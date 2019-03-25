@@ -14,6 +14,7 @@ module Data.Password
   , newSalt
     -- * Functions for Checking Plaintext Passwords Against Hashed Passwords
   , checkPass
+  , PassCheck
   , -- * Setup for doctests.
     -- $setup
   ) where
@@ -161,3 +162,23 @@ checkPass pass passHash =
   if verifyPass' (passToScryptPass pass) (passHashToScryptEncryptedPass passHash)
   then PassCheckSucc
   else PassCheckFail
+
+-- TODO: Create code for checking that plaintext passwords conform to some sort of
+-- password policy.
+
+-- data PassPolicy = PassPolicy
+--   { passPolicyLength :: Int
+--   , passPolicyCharReqs :: [PolicyCharReq]
+--   , passPolicyCharSet :: PolicyCharSet
+--   }
+
+-- -- | Character requirements for a password policy.
+-- data PolicyCharReq
+--   = PolicyCharReqUpper Int
+--   -- ^ A password requires at least 'Int' upper-case characters.
+--   | PolicyCharReqLower Int
+--   -- ^ A password requires at least 'Int' lower-case characters.
+--   | PolicyCharReqSpecial Int
+--   -- ^ A password requires at least 'Int' special characters
+
+-- data PolicyCharSet = PolicyCharSetAscii
