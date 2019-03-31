@@ -1,6 +1,32 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+{-|
+Module      : Data.Password
+Copyright   : (c) Dennis Gosnell, 2019
+License     : BSD-style (see LICENSE file)
+Maintainer  : cdep.illabout@gmail.com
+Stability   : experimental
+Portability : POSIX
+
+This module provides an easy way for interacting with passwords from Haskell.
+It provides the types 'Pass' and 'PassHash', which correspond to plain-text and
+hashed passwords.
+
+It also provides functions for hashing ('hashPass') and checking passwords
+('checkPass').
+
+The real benefit of this module is that there is a corresponding
+<https:// password-instances> module that provides canonical typeclass instances for
+'Pass' and 'PassHash' for many common typeclasses, like
+<https:// FromJSON> and
+<https:// ToJSON> from
+<https:// aeson>,
+<https:// Blahblah> from <https:// persistent>, etc.
+
+See the <https:// password-instances> module for more information.
+-}
+
 module Data.Password
   (
     -- * Plaintext Password
