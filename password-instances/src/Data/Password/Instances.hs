@@ -44,6 +44,7 @@ module Data.Password.Instances
 import Data.Aeson (FromJSON)
 import Data.Password
 import Database.Persist.Class (PersistField)
+import Database.Persist.Sql (PersistFieldSql)
 import Web.HttpApiData (FromHttpApiData)
 
 
@@ -95,3 +96,7 @@ deriving newtype instance FromHttpApiData Pass
 -- We don't provide an instance of 'PersistField' for 'Pass', because we don't
 -- want to make it easy to store a plain-text password in the database.
 deriving newtype instance PersistField PassHash
+
+-- | This instance allows a 'PassHash' to be stored as a field in an SQL
+-- database in "Database.Persist.Sql".
+deriving newtype instance PersistFieldSql PassHash
