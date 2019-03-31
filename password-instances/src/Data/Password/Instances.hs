@@ -34,12 +34,15 @@ module Data.Password.Instances
     -- * Functions for Checking Plaintext Passwords Against Hashed Passwords
   , checkPass
   , PassCheck(..)
+    -- * Unsafe Debugging Functions for Showing a Password
+  , unsafeShowPassword
+  , unsafeShowPasswordText
   , -- * Setup for doctests.
     -- $setup
   ) where
 
 import Data.Aeson (FromJSON)
-import Data.Password (Pass(..), PassCheck(..), PassHash(..), Salt(..), checkPass, hashPass, hashPassWithSalt, newSalt)
+import Data.Password
 import Database.Persist.Class (PersistField)
 
 
@@ -54,8 +57,9 @@ import Database.Persist.Class (PersistField)
 
 -- | This instance allows a 'Pass' to be created from a JSON blob.
 --
--- >>> decode "\"foobar\"" :: Maybe Pass
--- Just (Pass {unPass = "foobar"})
+-- >>> let maybePass = decode "\"foobar\"" :: Maybe Pass
+-- >>> fmap unsafeShowPassword maybePass
+-- Just "foobar"
 --
 -- There is no instance for 'ToJSON' for 'Pass' because we don't want to
 -- accidentally encode a plain-text 'Pass' to JSON and send it to the end-user.

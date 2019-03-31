@@ -41,6 +41,9 @@ module Data.Password
     -- * Functions for Checking Plaintext Passwords Against Hashed Passwords
   , checkPass
   , PassCheck(..)
+    -- * Unsafe Debugging Functions for Showing a Password
+  , unsafeShowPassword
+  , unsafeShowPasswordText
   , -- * Setup for doctests.
     -- $setup
   ) where
@@ -50,7 +53,7 @@ import Crypto.Scrypt (EncryptedPass(..), Salt(..), defaultParams, encryptPass,
                       newSalt, verifyPass')
 import qualified Crypto.Scrypt as Scrypt
 import Data.String (IsString)
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 import Data.Text.Encoding (decodeUtf8With, encodeUtf8)
 import Data.Text.Encoding.Error (lenientDecode)
 
@@ -60,7 +63,7 @@ import Data.Text.Encoding.Error (lenientDecode)
 -- Import needed libraries.
 --
 -- >>> import Data.ByteString (pack)
--- >>> import Test.QuickCheck (Arbitrary(arbitrary), vector)
+-- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
 -- >>> import Test.QuickCheck.Instances.ByteString ()
 -- >>> import Test.QuickCheck.Instances.Text ()
 --
@@ -75,10 +78,34 @@ import Data.Text.Encoding.Error (lenientDecode)
 -- >>> instance Arbitrary Scrypt.Pass where arbitrary = fmap Scrypt.Pass arbitrary
 -- >>> instance Arbitrary EncryptedPass where arbitrary = encryptPass defaultParams <$> arbitrary <*> arbitrary
 
+-- | A plain-text password.
+--
+-- This represents a plain-text password that has /NOT/ been hashed.
+--
+-- You should be careful with 'Pass'.  Make sure not to write it to logs or
+-- store it in a database.
 newtype Pass = Pass
   { unPass :: Text
-  } deriving (Eq, IsString, Ord, Read, Show)
+  } deriving (IsString, Read)
 
+-- | This is an unsafe function that shows a password in plain-text.
+--
+-- >>> unsafeShowPasswordText $ Pass "foobar"
+-- "foobar"
+--
+-- You should generally not use this function.
+unsafeShowPassword :: Pass -> String
+unsafeShowPassword = unpack . unsafeShowPasswordText
+
+-- | This is like 'unsafeShowPassword' but produces a 'Text' instead of a
+-- 'String'.
+unsafeShowPasswordText :: Pass -> Text
+unsafeShowPasswordText (Pass pass) = pass
+
+-- | A hashed password.
+--
+-- This represents a password that has been put through a hashing function.
+-- The hashed password can be stored in a database.
 newtype PassHash = PassHash
   { unPassHash :: Text
   } deriving (Eq, Ord, Read, Show)
@@ -182,7 +209,7 @@ data PassCheck = PassCheckSucc | PassCheckFail deriving (Eq, Read, Show)
 --
 -- This should always fail if an incorrect password is given.
 --
--- prop> let correctPassHash = hashPassWithSalt (Pass "foobar") salt in checkPass badpass correctPassHash == PassCheckFail
+-- prop> \(Blind badpass) -> let correctPassHash = hashPassWithSalt (Pass "foobar") salt in checkPass badpass correctPassHash == PassCheckFail
 checkPass :: Pass -> PassHash -> PassCheck
 checkPass pass passHash =
   if verifyPass' (passToScryptPass pass) (passHashToScryptEncryptedPass passHash)
