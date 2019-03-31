@@ -189,7 +189,16 @@ hashPassWithSalt pass salt =
   scryptEncryptedPassToPassHash $
     encryptPass defaultParams salt (passToScryptPass pass)
 
-data PassCheck = PassCheckSucc | PassCheckFail deriving (Eq, Read, Show)
+-- | The result of a checking a password against a hashed version.  This is
+-- returned by 'checkPass'.
+data PassCheck
+  = PassCheckSucc
+  -- ^ The password check was successful.  The plain-text password matches the
+  -- hashed password.
+  | PassCheckFail
+  -- ^ The password check failed.  The plain-text password does not match the
+  -- hashed password.
+  deriving (Eq, Read, Show)
 
 -- | Check a 'Pass' against a 'PassHash'.
 --
