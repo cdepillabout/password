@@ -17,14 +17,16 @@ It also provides functions for hashing ('hashPass') and checking passwords
 ('checkPass').
 
 The real benefit of this module is that there is a corresponding
-<https:// password-instances> module that provides canonical typeclass instances for
+<http://hackage.haskell.org/package/password-instances password-instances>
+module that provides canonical typeclass instances for
 'Pass' and 'PassHash' for many common typeclasses, like
-<https:// FromJSON> and
-<https:// ToJSON> from
-<https:// aeson>,
-<https:// Blahblah> from <https:// persistent>, etc.
+<http://hackage.haskell.org/package/aeson/docs/Data-Aeson.html#t:FromJSON FromJSON> from
+<http://hackage.haskell.org/package/aeson aeson>,
+<http://hackage.haskell.org/package/persistent/docs/Database-Persist-Class.html#t:PersistField PersistField>
+from
+<http://hackage.haskell.org/package/persistent persistent>, etc.
 
-See the <https:// password-instances> module for more information.
+See the <http://hackage.haskell.org/package/password-instances password-instances> module for more information.
 -}
 
 module Data.Password
@@ -184,6 +186,8 @@ hashPass pass = do
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
 -- example is reproducible, but in general you should use 'hashPass'.  'hashPass'
 -- generates a new 'Salt' everytime it is called.)
+--
+-- This function uses the hash function from the scrypt package: 'encryptPass'.
 hashPassWithSalt :: Pass -> Salt -> PassHash
 hashPassWithSalt pass salt =
   scryptEncryptedPassToPassHash $

@@ -1,6 +1,9 @@
 
 # password
 
+[![Build Status](https://secure.travis-ci.org/cdepillabout/password.svg)](http://travis-ci.org/cdepillabout/password)
+[![BSD3 license](https://img.shields.io/badge/license-BSD3-blue.svg)](./LICENSE)
+
 This repo provides packages for easily working with passwords in Haskell.  This
 is mainly to be used for web applications that need to receive plain-text
 passwords from users, and store hashed passwords in a database.
