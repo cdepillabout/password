@@ -44,6 +44,7 @@ module Data.Password.Instances
 import Data.Aeson (FromJSON)
 import Data.Password
 import Database.Persist.Class (PersistField)
+import Web.HttpApiData (FromHttpApiData)
 
 
 -- $setup
@@ -52,7 +53,9 @@ import Database.Persist.Class (PersistField)
 -- Import needed functions.
 --
 -- >>> import Data.Aeson (decode)
+-- >>> import Data.Text (Text)
 -- >>> import Database.Persist.Class (PersistField(toPersistValue))
+-- >>> import Web.HttpApiData (parseUrlPiece)
 
 
 -- | This instance allows a 'Pass' to be created from a JSON blob.
@@ -68,6 +71,14 @@ import Database.Persist.Class (PersistField)
 -- because we don't want to accidentally send the password hash to the end
 -- user.
 deriving newtype instance FromJSON Pass
+
+-- | This instance allows a 'Pass' to be created with functions like
+-- 'Web.HttpApiData.parseUrlPiece' or 'Web.HttpApiData.parseQueryParam'.
+--
+-- >>> let eitherPass = parseUrlPiece "foobar" :: Either Text Pass
+-- >>> fmap unsafeShowPassword eitherPass
+-- Right "foobar"
+deriving newtype instance FromHttpApiData Pass
 
 -- | This instance allows a 'PassHash' to be stored as a field in a database using
 -- "Database.Persist".
