@@ -40,7 +40,7 @@ module Data.Password
   , newSalt
     -- * Functions for Checking Plaintext Passwords Against Hashed Passwords
   , checkPass
-  , PassCheck
+  , PassCheck(..)
   , -- * Setup for doctests.
     -- $setup
   ) where
