@@ -54,7 +54,6 @@ import Web.HttpApiData (FromHttpApiData)
 -- Import needed functions.
 --
 -- >>> import Data.Aeson (decode)
--- >>> import Data.Text (Text)
 -- >>> import Database.Persist.Class (PersistField(toPersistValue))
 -- >>> import Web.HttpApiData (parseUrlPiece)
 
@@ -76,7 +75,7 @@ deriving newtype instance FromJSON Pass
 -- | This instance allows a 'Pass' to be created with functions like
 -- 'Web.HttpApiData.parseUrlPiece' or 'Web.HttpApiData.parseQueryParam'.
 --
--- >>> let eitherPass = parseUrlPiece "foobar" :: Either Text Pass
+-- >>> let eitherPass = parseUrlPiece "foobar"
 -- >>> fmap unsafeShowPassword eitherPass
 -- Right "foobar"
 deriving newtype instance FromHttpApiData Pass
