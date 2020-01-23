@@ -23,7 +23,8 @@ See the "Data.Password" module for more information.
 module Data.Password.Instances
   (
     -- * Plaintext Password
-    Pass(..)
+    Pass
+  , mkPass
     -- * Hashed Password
   , PassHash(..)
   , Salt(..)
@@ -41,11 +42,11 @@ module Data.Password.Instances
     -- $setup
   ) where
 
-import Data.Aeson (FromJSON)
+import Data.Aeson (FromJSON(..))
 import Data.Password
 import Database.Persist.Class (PersistField)
 import Database.Persist.Sql (PersistFieldSql)
-import Web.HttpApiData (FromHttpApiData)
+import Web.HttpApiData (FromHttpApiData(..))
 
 
 -- $setup
@@ -56,7 +57,6 @@ import Web.HttpApiData (FromHttpApiData)
 -- >>> import Data.Aeson (decode)
 -- >>> import Database.Persist.Class (PersistField(toPersistValue))
 -- >>> import Web.HttpApiData (parseUrlPiece)
-
 
 -- | This instance allows a 'Pass' to be created from a JSON blob.
 --
@@ -70,7 +70,8 @@ import Web.HttpApiData (FromHttpApiData)
 -- Similarly, there is no 'ToJSON' and 'FromJSON' instance for 'PassHash'
 -- because we don't want to accidentally send the password hash to the end
 -- user.
-deriving newtype instance FromJSON Pass
+instance FromJSON Pass where
+  parseJSON = fmap mkPass . parseJSON
 
 -- | This instance allows a 'Pass' to be created with functions like
 -- 'Web.HttpApiData.parseUrlPiece' or 'Web.HttpApiData.parseQueryParam'.
@@ -78,14 +79,15 @@ deriving newtype instance FromJSON Pass
 -- >>> let eitherPass = parseUrlPiece "foobar"
 -- >>> fmap unsafeShowPassword eitherPass
 -- Right "foobar"
-deriving newtype instance FromHttpApiData Pass
+instance FromHttpApiData Pass where
+  parseUrlPiece = fmap mkPass . parseUrlPiece
 
 -- | This instance allows a 'PassHash' to be stored as a field in a database using
 -- "Database.Persist".
 --
 -- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
--- >>> let pass = Pass "foobar"
--- >>> let hashedPassword = hashPassWithSalt (Pass "foobar") salt
+-- >>> let pass = mkPass "foobar"
+-- >>> let hashedPassword = hashPassWithSalt salt pass
 -- >>> toPersistValue hashedPassword
 -- PersistText "14|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|nENDaqWBmPKapAqQ3//H0iBImweGjoTqn5SvBS8Mc9FPFbzq6w65maYPZaO+SPamVZRXQjARQ8Y+5rhuDhjIhw=="
 --
