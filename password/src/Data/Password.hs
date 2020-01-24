@@ -95,6 +95,9 @@ newtype Pass = Pass Text
 
 -- | CAREFUL: 'Show'-ing a 'Pass' will always print @"**PASSWORD**"@
 --
+-- >>> show $ mkPass "hello"
+-- "**PASSWORD**"
+--
 -- @since 1.0.0.0
 instance Show Pass where
  show _ = "**PASSWORD**"
