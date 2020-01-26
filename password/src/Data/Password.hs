@@ -1,5 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 {-|
 Module      : Data.Password
@@ -32,7 +31,8 @@ See the <http://hackage.haskell.org/package/password-instances password-instance
 module Data.Password
   (
     -- * Plaintext Password
-    Pass(..)
+    Pass
+  , mkPass
     -- * Hashed Password
   , PassHash(..)
   , Salt(..)
@@ -52,9 +52,9 @@ module Data.Password
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.Scrypt (EncryptedPass(..), Salt(..), defaultParams, encryptPass,
-                      newSalt, verifyPass')
+                      verifyPass')
 import qualified Crypto.Scrypt as Scrypt
-import Data.String (IsString)
+import Data.String (IsString(..))
 import Data.Text (Text, unpack)
 import Data.Text.Encoding (decodeUtf8With, encodeUtf8)
 import Data.Text.Encoding.Error (lenientDecode)
@@ -84,15 +84,33 @@ import Data.Text.Encoding.Error (lenientDecode)
 --
 -- This represents a plain-text password that has /NOT/ been hashed.
 --
--- You should be careful with 'Pass'.  Make sure not to write it to logs or
+-- You should be careful with 'Pass'. Make sure not to write it to logs or
 -- store it in a database.
-newtype Pass = Pass
-  { unPass :: Text
-  } deriving (IsString, Read)
+--
+-- You can construct a 'Pass' by using the 'mkPass' function or as literal strings together with the
+-- OverloadedStrings pragma (or manually, by using 'fromString' on a 'String').
+-- Alternatively, you could also use some of the instances in the @password-instances@ library.
+newtype Pass = Pass Text
+  deriving (IsString)
+
+-- | CAREFUL: 'Show'-ing a 'Pass' will always print @"**PASSWORD**"@
+--
+-- >>> show $ mkPass "hello"
+-- "**PASSWORD**"
+--
+-- @since 1.0.0.0
+instance Show Pass where
+ show _ = "**PASSWORD**"
+
+-- | Construct a 'Pass'
+--
+-- @since 1.0.0.0
+mkPass :: Text -> Pass
+mkPass = Pass
 
 -- | This is an unsafe function that shows a password in plain-text.
 --
--- >>> unsafeShowPasswordText $ Pass "foobar"
+-- >>> unsafeShowPasswordText $ mkPass "foobar"
 -- "foobar"
 --
 -- You should generally not use this function.
@@ -114,7 +132,7 @@ newtype PassHash = PassHash
 
 -- | Convert an "Crypto.Scrypt".'Scrypt.Pass' to our 'Pass' type.
 --
--- >>> passToScryptPass $ Pass "foobar"
+-- >>> passToScryptPass "foobar"
 -- Pass {getPass = "foobar"}
 passToScryptPass :: Pass -> Scrypt.Pass
 passToScryptPass (Pass pass) = Scrypt.Pass $ encodeUtf8 pass
@@ -165,12 +183,12 @@ passHashToScryptEncryptedPass (PassHash passHash) =
 -- | Just like 'hashPassWithSalt', but generate a new 'Salt' everytime with a
 -- call to 'newSalt'.
 --
--- >>> hashPass (Pass "foobar")
+-- >>> hashPass $ mkPass "foobar"
 -- PassHash {unPassHash = "14|8|1|...|..."}
 hashPass :: MonadIO m => Pass -> m PassHash
 hashPass pass = do
   salt <- liftIO newSalt
-  pure $ hashPassWithSalt pass salt
+  pure $ hashPassWithSalt salt pass
 
 -- | Hash a password with the given 'Salt'.
 --
@@ -180,7 +198,7 @@ hashPass pass = do
 -- The input 'Salt' and resulting 'PassHash' are both byte-64 encoded.
 --
 -- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
--- >>> hashPassWithSalt (Pass "foobar") salt
+-- >>> hashPassWithSalt salt (mkPass "foobar")
 -- PassHash {unPassHash = "14|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|nENDaqWBmPKapAqQ3//H0iBImweGjoTqn5SvBS8Mc9FPFbzq6w65maYPZaO+SPamVZRXQjARQ8Y+5rhuDhjIhw=="}
 --
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
@@ -188,16 +206,16 @@ hashPass pass = do
 -- generates a new 'Salt' everytime it is called.)
 --
 -- This function uses the hash function from the scrypt package: 'encryptPass'.
-hashPassWithSalt :: Pass -> Salt -> PassHash
-hashPassWithSalt pass salt =
+hashPassWithSalt :: Salt -> Pass -> PassHash
+hashPassWithSalt salt pass =
   scryptEncryptedPassToPassHash $
     encryptPass defaultParams salt (passToScryptPass pass)
 
 -- | The result of a checking a password against a hashed version.  This is
 -- returned by 'checkPass'.
 data PassCheck
-  = PassCheckSucc
-  -- ^ The password check was successful.  The plain-text password matches the
+  = PassCheckSuccess
+  -- ^ The password check was successful. The plain-text password matches the
   -- hashed password.
   | PassCheckFail
   -- ^ The password check failed.  The plain-text password does not match the
@@ -206,28 +224,32 @@ data PassCheck
 
 -- | Check a 'Pass' against a 'PassHash'.
 --
--- Returns 'PassCheckSucc' on success.
+-- Returns 'PassCheckSuccess' on success.
 --
 -- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
--- >>> let pass = Pass "foobar"
--- >>> let passHash = hashPassWithSalt pass salt
+-- >>> let pass = mkPass "foobar"
+-- >>> let passHash = hashPassWithSalt salt pass
 -- >>> checkPass pass passHash
--- PassCheckSucc
+-- PassCheckSuccess
 --
 -- Returns 'PassCheckFail' If an incorrect 'Pass' or 'PassHash' is used.
 --
--- >>> let badpass = Pass "incorrect-password"
+-- >>> let badpass = mkPass "incorrect-password"
 -- >>> checkPass badpass passHash
 -- PassCheckFail
 --
 -- This should always fail if an incorrect password is given.
 --
--- prop> \(Blind badpass) -> let correctPassHash = hashPassWithSalt (Pass "foobar") salt in checkPass badpass correctPassHash == PassCheckFail
+-- prop> \(Blind badpass) -> let correctPassHash = hashPassWithSalt salt "foobar" in checkPass badpass correctPassHash == PassCheckFail
 checkPass :: Pass -> PassHash -> PassCheck
 checkPass pass passHash =
   if verifyPass' (passToScryptPass pass) (passHashToScryptEncryptedPass passHash)
-  then PassCheckSucc
+  then PassCheckSuccess
   else PassCheckFail
+
+-- | Generate a random 32-byte salt.
+newSalt :: MonadIO m => m Salt
+newSalt = liftIO Scrypt.newSalt
 
 -- TODO: Create code for checking that plaintext passwords conform to some sort of
 -- password policy.
