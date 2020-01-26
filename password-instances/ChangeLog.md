@@ -1,5 +1,10 @@
 # Changelog for password-instances
 
+## 1.0.0.0
+
+-   Various changes re-exported from the `password` package.
+    [#6](https://github.com/cdepillabout/password/pull/6)
+
 ## 0.3.0.1
 
 -   Small fix to make sure the doctests build with stack.
