@@ -14,47 +14,31 @@ Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
 Portability : POSIX
 
-This module provides the same interface as "Data.Password", but it also
-provides additional typeclass instances for 'Pass' and 'PassHash'.
+This module provides additional typeclass instances for 'Pass' and 'PassHash'.
 
 See the "Data.Password" module for more information.
 -}
 
-module Data.Password.Instances
-  (
-    -- * Plaintext Password
-    Pass
-  , mkPass
-    -- * Hashed Password
-  , PassHash(..)
-  , Salt(..)
-    -- * Functions for Hashing Plaintext Passwords
-  , hashPass
-  , hashPassWithSalt
-  , newSalt
-    -- * Functions for Checking Plaintext Passwords Against Hashed Passwords
-  , checkPass
-  , PassCheck(..)
-    -- * Unsafe Debugging Functions for Showing a Password
-  , unsafeShowPassword
-  , unsafeShowPasswordText
-  , -- * Setup for doctests.
-    -- $setup
-  ) where
+module Data.Password.Instances () where
 
 import Data.Aeson (FromJSON(..))
-import Data.Password
-import Database.Persist.Class (PersistField)
-import Database.Persist.Sql (PersistFieldSql)
+import Data.Password (Pass, PassHash(..), mkPass)
+import Data.Text.Encoding as TE (decodeUtf8)
+import Database.Persist (PersistValue(..))
+import Database.Persist.Class (PersistField(..))
+import Database.Persist.Sql (PersistFieldSql(..))
 import Web.HttpApiData (FromHttpApiData(..))
 
 
 -- $setup
 -- >>> :set -XOverloadedStrings
+-- >>> :set -XDataKinds
 --
 -- Import needed functions.
 --
 -- >>> import Data.Aeson (decode)
+-- >>> import Data.Password (Salt(..), unsafeShowPassword)
+-- >>> import Data.Password.Scrypt (defaultParams, hashPassWithSalt)
 -- >>> import Database.Persist.Class (PersistField(toPersistValue))
 -- >>> import Web.HttpApiData (parseUrlPiece)
 
@@ -87,17 +71,21 @@ instance FromHttpApiData Pass where
 --
 -- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
 -- >>> let pass = mkPass "foobar"
--- >>> let hashedPassword = hashPassWithSalt salt pass
+-- >>> let hashedPassword = hashPassWithSalt defaultParams salt pass
 -- >>> toPersistValue hashedPassword
--- PersistText "14|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|nENDaqWBmPKapAqQ3//H0iBImweGjoTqn5SvBS8Mc9FPFbzq6w65maYPZaO+SPamVZRXQjARQ8Y+5rhuDhjIhw=="
+-- PersistText "16|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|BH0oidcU/4Ec7Co4EM+LQ6xp39//MnOUhqmNeOnOz/nl4JHNXEJBw5dPdi3wTStYr+e1SmJkzHJrMvUJYNxK1w=="
 --
 -- In the example above, the long 'PersistText' will be the value you store in
 -- the database.
 --
 -- We don't provide an instance of 'PersistField' for 'Pass', because we don't
 -- want to make it easy to store a plain-text password in the database.
-deriving newtype instance PersistField PassHash
+instance PersistField (PassHash a) where
+  toPersistValue (PassHash hpw) = PersistText hpw
+  fromPersistValue (PersistText txt) = Right $ PassHash txt
+  fromPersistValue (PersistByteString bs) = Right $ PassHash $ TE.decodeUtf8 bs
+  fromPersistValue _ = Left "did not parse PassHash from PersistValue"
 
 -- | This instance allows a 'PassHash' to be stored as a field in an SQL
 -- database in "Database.Persist.Sql".
-deriving newtype instance PersistFieldSql PassHash
+deriving newtype instance PersistFieldSql (PassHash a)
