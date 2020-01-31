@@ -13,12 +13,18 @@ Portability : POSIX
 -- I think the portability is broadened to
 -- whatever, now that we use cryptonite... I think
 module Data.Password.Scrypt (
+  -- * Hash Passwords (scrypt)
     hashPass
+  -- * Verify Passwords (scrypt)
+  , checkPass
+  -- * Hashing Manually (DISADVISED)
+  --
+  -- If you have any doubt about your knowledge of cryptography and/or the
+  -- /scrypt/ algorithm, please, please just use 'hashPass'.
   , hashPassWithParams
   , hashPassWithSalt
   , ScryptParams(..)
   , defaultParams
-  , checkPass
   ) where
 
 import Control.Monad (guard)
@@ -56,8 +62,6 @@ import Text.Read (readMaybe)
 --
 -- >>> hashPass $ mkPass "foobar"
 -- PassHash {unPassHash = "16|8|1|...|..."}
---
--- @since 2.0.0.0
 hashPass :: MonadIO m => Pass -> m (PassHash "scrypt")
 hashPass = hashPassWithParams defaultParams
 
@@ -104,8 +108,6 @@ defaultParams = ScryptParams {
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
 -- example is reproducible, but in general you should use 'hashPass'.  'hashPass'
 -- generates a new 'Salt' everytime it is called.)
---
--- @since 2.0.0.0
 hashPassWithSalt :: ScryptParams -> Salt -> Pass -> PassHash "scrypt"
 hashPassWithSalt params@ScryptParams{..} s@(Salt salt) pass =
   PassHash $ T.intercalate "|"
