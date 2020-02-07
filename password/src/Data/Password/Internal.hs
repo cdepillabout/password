@@ -30,7 +30,6 @@ import Crypto.Random (getRandomBytes)
 import Data.ByteString (ByteString)
 import Data.String (IsString(..))
 import Data.Text (Text, unpack)
-import GHC.TypeLits (Symbol)
 
 -- | A plain-text password.
 --
@@ -63,14 +62,14 @@ mkPass = Pass
 -- | A salt used by a hashing algorithm.
 --
 -- @since 2.0.0.0
-newtype Salt = Salt ByteString
+newtype Salt a = Salt ByteString
   deriving (Eq, Show)
 
--- | Generate a random 32-byte salt.
+-- | Generate a random x-byte salt.
 --
 -- @since 2.0.0.0
-newSalt :: MonadIO m => m Salt
-newSalt = liftIO $ Salt <$> getRandomBytes 32
+newSalt :: MonadIO m => Int -> m (Salt a)
+newSalt i = liftIO $ Salt <$> getRandomBytes i
 
 -- | This is an unsafe function that shows a password in plain-text.
 --
@@ -90,7 +89,7 @@ unsafeShowPasswordText (Pass pass) = pass
 --
 -- This represents a password that has been put through a hashing function.
 -- The hashed password can be stored in a database.
-newtype PassHash (a :: Symbol) = PassHash
+newtype PassHash a = PassHash
   { unPassHash :: Text
   } deriving (Eq, Ord, Read, Show)
 

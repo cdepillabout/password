@@ -1,5 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 {-|
 Module      : Data.Password
 Copyright   : (c) Dennis Gosnell, 2019

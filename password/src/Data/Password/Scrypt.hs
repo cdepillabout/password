@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -15,6 +14,7 @@ Portability : POSIX
 module Data.Password.Scrypt (
   -- * Hash Passwords (scrypt)
     hashPass
+  , Scrypt
   -- * Verify Passwords (scrypt)
   , checkPass
   -- * Hashing Manually (DISADVISED)
@@ -25,6 +25,7 @@ module Data.Password.Scrypt (
   , hashPassWithSalt
   , ScryptParams(..)
   , defaultParams
+  , newSalt
   ) where
 
 import Control.Monad (guard)
@@ -35,14 +36,19 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Char8 as C8 (length)
 import Data.Maybe (fromMaybe)
-import Data.Password.Internal
+import Data.Password.Internal hiding (newSalt)
+import qualified Data.Password.Internal
 import Data.Text (Text)
 import qualified Data.Text as T (intercalate, pack, split, unpack)
 import Data.Text.Encoding (encodeUtf8)
 import Text.Read (readMaybe)
 
+-- | Phantom type for keeping 'PassHash'es apart
+--
+-- @since 2.0.0.0
+data Scrypt
+
 -- $setup
--- >>> :set -XDataKinds
 -- >>> :set -XFlexibleInstances
 -- >>> :set -XOverloadedStrings
 --
@@ -54,15 +60,16 @@ import Text.Read (readMaybe)
 -- >>> import Test.QuickCheck.Instances.ByteString ()
 -- >>> import Test.QuickCheck.Instances.Text ()
 --
--- >>> instance Arbitrary Salt where arbitrary = Salt . pack <$> vector 32
+-- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 32
 -- >>> instance Arbitrary Pass where arbitrary = fmap Pass arbitrary
--- >>> instance Arbitrary (PassHash "scrypt") where arbitrary = hashPassWithSalt defaultParams <$> arbitrary <*> arbitrary
+-- >>> let testParams = defaultParams {scryptRounds = 12}
+-- >>> instance Arbitrary (PassHash Scrypt) where arbitrary = hashPassWithSalt testParams <$> arbitrary <*> arbitrary
 
 -- | Hash the 'Pass' using the /scrypt/ hash algorithm
 --
 -- >>> hashPass $ mkPass "foobar"
 -- PassHash {unPassHash = "16|8|1|...|..."}
-hashPass :: MonadIO m => Pass -> m (PassHash "scrypt")
+hashPass :: MonadIO m => Pass -> m (PassHash Scrypt)
 hashPass = hashPassWithParams defaultParams
 
 -- | Parameters used in the /scrypt/ hashing algorithm.
@@ -106,9 +113,9 @@ defaultParams = ScryptParams {
 -- PassHash {unPassHash = "16|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|BH0oidcU/4Ec7Co4EM+LQ6xp39//MnOUhqmNeOnOz/nl4JHNXEJBw5dPdi3wTStYr+e1SmJkzHJrMvUJYNxK1w=="}
 --
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
--- example is reproducible, but in general you should use 'hashPass'.  'hashPass'
+-- example is reproducible, but in general you should use 'hashPass'. 'hashPass'
 -- generates a new 'Salt' everytime it is called.)
-hashPassWithSalt :: ScryptParams -> Salt -> Pass -> PassHash "scrypt"
+hashPassWithSalt :: ScryptParams -> Salt Scrypt -> Pass -> PassHash Scrypt
 hashPassWithSalt params@ScryptParams{..} s@(Salt salt) pass =
   PassHash $ T.intercalate "|"
     [ t scryptRounds
@@ -124,7 +131,7 @@ hashPassWithSalt params@ScryptParams{..} s@(Salt salt) pass =
     key = hashPassWithSalt' params s pass
 
 -- | Only for internal use
-hashPassWithSalt' :: ScryptParams -> Salt -> Pass -> ByteString
+hashPassWithSalt' :: ScryptParams -> Salt Scrypt -> Pass -> ByteString
 hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
     Scrypt.generate params bsPass salt
   where
@@ -143,22 +150,21 @@ hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
 -- /scrypt/ algorithm, please, please just use 'hashPass'.
 --
 -- @since 2.0.0.0
-hashPassWithParams :: MonadIO m => ScryptParams -> Pass -> m (PassHash "scrypt")
+hashPassWithParams :: MonadIO m => ScryptParams -> Pass -> m (PassHash Scrypt)
 hashPassWithParams scryptParams pass = liftIO $ do
-    salt <- getRandomBytes $ scryptSalt scryptParams
-    return $ hashPassWithSalt scryptParams (Salt salt) pass
+    salt <- newSalt
+    return $ hashPassWithSalt scryptParams salt pass
 
--- | Check a 'Pass' against a 'PassHash'.
+-- | Check a 'Pass' against a 'PassHash' 'Scrypt'.
 --
 -- Returns 'PassCheckSuccess' on success.
 --
--- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
 -- >>> let pass = mkPass "foobar"
--- >>> let passHash = hashPassWithSalt defaultParams salt pass
+-- >>> passHash <- hashPass pass
 -- >>> checkPass pass passHash
 -- PassCheckSuccess
 --
--- Returns 'PassCheckFail' If an incorrect 'Pass' or 'PassHash' is used.
+-- Returns 'PassCheckFail' if an incorrect 'Pass' or 'PassHash' 'Scrypt' is used.
 --
 -- >>> let badpass = mkPass "incorrect-password"
 -- >>> checkPass badpass passHash
@@ -167,7 +173,7 @@ hashPassWithParams scryptParams pass = liftIO $ do
 -- This should always fail if an incorrect password is given.
 --
 -- prop> \(Blind badpass) -> let correctPassHash = hashPassWithSalt defaultParams salt "foobar" in checkPass badpass correctPassHash == PassCheckFail
-checkPass :: Pass -> PassHash "scrypt" -> PassCheck
+checkPass :: Pass -> PassHash Scrypt -> PassCheck
 checkPass pass (PassHash passHash) =
   fromMaybe PassCheckFail $ do
     let paramList = T.split (== '|') passHash
@@ -191,3 +197,9 @@ checkPass pass (PassHash passHash) =
     from64 = either (\_ -> Nothing) pure . Base64.decodeBase64 . encodeUtf8
     readT :: forall a. Read a => Text -> Maybe a
     readT = readMaybe . T.unpack
+
+-- | Generate a random 32-byte salt
+--
+-- @since 2.0.0.0
+newSalt :: MonadIO m => m (Salt Scrypt)
+newSalt = Data.Password.Internal.newSalt 32
