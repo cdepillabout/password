@@ -31,7 +31,7 @@ module Data.Password.Scrypt (
 import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.KDF.Scrypt as Scrypt
-import Crypto.Random (getRandomBytes)
+import Data.ByteArray (Bytes, convert)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Char8 as C8 (length)
@@ -133,7 +133,7 @@ hashPassWithSalt params@ScryptParams{..} s@(Salt salt) pass =
 -- | Only for internal use
 hashPassWithSalt' :: ScryptParams -> Salt Scrypt -> Pass -> ByteString
 hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
-    Scrypt.generate params bsPass salt
+    Scrypt.generate params bsPass (convert salt :: Bytes)
   where
     bsPass = encodeUtf8 pass
     params = Scrypt.Parameters {
