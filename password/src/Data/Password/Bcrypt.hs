@@ -31,7 +31,6 @@ import Crypto.KDF.BCrypt as Bcrypt
 import Data.ByteArray (Bytes, convert)
 import Data.Password.Internal hiding (newSalt)
 import qualified Data.Password.Internal
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 
 -- | Phantom type for keeping 'PassHash'es apart
 --
@@ -78,8 +77,8 @@ hashPassWithSalt
   -> Pass -- ^ The password to be hashed.
   -> PassHash Bcrypt -- ^ The bcrypt hash in standard format.
 hashPassWithSalt cost (Salt salt) (Pass pass) =
-    let hash = Bcrypt.bcrypt cost (convert salt :: Bytes) $ encodeUtf8 pass
-    in PassHash . decodeUtf8 $ convert (hash :: Bytes)
+    let hash = Bcrypt.bcrypt cost (convert salt :: Bytes) (toBytes pass)
+    in PassHash $ fromBytes hash
 
 -- | Hash a password using the /bcrypt/ algorithm with the given cost.
 --
@@ -116,7 +115,7 @@ hashPassWithParams cost pass = liftIO $ do
 -- prop> \(Blind badpass) -> let correctPassHash = hashPassWithSalt 8 salt "foobar" in checkPass badpass correctPassHash == PassCheckFail
 checkPass :: Pass -> PassHash Bcrypt -> PassCheck
 checkPass (Pass pass) (PassHash passHash) =
-    if Bcrypt.validatePassword (encodeUtf8 pass) (encodeUtf8 passHash)
+    if Bcrypt.validatePassword (toBytes pass) (toBytes passHash)
       then PassCheckSuccess
       else PassCheckFail
 

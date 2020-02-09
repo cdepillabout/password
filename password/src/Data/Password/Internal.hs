@@ -23,13 +23,18 @@ module Data.Password.Internal
   -- * Unsafe functions
   , unsafeShowPassword
   , unsafeShowPasswordText
+  -- * Utility
+  , toBytes
+  , fromBytes
   ) where
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.Random (getRandomBytes)
+import Data.ByteArray (Bytes, convert)
 import Data.ByteString (ByteString)
 import Data.String (IsString(..))
 import Data.Text (Text, unpack)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 
 -- | A plain-text password.
 --
@@ -58,6 +63,7 @@ instance Show Pass where
 -- @since 1.0.0.0
 mkPass :: Text -> Pass
 mkPass = Pass
+{-# INLINE mkPass #-}
 
 -- | A salt used by a hashing algorithm.
 --
@@ -70,6 +76,7 @@ newtype Salt a = Salt ByteString
 -- @since 2.0.0.0
 newSalt :: MonadIO m => Int -> m (Salt a)
 newSalt i = liftIO $ Salt <$> getRandomBytes i
+{-# INLINE newSalt #-}
 
 -- | This is an unsafe function that shows a password in plain-text.
 --
@@ -79,11 +86,13 @@ newSalt i = liftIO $ Salt <$> getRandomBytes i
 -- You should generally not use this function.
 unsafeShowPassword :: Pass -> String
 unsafeShowPassword = unpack . unsafeShowPasswordText
+{-# INLINE unsafeShowPassword #-}
 
 -- | This is like 'unsafeShowPassword' but produces a 'Text' instead of a
 -- 'String'.
 unsafeShowPasswordText :: Pass -> Text
 unsafeShowPasswordText (Pass pass) = pass
+{-# INLINE unsafeShowPasswordText #-}
 
 -- | A hashed password.
 --
@@ -103,3 +112,13 @@ data PassCheck
   -- ^ The password check failed.  The plain-text password does not match the
   -- hashed password.
   deriving (Eq, Read, Show)
+
+-- | Converting 'Text' to 'Bytes'
+toBytes :: Text -> Bytes
+toBytes = convert . encodeUtf8
+{-# INLINE toBytes #-}
+
+-- | Converting 'Bytes' to 'Text'
+fromBytes :: Bytes -> Text
+fromBytes = decodeUtf8 . convert
+{-# INLINE fromBytes #-}

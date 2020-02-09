@@ -132,9 +132,9 @@ hashPassWithSalt params@ScryptParams{..} s@(Salt salt) pass =
 -- | Only for internal use
 hashPassWithSalt' :: ScryptParams -> Salt Scrypt -> Pass -> ByteString
 hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
-    Scrypt.generate params bsPass (convert salt :: Bytes)
+    convert (scryptHash :: Bytes)
   where
-    bsPass = encodeUtf8 pass
+    scryptHash = Scrypt.generate params (toBytes pass) (convert salt :: Bytes)
     params = Scrypt.Parameters {
         n = 2 ^ scryptRounds,
         r = scryptBlockSize,
