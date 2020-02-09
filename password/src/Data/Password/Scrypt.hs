@@ -105,7 +105,7 @@ defaultParams = ScryptParams {
 -- The resulting 'PassHash' has the parameters used to hash it, as well as the
 -- 'Salt' appended to it, separated by @|@.
 --
--- The input 'Salt' and resulting 'PassHash' are both byte-64 encoded.
+-- The input 'Salt' and resulting 'PassHash' are both base64 encoded.
 --
 -- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
 -- >>> hashPassWithSalt defaultParams salt (mkPass "foobar")
@@ -151,7 +151,7 @@ hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
 -- @since 2.0.0.0
 hashPassWithParams :: MonadIO m => ScryptParams -> Pass -> m (PassHash Scrypt)
 hashPassWithParams scryptParams pass = liftIO $ do
-    salt <- newSalt
+    salt <- Data.Password.Internal.newSalt scryptSalt
     return $ hashPassWithSalt scryptParams salt pass
 
 -- | Check a 'Pass' against a 'PassHash' 'Scrypt'.

@@ -18,7 +18,7 @@ language: generic
 cache:
   directories:
   - $HOME/.ghc
-  # - $HOME/.cabal
+  - $HOME/.cabal
   - $HOME/.stack
   - $TRAVIS_BUILD_DIR/.stack-work
 
@@ -213,7 +213,7 @@ install:
       ;;
     cabal)
       cabal --version
-      travis_retry cabal update
+      travis_retry cabal v2-update
 
       # Get the list of packages from the stack.yaml file. Note that
       # this will also implicitly run hpack as necessary to generate
@@ -221,7 +221,7 @@ install:
       PACKAGES=$(stack --install-ghc query locals | grep '^ *path' | sed 's@^ *path:@@')
       unset GHC_ENVIRONMENT
 
-      cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
+      cabal v2-install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
       ;;
   esac
   set +ex
@@ -234,25 +234,25 @@ script:
       stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
       ;;
     cabal)
-      cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
+      cabal v2-install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
 
       ORIGDIR=$(pwd)
       for dir in $PACKAGES
       do
         cd $dir
         cabal check || [ "$CABALVER" == "1.16" ]
-        cabal sdist
+        cabal v2-sdist
         PKGVER=$(cabal info . | awk '{print $2;exit}')
         SRC_TGZ=$PKGVER.tar.gz
         cd dist
         tar zxfv "$SRC_TGZ"
         cd "$PKGVER"
-        cabal configure --enable-tests --ghc-options -O0
-        cabal build
+        cabal v2-configure --enable-tests --ghc-options -O0
+        cabal v2-build
         if [ "$CABALVER" = "1.16" ] || [ "$CABALVER" = "1.18" ]; then
-          cabal test
+          cabal v2-test
         else
-          cabal test --show-details=streaming --log=/dev/stdout
+          cabal v2-test --show-details=streaming --log=/dev/stdout
         fi
         cd $ORIGDIR
       done
