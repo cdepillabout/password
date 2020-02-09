@@ -47,7 +47,6 @@ data Bcrypt
 -- >>> import Data.Password
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
--- >>> import Test.QuickCheck.Instances.ByteString ()
 -- >>> import Test.QuickCheck.Instances.Text ()
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 16
@@ -114,7 +113,7 @@ hashPassWithParams cost pass = liftIO $ do
 --
 -- This should always fail if an incorrect password is given.
 --
--- prop> \(Blind badpass) -> let correctPassHash = hashPassWithSalt 10 salt "foobar" in checkPass badpass correctPassHash == PassCheckFail
+-- prop> \(Blind badpass) -> let correctPassHash = hashPassWithSalt 8 salt "foobar" in checkPass badpass correctPassHash == PassCheckFail
 checkPass :: Pass -> PassHash Bcrypt -> PassCheck
 checkPass (Pass pass) (PassHash passHash) =
     if Bcrypt.validatePassword (encodeUtf8 pass) (encodeUtf8 passHash)
