@@ -81,8 +81,8 @@ data ScryptParams = ScryptParams {
   -- ^ log2(N) rounds to hash, default is __16__ (i.e. 2^16 rounds)
   scryptBlockSize :: Int,
   -- ^ Block size, defaults to __8__
-  scryptParallellism :: Int,
-  -- ^ Parallellism factor, defaults to __1__
+  scryptParallelism :: Int,
+  -- ^ Parallelism factor, defaults to __1__
   scryptOutputLength :: Int
   -- ^ Output key length in bytes, defaults to __64__
 } deriving (Eq, Show)
@@ -95,7 +95,7 @@ defaultParams = ScryptParams {
   scryptSalt = 32,
   scryptRounds = 16,
   scryptBlockSize = 8,
-  scryptParallellism = 1,
+  scryptParallelism = 1,
   scryptOutputLength = 64
 }
 
@@ -119,7 +119,7 @@ hashPassWithSalt params@ScryptParams{..} s@(Salt salt) pass =
   PassHash $ T.intercalate "|"
     [ t scryptRounds
     , t scryptBlockSize
-    , t scryptParallellism
+    , t scryptParallelism
     , b64 salt
     , b64 key
     ]
@@ -138,7 +138,7 @@ hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
     params = Scrypt.Parameters {
         n = 2 ^ scryptRounds,
         r = scryptBlockSize,
-        p = scryptParallellism,
+        p = scryptParallelism,
         outputLength = scryptOutputLength
       }
 
@@ -179,12 +179,12 @@ checkPass pass (PassHash passHash) =
     guard $ length paramList == 5
     let [ scryptRoundsT,
           scryptBlockSizeT,
-          scryptParallellismT,
+          scryptParallelismT,
           salt64,
           hashedKey64 ] = paramList
     scryptRounds <- readT scryptRoundsT
     scryptBlockSize <- readT scryptBlockSizeT
-    scryptParallellism <- readT scryptParallellismT
+    scryptParallelism <- readT scryptParallelismT
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
     let scryptOutputLength = C8.length hashedKey -- only here because of warnings
