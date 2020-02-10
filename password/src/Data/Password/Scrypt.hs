@@ -150,9 +150,9 @@ hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
 --
 -- @since 2.0.0.0
 hashPassWithParams :: MonadIO m => ScryptParams -> Pass -> m (PassHash Scrypt)
-hashPassWithParams scryptParams pass = liftIO $ do
-    salt <- Data.Password.Internal.newSalt scryptSalt
-    return $ hashPassWithSalt scryptParams salt pass
+hashPassWithParams params pass = liftIO $ do
+    salt <- Data.Password.Internal.newSalt $ scryptSalt params
+    return $ hashPassWithSalt params salt pass
 
 -- | Check a 'Pass' against a 'PassHash' 'Scrypt'.
 --
