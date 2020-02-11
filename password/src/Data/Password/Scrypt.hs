@@ -19,8 +19,8 @@ module Data.Password.Scrypt (
   , checkPass
   -- * Hashing Manually (DISADVISED)
   --
-  -- If you have any doubt about your knowledge of cryptography and/or the
-  -- /scrypt/ algorithm, please, please just use 'hashPass'.
+  -- If you have any doubt about what the parameters do or mean,
+  -- please, please just use 'hashPass'.
   , hashPassWithParams
   , hashPassWithSalt
   , ScryptParams(..)
