@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -42,6 +43,9 @@ import qualified Data.ByteString.Char8 as C8 (length)
 import Data.Maybe (fromMaybe)
 import Data.Password.Internal hiding (newSalt)
 import qualified Data.Password.Internal
+#if MIN_VERSION_base(4,9,0)
+import Data.Semigroup ((<>))
+#endif
 import Data.Text (Text)
 import qualified Data.Text as T (intercalate, length, pack, split, splitAt, unpack)
 import Data.Text.Encoding (encodeUtf8)
