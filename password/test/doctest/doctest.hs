@@ -11,4 +11,4 @@ main = do
   unsetEnv "GHC_ENVIRONMENT"
   doctest args
   where
-    args = flags ++ pkgs ++ module_sources ++ "-v"
+    args = flags ++ pkgs ++ module_sources ++ ["-v"]
