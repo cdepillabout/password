@@ -80,7 +80,7 @@ hashPass = hashPassWithParams defaultParams
 --
 -- @since 2.0.0.0
 data Argon2Params = Argon2Params {
-  argon2Salt :: Int,
+  argon2Salt :: Word32,
   -- ^ Bytes to randomly generate as a unique salt, default is __16__
   -- Limits are min: @8@, and max: @'maxBound' :: 'Word32'@
   argon2Variant :: Argon2.Variant,
@@ -95,7 +95,8 @@ data Argon2Params = Argon2Params {
   -- (Can't be 0)
   argon2Parallelism :: Word32,
   -- ^ Parallelism factor, defaults to __1__
-  argon2OutputLength :: Int
+  -- (Can't be 0)
+  argon2OutputLength :: Word32
   -- ^ Output key length in bytes, defaults to __32__
   -- Limits are min: @4@, and max: @'maxBound' :: 'Word32'@
 } deriving (Eq, Show)
@@ -156,7 +157,7 @@ hashPassWithSalt' Argon2Params{..} (Salt salt) (Pass pass) =
     convert (argon2Hash :: Bytes)
   where
     argon2Hash = throwCryptoError $
-        Argon2.hash options (toBytes pass) (convert salt :: Bytes) argon2OutputLength
+        Argon2.hash options (toBytes pass) (convert salt :: Bytes) $ fromIntegral argon2OutputLength
     options = Argon2.Options {
         iterations = argon2TimeCost,
         memory = argon2MemoryCost,
@@ -181,7 +182,7 @@ hashPassWithSalt' Argon2Params{..} (Salt salt) (Pass pass) =
 -- @since 2.0.0.0
 hashPassWithParams :: MonadIO m => Argon2Params -> Pass -> m (PassHash Argon2)
 hashPassWithParams params pass = liftIO $ do
-    salt <- Data.Password.Internal.newSalt $ argon2Salt params
+    salt <- Data.Password.Internal.newSalt . fromIntegral $ argon2Salt params
     return $ hashPassWithSalt params salt pass
 
 -- | Check a 'Pass' against a 'PassHash' 'Argon2'.
@@ -218,7 +219,7 @@ checkPass pass (PassHash passHash) =
     (argon2MemoryCost, argon2TimeCost, argon2Parallelism) <- parseParameters parametersT
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
-    let argon2OutputLength = C8.length hashedKey -- only here because of warnings
+    let argon2OutputLength = fromIntegral $ C8.length hashedKey -- only here because of warnings
         producedKey = hashPassWithSalt' Argon2Params{..} (Salt salt) pass
     guard $ hashedKey == producedKey
     return PassCheckSuccess
@@ -257,8 +258,8 @@ newSalt = Data.Password.Internal.newSalt 16
 -- | Makes a letter out of the variant
 variantToLetter :: Argon2.Variant -> Text
 variantToLetter = \case
-    Argon2d  -> "i"
-    Argon2i  -> "d"
+    Argon2i  -> "i"
+    Argon2d  -> "d"
     Argon2id -> "id"
 
 -- | Parses the variant parameter in the encoded hash
