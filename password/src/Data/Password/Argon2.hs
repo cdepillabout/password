@@ -4,7 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-|
 Module      : Data.Password.Argon2
-Copyright   : (c) Dennis Gosnell, 2020
+Copyright   : (c) Dennis Gosnell, Felix Paulusma, 2020
 License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
@@ -72,7 +72,7 @@ data Argon2
 -- | Hash the 'Pass' using the /Argon2/ hash algorithm
 --
 -- >>> hashPass $ mkPass "foobar"
--- PassHash {unPassHash = "$argon2id$v=19$m=65535,t=2,p=1$...$..."}
+-- PassHash {unPassHash = "$argon2id$v=19$m=65536,t=2,p=1$...$..."}
 hashPass :: MonadIO m => Pass -> m (PassHash Argon2)
 hashPass = hashPassWithParams defaultParams
 
@@ -82,21 +82,25 @@ hashPass = hashPassWithParams defaultParams
 data Argon2Params = Argon2Params {
   argon2Salt :: Int,
   -- ^ Bytes to randomly generate as a unique salt, default is __16__
+  -- Limits are min: @8@, and max: @'maxBound' :: 'Word32'@
   argon2Variant :: Argon2.Variant,
   -- ^ Which variant of Argon2 to use ('Argon2d', 'Argon2i' or 'Argon2id')
   argon2Version :: Argon2.Version,
   -- ^ Which version of Argon2 to use ('Version10' or 'Version13')
   argon2MemoryCost :: Word32,
   -- ^ Memory cost, defaults to __65536__ (i.e. 64MB)
+  -- Limits are min: @8 * 'argon2Parallelism'@, and max: @'maxBound' :: 'Word32'@
   argon2TimeCost :: Word32,
   -- ^ Amount of computation realized, default is __2__
+  -- (Can't be 0)
   argon2Parallelism :: Word32,
   -- ^ Parallelism factor, defaults to __1__
   argon2OutputLength :: Int
   -- ^ Output key length in bytes, defaults to __32__
+  -- Limits are min: @4@, and max: @'maxBound' :: 'Word32'@
 } deriving (Eq, Show)
 
--- | Default "industry standard" parameters for the /Argon2/ algorithm.
+-- | Default parameters for the /Argon2/ algorithm.
 --
 -- @since 2.0.0.0
 defaultParams :: Argon2Params
@@ -111,7 +115,9 @@ defaultParams = Argon2Params {
 }
 
 -- | Hash a password with the given 'Argon2Params' and also with the given 'Salt'
--- instead of using 'argon2Salt' from 'Argon2Params'. (cf. 'hashPassWithParams')
+-- instead of a random generated salt using 'argon2Salt' from 'Argon2Params'. (cf. 'hashPassWithParams')
+-- Using 'hashPassWithSalt' is strongly disadvised and 'hashPassWithParams' should be used instead.
+-- /Never use a static salt in production applications!/
 --
 -- __N.B.__: The salt HAS to be 8 bytes or more, or this function will throw an error!
 --
@@ -163,6 +169,14 @@ hashPassWithSalt' Argon2Params{..} (Salt salt) (Pass pass) =
 --
 -- __N.B.__: If you have any doubt in your knowledge of cryptography and/or the
 -- /Argon2/ algorithm, please, please just use 'hashPass'.
+--
+-- Advice to set the parameters:
+--
+-- * Figure out how many threads you can use, choose "parallelism" accordingly.
+-- * Figure out how much memory you can use, choose "memory cost" accordingly.
+-- * Decide on the maximum time @x@ you can spend on it, choose the largest
+-- "time cost" such that it takes less than @x@ with your system and other
+-- parameter choices.
 --
 -- @since 2.0.0.0
 hashPassWithParams :: MonadIO m => Argon2Params -> Pass -> m (PassHash Argon2)
