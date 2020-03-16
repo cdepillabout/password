@@ -61,7 +61,7 @@ data Scrypt
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 32
 -- >>> instance Arbitrary Pass where arbitrary = fmap Pass arbitrary
--- >>> let testParams = defaultParams {scryptRounds = 12}
+-- >>> let testParams = defaultParams {scryptRounds = 10}
 -- >>> instance Arbitrary (PassHash Scrypt) where arbitrary = hashPassWithSalt testParams <$> arbitrary <*> arbitrary
 
 -- | Hash the 'Pass' using the /scrypt/ hash algorithm
@@ -87,7 +87,7 @@ data ScryptParams = ScryptParams {
   -- ^ Output key length in bytes, defaults to __64__
 } deriving (Eq, Show)
 
--- | Default "industry standard" parameters for the /scrypt/ algorithm.
+-- | Default parameters for the /scrypt/ algorithm.
 --
 -- @since 2.0.0.0
 defaultParams :: ScryptParams
@@ -100,7 +100,9 @@ defaultParams = ScryptParams {
 }
 
 -- | Hash a password with the given 'ScryptParams' and also with the given 'Salt'
--- instead of using 'scryptSalt' from 'ScryptParams'.
+-- instead of generating a random salt using 'scryptSalt' from 'ScryptParams'.
+-- Using 'hashPassWithSalt' is strongly disadvised and 'hashPassWithParams' should be used instead.
+-- /Never use a static salt in production applications!/
 --
 -- The resulting 'PassHash' has the parameters used to hash it, as well as the
 -- 'Salt' appended to it, separated by @|@.
