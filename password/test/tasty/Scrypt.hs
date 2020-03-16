@@ -11,27 +11,16 @@ import qualified Crypto.Scrypt as Scrypt
 import Data.Password
 import Data.Password.Scrypt
 
+import Internal
+
 
 testScrypt :: TestTree
 testScrypt = testGroup "scrypt"
-  [ testProperty "Scrypt (hashPass)" $ \pass -> run10 $ do
-      let pw = mkPass pass
-      hpw <- hashPass pw
-      return $ checkPass pw hpw === PassCheckSuccess
-  , testProperty "Scrypt (hashPass) fail" $ \pass pass2 -> run10 $ do
-      let pw = mkPass pass
-          pw2 = mkPass pass2
-          result = if pass == pass2 then PassCheckSuccess else PassCheckFail
-      hpw <- hashPass pw
-      return $ checkPass pw2 hpw === result
-  , testProperty "Scrypt (hashPassWithSalt)" $ \pass salt -> withMaxSuccess 10 $
-      let pw = mkPass pass
-          hpw = hashPassWithSalt defaultParams (Salt $ encodeUtf8 salt) pw
-      in checkPass pw hpw === PassCheckSuccess
+  [ testCorrectPass "Scrypt (hashPass)" hashPass checkPass
+  , testIncorrectPass "Scrypt (hashPass) fail" hashPass checkPass
+  , testWithSalt "Scrypt (hashPassWithSalt)" (hashPassWithSalt defaultParams) checkPass
   , testProperty "scrypt <-> cryptonite" $ withMaxSuccess 10 $ checkScrypt
   ]
-  where
-    run10 = withMaxSuccess 10 . ioProperty
 
 checkScrypt :: Text -> Property
 checkScrypt pass = ioProperty $ do
