@@ -253,6 +253,7 @@ script:
         else
           # This isn't working for some reason
           # cabal test -v3 --show-details=streaming # --log=/dev/stdout
+          true
         fi
         cd $ORIGDIR
       done
