@@ -251,7 +251,7 @@ script:
         if [ "$CABALVER" = "1.16" ] || [ "$CABALVER" = "1.18" ]; then
           cabal test
         else
-          travis_wait 30 cabal test -v # --show-details=streaming --log=/dev/stdout
+          cabal test -v3 # --show-details=streaming --log=/dev/stdout
         fi
         cd $ORIGDIR
       done
