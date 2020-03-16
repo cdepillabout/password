@@ -1,7 +1,6 @@
 module Argon2 where
 
 import Test.Tasty
--- import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
 
 import Data.Password.Argon2
