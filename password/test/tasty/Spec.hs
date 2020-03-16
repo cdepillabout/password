@@ -2,13 +2,16 @@ import Test.Tasty
 import Test.Tasty.QuickCheck
 
 import Data.Password
-import Scrypt
+
+import Argon2
 import Bcrypt
+import Scrypt
 
 main :: IO ()
 main = defaultMain $ testGroup "Password"
   [ testProperty "Pass" $ \pass ->
       unsafeShowPasswordText (mkPass pass) === pass
-  , testScrypt
+  , testArgon2
   , testBcrypt
+  , testScrypt
   ]
