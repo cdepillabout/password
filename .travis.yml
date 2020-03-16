@@ -251,7 +251,8 @@ script:
         if [ "$CABALVER" = "1.16" ] || [ "$CABALVER" = "1.18" ]; then
           cabal test
         else
-          cabal test -v3 # --show-details=streaming --log=/dev/stdout
+          # This isn't working for some reason
+          # cabal test -v3 --show-details=streaming # --log=/dev/stdout
         fi
         cd $ORIGDIR
       done
