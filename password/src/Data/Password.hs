@@ -10,6 +10,8 @@ This library provides an easy way for interacting with passwords from Haskell.
 It provides the types 'Pass' and 'PassHash', which correspond to plain-text and
 hashed passwords.
 
+== API
+
 Every supported hashing algorithm has its own module (e.g. "Data.Password.BCrypt")
 which exports its own @hashPass@ and @checkPass@ functions, as well as all the
 types and functions in this module. If you are not sure about the specifics of an
@@ -20,6 +22,20 @@ Of course, if you know what you're doing and you want more fine-grained control
 over the hashing function, you can adjust it using the @hashPassWithParams@
 function of the respective algorithm.
 
+== Algorithms
+
+Generally, the most "secure" algorithm is believed to be @Argon2@, then @scrypt@,
+then @bcrypt@, and lastly @PBKDF2@. @bcrypt@ and @PBKDF2@ are the most established
+algorithms, so they have been tried and tested, though they both lack a memory cost,
+and therefore have a greater vulnerability to specialized hardware attacks.
+
+When choosing an algorithm, and you have no idea which to pick, just go for @bcrypt@
+if your password does not need the highest security possible. It's still a fine way
+for hashing passwords, and the cost is easily adjustable if needed. If your needs
+do require stronger protection, you should find someone who can advise you on this
+topic. (And if you're already knowledgeable enough, you know what to do)
+
+== Special instances
 
 The real benefit of this module is that there is a corresponding
 <http://hackage.haskell.org/package/password-instances password-instances>

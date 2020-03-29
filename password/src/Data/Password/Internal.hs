@@ -101,14 +101,14 @@ newtype PassHash a = PassHash
   { unPassHash :: Text
   } deriving (Eq, Ord, Read, Show)
 
--- | The result of a checking a password against a hashed version.  This is
+-- | The result of a checking a password against a hashed version. This is
 -- returned by 'checkPass'.
 data PassCheck
   = PassCheckSuccess
   -- ^ The password check was successful. The plain-text password matches the
   -- hashed password.
   | PassCheckFail
-  -- ^ The password check failed.  The plain-text password does not match the
+  -- ^ The password check failed. The plain-text password does not match the
   -- hashed password.
   deriving (Eq, Read, Show)
 
