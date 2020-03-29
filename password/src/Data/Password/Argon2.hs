@@ -17,7 +17,7 @@ Portability : POSIX
 module Data.Password.Argon2 (
   -- Algorithm
   Argon2
-  -- * Plaintext Password
+  -- * Plain-text Password
   , Pass
   , mkPass
   -- * Hash Passwords (Argon2)

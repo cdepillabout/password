@@ -34,7 +34,7 @@ thus is fine for protection against brute-force attacks.
 module Data.Password.Scrypt (
   -- * Algorithm
   Scrypt
-  -- * Plaintext Password
+  -- * Plain-text Password
   , Pass
   , mkPass
   -- * Hash Passwords (scrypt)

@@ -34,7 +34,7 @@ time to brute-force would still be significant.
 module Data.Password.Bcrypt (
   -- * Algorithm
   Bcrypt
-  -- * Plaintext Password
+  -- * Plain-text Password
   , Pass
   , mkPass
   -- * Hash Passwords (bcrypt)

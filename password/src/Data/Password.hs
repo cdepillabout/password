@@ -51,7 +51,7 @@ See the <http://hackage.haskell.org/package/password-instances password-instance
 -}
 
 module Data.Password (
-    -- * Plaintext Password
+    -- * Plain-text Password
     Pass
   , mkPass
     -- * Password Hashing

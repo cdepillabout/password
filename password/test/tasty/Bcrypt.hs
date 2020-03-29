@@ -18,7 +18,7 @@ testBcrypt = testGroup "bcrypt"
       let pw = mkPass pass
           pw2 = mkPass pass2
           result = if pass == pass2 then PassCheckSuccess else PassCheckFail
-          isEmpty = \c -> c == "" || c == "\NUL"
+          isEmpty c = c == "" || c == "\NUL"
       -- FIXME: for some reason, "\NUL" hashes the same as an empty string
       -- This will(/should) NEVER happen in the real world, though.
       if all isEmpty [pass, pass2]
