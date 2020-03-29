@@ -15,12 +15,18 @@ Portability : POSIX
 -- I think the portability is broadened to
 -- whatever, now that we use cryptonite... I think
 module Data.Password.Argon2 (
-    Argon2
+  -- Algorithm
+  Argon2
+  -- * Plaintext Password
+  , Pass
+  , mkPass
   -- * Hash Passwords (Argon2)
   , hashPass
+  , PassHash(..)
   -- * Verify Passwords (Argon2)
   , checkPass
-  -- * Hashing Manually (DISADVISED)
+  , PassCheck(..)
+  -- * Hashing Manually (Argon2)
   --
   -- | If you have any doubt about what the parameters do or mean,
   -- please just use 'hashPass'.

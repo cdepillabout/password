@@ -11,9 +11,8 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Data.Password.Internal
-  (
-  -- * Global types
+module Data.Password.Internal (
+    -- * Global types
     Pass(..)
   , mkPass
   , PassHash(..)

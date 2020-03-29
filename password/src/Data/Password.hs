@@ -34,21 +34,18 @@ from
 See the <http://hackage.haskell.org/package/password-instances password-instances> module for more information.
 -}
 
-module Data.Password
-  (
+module Data.Password (
     -- * Plaintext Password
     Pass
   , mkPass
     -- * Password Hashing
   , PassHash(..)
+  , PassCheck(..)
   , Salt(..)
   , newSalt
-  , PassCheck(..)
     -- * Unsafe Debugging Functions for Showing a Password
   , unsafeShowPassword
   , unsafeShowPasswordText
-  , -- * Setup for doctests.
-    -- $setup
   ) where
 
 import Data.Password.Internal

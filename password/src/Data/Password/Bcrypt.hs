@@ -11,12 +11,18 @@ Portability : POSIX
 -- I think the portability is broadened to
 -- whatever, now that we use cryptonite... I think
 module Data.Password.Bcrypt (
-    Bcrypt
+  -- * Algorithm
+  Bcrypt
+  -- * Plaintext Password
+  , Pass
+  , mkPass
   -- * Hash Passwords (bcrypt)
   , hashPass
+  , PassHash(..)
   -- * Verify Passwords (bcrypt)
   , checkPass
-  -- * Hashing Manually (DISADVISED)
+  , PassCheck(..)
+  -- * Hashing Manually (bcrypt)
   --
   -- | If you have any doubt about what the cost does or means,
   -- please just use 'hashPass'.
