@@ -1,6 +1,4 @@
 {-# LANGUAGE ExplicitForAll #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-|
 Module      : Data.Password.Bcrypt
 Copyright   : (c) Dennis Gosnell, Felix Paulusma, 2020
@@ -9,6 +7,7 @@ Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
 Portability : POSIX
 -}
+
 -- I think the portability is broadened to
 -- whatever, now that we use cryptonite... I think
 module Data.Password.Bcrypt (
@@ -19,11 +18,24 @@ module Data.Password.Bcrypt (
   , checkPass
   -- * Hashing Manually (DISADVISED)
   --
-  -- If you have any doubt about what the cost does or means,
-  -- please, please just use 'hashPass'.
+  -- | If you have any doubt about what the cost does or means,
+  -- please just use 'hashPass'.
   , hashPassWithParams
+  -- ** Hashing with salt (DISADVISED)
+  --
+  -- | Hashing with a set 'Salt' is almost never what you want
+  -- to do. Use 'hashPass' or 'hashPassWithParams' to have
+  -- automatic generation of randomized salts.
   , hashPassWithSalt
+  , Salt(..)
   , newSalt
+  -- * Unsafe Debugging Functions for Showing a Password
+  --
+  -- | Use at your own risk
+  , unsafeShowPassword
+  , unsafeShowPasswordText
+  , -- * Setup for doctests.
+    -- $setup
   ) where
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
@@ -32,7 +44,7 @@ import Data.ByteArray (Bytes, convert)
 import Data.Password.Internal hiding (newSalt)
 import qualified Data.Password.Internal
 
--- | Phantom type for keeping 'PassHash'es apart
+-- | Phantom type for __bcrypt__
 --
 -- @since 2.0.0.0
 data Bcrypt
@@ -53,6 +65,10 @@ data Bcrypt
 -- >>> instance Arbitrary (PassHash Bcrypt) where arbitrary = hashPassWithSalt 8 <$> arbitrary <*> arbitrary
 
 -- | Hash the 'Pass' using the /bcrypt/ hash algorithm.
+--
+-- __N.B.__: @bcrypt@ has a limit of 72 bytes as input, so anything longer than that
+-- will be cut off at the 72 byte point and thus any password that is 72 bytes
+-- or longer will match as long as the first 72 bytes are the same.
 --
 -- >>> hashPass $ mkPass "foobar"
 -- PassHash {unPassHash = "$2b$12$..."}
@@ -84,10 +100,10 @@ hashPassWithSalt cost (Salt salt) (Pass pass) =
 
 -- | Hash a password using the /bcrypt/ algorithm with the given cost.
 --
--- The higher the cost, the longer 'hashPass' and 'checkPass' will take, thus
--- increasing the security, but taking longer and taking up more resources.
--- The optimal cost for generic user logins would be one that would take around
--- 0.5 seconds to check on the machine that will run it.
+-- The higher the cost, the longer 'hashPass' and 'checkPass' will take to run,
+-- thus increasing the security, but taking longer and taking up more resources.
+-- The optimal cost for generic user logins would be one that would take between
+-- 0.05 - 0.5 seconds to check on the machine that will run it.
 --
 -- __N.B.__: It is advised to use 'hashPass' if you're unsure about the
 -- implications that changing the cost brings with it.
@@ -126,7 +142,7 @@ checkPass (Pass pass) (PassHash passHash) =
       then PassCheckSuccess
       else PassCheckFail
 
--- | Generate a random 16-byte salt
+-- | Generate a random 16-byte @bcrypt@ salt
 --
 -- @since 2.0.0.0
 newSalt :: MonadIO m => m (Salt Bcrypt)

@@ -11,6 +11,7 @@ Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
 Portability : POSIX
 -}
+
 -- I think the portability is broadened to
 -- whatever, now that we use cryptonite... I think
 module Data.Password.Argon2 (
@@ -21,15 +22,26 @@ module Data.Password.Argon2 (
   , checkPass
   -- * Hashing Manually (DISADVISED)
   --
-  -- If you have any doubt about what the parameters do or mean,
-  -- please, please just use 'hashPass'.
+  -- | If you have any doubt about what the parameters do or mean,
+  -- please just use 'hashPass'.
   , hashPassWithParams
-  , hashPassWithSalt
   , Argon2Params(..)
   , defaultParams
   , Argon2.Variant(..)
   , Argon2.Version(..)
+  -- ** Hashing with salt (DISADVISED)
+  --
+  -- | Hashing with a set 'Salt' is almost never what you want
+  -- to do. Use 'hashPass' or 'hashPassWithParams' to have
+  -- automatic generation of randomized salts.
+  , hashPassWithSalt
+  , Salt(..)
   , newSalt
+  -- * Unsafe Debugging Functions for Showing a Password
+  , unsafeShowPassword
+  , unsafeShowPasswordText
+  , -- * Setup for doctests.
+    -- $setup
   ) where
 
 import Control.Monad (guard)
@@ -52,7 +64,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
 import Text.Read (readMaybe)
 
--- | Phantom type for keeping 'PassHash'es apart
+-- | Phantom type for __Argon2__
 --
 -- @since 2.0.0.0
 data Argon2
@@ -86,23 +98,29 @@ hashPass = hashPassWithParams defaultParams
 data Argon2Params = Argon2Params {
   argon2Salt :: Word32,
   -- ^ Bytes to randomly generate as a unique salt, default is __16__
-  -- Limits are min: @8@, and max: @'maxBound' :: 'Word32'@
+  --
+  -- Limits are min: @8@, and max: @2 ^ 32 -1@
   argon2Variant :: Argon2.Variant,
   -- ^ Which variant of Argon2 to use ('Argon2d', 'Argon2i' or 'Argon2id')
   argon2Version :: Argon2.Version,
   -- ^ Which version of Argon2 to use ('Version10' or 'Version13')
   argon2MemoryCost :: Word32,
-  -- ^ Memory cost, defaults to __65536__ (i.e. 64MB)
-  -- Limits are min: @8 * 'argon2Parallelism'@, and max: @'maxBound' :: 'Word32'@
+  -- ^ Memory cost, default is __65536__ (i.e. 64MB)
+  --
+  -- Limits are min: @8 * 'argon2Parallelism'@, and max is addressing
+  -- space / 2, or @2 ^ 32 - 1@, whichever is lower.
   argon2TimeCost :: Word32,
   -- ^ Amount of computation realized, default is __2__
-  -- (Can't be 0)
+  --
+  -- Limits are min: @1@, and max: @2 ^ 32 - 1@
   argon2Parallelism :: Word32,
-  -- ^ Parallelism factor, defaults to __1__
-  -- (Can't be 0)
+  -- ^ Parallelism factor, default is __1__
+  --
+  -- Limits are min: @1@, and max: @2 ^ 24 - 1@
   argon2OutputLength :: Word32
-  -- ^ Output key length in bytes, defaults to __32__
-  -- Limits are min: @4@, and max: @'maxBound' :: 'Word32'@
+  -- ^ Output key length in bytes, default is __32__
+  --
+  -- Limits are min: @4@, and max: @2 ^ 32 - 1@
 } deriving (Eq, Show)
 
 -- | Default parameters for the /Argon2/ algorithm.
@@ -125,8 +143,6 @@ defaultParams = Argon2Params {
 -- /Never use a static salt in production applications!/
 --
 -- __N.B.__: The salt HAS to be 8 bytes or more, or this function will throw an error!
---
--- __N.B.__: The output length HAS to be between @4@ and @2^31-1@ bytes, or this function will throw an error!
 --
 -- >>> let salt = Salt "abcdefghijklmnop"
 -- >>> hashPassWithSalt defaultParams salt (mkPass "foobar")
@@ -173,7 +189,7 @@ hashPassWithSalt' Argon2Params{..} (Salt salt) (Pass pass) =
 -- | Hash a password using the /Argon2/ algorithm with the given 'Argon2Params'.
 --
 -- __N.B.__: If you have any doubt in your knowledge of cryptography and/or the
--- /Argon2/ algorithm, please, please just use 'hashPass'.
+-- /Argon2/ algorithm, please just use 'hashPass'.
 --
 -- Advice to set the parameters:
 --
@@ -253,7 +269,7 @@ checkPass pass (PassHash passHash) =
     readT :: forall a. Read a => Text -> Maybe a
     readT = readMaybe . T.unpack
 
--- | Generate a random 16-byte salt
+-- | Generate a random 16-byte @Argon2@ salt
 --
 -- @since 2.0.0.0
 newSalt :: MonadIO m => m (Salt Argon2)

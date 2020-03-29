@@ -9,6 +9,7 @@ Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
 Portability : POSIX
 -}
+
 -- I think the portability is broadened to
 -- whatever, now that we use cryptonite... I think
 module Data.Password.Scrypt (
@@ -19,13 +20,24 @@ module Data.Password.Scrypt (
   , checkPass
   -- * Hashing Manually (DISADVISED)
   --
-  -- If you have any doubt about what the parameters do or mean,
-  -- please, please just use 'hashPass'.
+  -- | If you have any doubt about what the parameters do or mean,
+  -- please just use 'hashPass'.
   , hashPassWithParams
-  , hashPassWithSalt
   , ScryptParams(..)
   , defaultParams
+  -- ** Hashing with salt (DISADVISED)
+  --
+  -- | Hashing with a set 'Salt' is almost never what you want
+  -- to do. Use 'hashPass' or 'hashPassWithParams' to have
+  -- automatic generation of randomized salts.
+  , hashPassWithSalt
+  , Salt(..)
   , newSalt
+    -- * Unsafe Debugging Functions for Showing a Password
+  , unsafeShowPassword
+  , unsafeShowPasswordText
+  , -- * Setup for doctests.
+    -- $setup
   ) where
 
 import Control.Monad (guard)
@@ -43,7 +55,7 @@ import qualified Data.Text as T (intercalate, pack, split, unpack)
 import Data.Text.Encoding (encodeUtf8)
 import Text.Read (readMaybe)
 
--- | Phantom type for keeping 'PassHash'es apart
+-- | Phantom type for __Argon2__
 --
 -- @since 2.0.0.0
 data Scrypt
@@ -71,6 +83,9 @@ data Scrypt
 hashPass :: MonadIO m => Pass -> m (PassHash Scrypt)
 hashPass = hashPassWithParams defaultParams
 
+-- TODO: Add way to parse the following. From [https://hashcat.net/wiki/doku.php?id=example_hashes]
+-- SCRYPT:1024:1:1:MDIwMzMwNTQwNDQyNQ==:5FW+zWivLxgCWj7qLiQbeC8zaNQ+qdO0NUinvqyFcfo=
+
 -- | Parameters used in the /scrypt/ hashing algorithm.
 --
 -- @since 2.0.0.0
@@ -80,11 +95,15 @@ data ScryptParams = ScryptParams {
   scryptRounds :: Int,
   -- ^ log2(N) rounds to hash, default is __16__ (i.e. 2^16 rounds)
   scryptBlockSize :: Int,
-  -- ^ Block size, defaults to __8__
+  -- ^ Block size, default is __8__
+  --
+  -- Limits are min: @1@, and max: @scryptBlockSize * scryptParallelism < 2 ^ 30@
   scryptParallelism :: Int,
-  -- ^ Parallelism factor, defaults to __1__
+  -- ^ Parallelism factor, default is __1__
+  --
+  -- Limits are min: @0@, and max: @scryptBlockSize * scryptParallelism < 2 ^ 30@
   scryptOutputLength :: Int
-  -- ^ Output key length in bytes, defaults to __64__
+  -- ^ Output key length in bytes, default is __64__
 } deriving (Eq, Show)
 
 -- | Default parameters for the /scrypt/ algorithm.
@@ -148,7 +167,16 @@ hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
 -- | Hash a password using the /scrypt/ algorithm with the given 'ScryptParams'.
 --
 -- __N.B.__: If you have any doubt in your knowledge of cryptography and/or the
--- /scrypt/ algorithm, please, please just use 'hashPass'.
+-- /scrypt/ algorithm, please just use 'hashPass'.
+--
+-- Advice for setting the parameters:
+--
+-- * Memory used is about @2 ^ 'scryptRounds' * 'scryptBlockSize' * 128@
+-- * Increasing 'scryptBlockSize' and 'scryptRounds' will increase CPU time
+--   and memory used.
+-- * Increasing 'scryptParallelism' will increase CPU time. (since this
+--   implementation, like most, runs the 'scryptParallelism' parameter in
+--   sequence, not in parallel)
 --
 -- @since 2.0.0.0
 hashPassWithParams :: MonadIO m => ScryptParams -> Pass -> m (PassHash Scrypt)
@@ -199,7 +227,7 @@ checkPass pass (PassHash passHash) =
     readT :: forall a. Read a => Text -> Maybe a
     readT = readMaybe . T.unpack
 
--- | Generate a random 32-byte salt
+-- | Generate a random 32-byte @scrypt@ salt
 --
 -- @since 2.0.0.0
 newSalt :: MonadIO m => m (Salt Scrypt)
