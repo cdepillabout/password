@@ -70,7 +70,7 @@ mkPass = Pass
 newtype Salt a = Salt ByteString
   deriving (Eq, Show)
 
--- | Generate a random x-byte salt.
+-- | Generate a random x-byte-long salt.
 --
 -- @since 2.0.0.0
 newSalt :: MonadIO m => Int -> m (Salt a)

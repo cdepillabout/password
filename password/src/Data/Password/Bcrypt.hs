@@ -6,6 +6,27 @@ License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
 Portability : POSIX
+
+= bcrypt
+
+The @bcrypt@ algorithm is a popular way of hashing passwords.
+It is based on the Blowfish cipher and fairly straightfoward
+in its usage. It has a cost parameter that, when increased,
+slows down the hashing speed.
+
+It is a straightforward and easy way to get decent protection
+on passwords, it is also been around long enough to be battle-tested
+and generally considered to provide a good amount of security.
+
+== Other algorithms
+
+@bcrypt@, together with @PBKDF2@, are only computationally intensive.
+And to protect from specialized hardware, new algorithms have been
+developed that are also resource intensive, like @scrypt@ and @Argon2@.
+Not having high resource demands, means an attacker with specialized
+software could take less time to brute-force a password, though with
+the default cost (12) and a decently long password, the amount of
+time to brute-force would still be significant.
 -}
 
 -- I think the portability is broadened to
@@ -77,9 +98,9 @@ data Bcrypt
 -- or longer will match as long as the first 72 bytes are the same.
 --
 -- >>> hashPass $ mkPass "foobar"
--- PassHash {unPassHash = "$2b$12$..."}
+-- PassHash {unPassHash = "$2b$10$..."}
 hashPass :: MonadIO m => Pass -> m (PassHash Bcrypt)
-hashPass = hashPassWithParams 12
+hashPass = hashPassWithParams 10
 
 -- | Hash a password with the given cost and also with the given 'Salt'
 -- instead of generating a random salt. Using 'hashPassWithSalt' is strongly disadvised,

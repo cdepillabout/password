@@ -8,6 +8,25 @@ License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
 Portability : POSIX
+
+= scrypt
+
+The @scrypt@ algorithm is a fairly new one. First published
+in 2009, but published by the IETF in 2016 as <https://tools.ietf.org/html/rfc7914 RFC 7914>.
+Originally used for the Tarsnap backup service, it is
+designed to be costly by requiring large amounts of memory.
+
+== Other algorithms
+
+@scrypt@ does increase the memory requirement in contrast to
+@bcrypt@ and @PBKDF2@, but it turns out it is not as optimal
+as it could be, and thus others have set out to search for
+other algorithms that do fulfill on their promises. @Argon2@
+seems to be the winner in that search.
+
+That is not to say using @scrypt@ somehow means your passwords
+won't be properly protected. The cryptography is sound and
+thus is fine for protection against brute-force attacks.
 -}
 
 -- I think the portability is broadened to
