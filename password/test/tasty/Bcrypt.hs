@@ -26,5 +26,5 @@ testBcrypt = testGroup "bcrypt"
         else do
           hpw <- hashPass pw
           return $ checkPass pw2 hpw === result
-  , testWithSalt "Bcrypt (hashPassWithSalt)" (hashPassWithSalt 12) checkPass
+  , testWithSalt "Bcrypt (hashPassWithSalt)" (hashPassWithSalt 10) checkPass
   ]
