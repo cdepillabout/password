@@ -1,7 +1,7 @@
 {-# LANGUAGE ExplicitForAll #-}
 {-|
 Module      : Data.Password.Bcrypt
-Copyright   : (c) Dennis Gosnell, Felix Paulusma, 2020
+Copyright   : (c) Felix Paulusma, 2020
 License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental

@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-|
 Module      : Data.Password.Scrypt
-Copyright   : (c) Dennis Gosnell, 2020
+Copyright   : (c) Dennis Gosnell, Felix Paulusma 2020
 License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
@@ -78,6 +78,7 @@ import qualified Data.Password.Internal
 import Data.Text (Text)
 import qualified Data.Text as T (intercalate, pack, split, unpack)
 import Data.Text.Encoding (encodeUtf8)
+import Data.Word (Word32)
 import Text.Read (readMaybe)
 
 -- | Phantom type for __Argon2__
@@ -115,19 +116,19 @@ hashPass = hashPassWithParams defaultParams
 --
 -- @since 2.0.0.0
 data ScryptParams = ScryptParams {
-  scryptSalt :: Int,
+  scryptSalt :: Word32,
   -- ^ Bytes to randomly generate as a unique salt, default is __32__
-  scryptRounds :: Int,
+  scryptRounds :: Word32,
   -- ^ log2(N) rounds to hash, default is __16__ (i.e. 2^16 rounds)
-  scryptBlockSize :: Int,
+  scryptBlockSize :: Word32,
   -- ^ Block size, default is __8__
   --
   -- Limits are min: @1@, and max: @scryptBlockSize * scryptParallelism < 2 ^ 30@
-  scryptParallelism :: Int,
+  scryptParallelism :: Word32,
   -- ^ Parallelism factor, default is __1__
   --
   -- Limits are min: @0@, and max: @scryptBlockSize * scryptParallelism < 2 ^ 30@
-  scryptOutputLength :: Int
+  scryptOutputLength :: Word32
   -- ^ Output key length in bytes, default is __64__
 } deriving (Eq, Show)
 
@@ -183,9 +184,9 @@ hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
     scryptHash = Scrypt.generate params (toBytes pass) (convert salt :: Bytes)
     params = Scrypt.Parameters {
         n = 2 ^ scryptRounds,
-        r = scryptBlockSize,
-        p = scryptParallelism,
-        outputLength = scryptOutputLength
+        r = fromIntegral scryptBlockSize,
+        p = fromIntegral scryptParallelism,
+        outputLength = fromIntegral scryptOutputLength
       }
 
 
@@ -206,8 +207,10 @@ hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
 -- @since 2.0.0.0
 hashPassWithParams :: MonadIO m => ScryptParams -> Pass -> m (PassHash Scrypt)
 hashPassWithParams params pass = liftIO $ do
-    salt <- Data.Password.Internal.newSalt $ scryptSalt params
+    salt <- Data.Password.Internal.newSalt saltLength
     return $ hashPassWithSalt params salt pass
+  where
+    saltLength = fromIntegral $ scryptSalt params
 
 -- | Check a 'Pass' against a 'PassHash' 'Scrypt'.
 --
@@ -242,7 +245,7 @@ checkPass pass (PassHash passHash) =
     scryptParallelism <- readT scryptParallelismT
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
-    let scryptOutputLength = C8.length hashedKey -- only here because of warnings
+    let scryptOutputLength = fromIntegral $ C8.length hashedKey -- only here because of warnings
         producedKey = hashPassWithSalt' ScryptParams{..} (Salt salt) pass
     guard $ hashedKey == producedKey
     return PassCheckSuccess
