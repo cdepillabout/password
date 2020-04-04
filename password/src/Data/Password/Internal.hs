@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 
@@ -25,15 +26,21 @@ module Data.Password.Internal (
   -- * Utility
   , toBytes
   , fromBytes
+  , from64
+  , readT
+  , showT
   ) where
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.Random (getRandomBytes)
 import Data.ByteArray (Bytes, convert)
 import Data.ByteString (ByteString)
+import Data.ByteString.Base64 (decodeBase64)
 import Data.String (IsString(..))
-import Data.Text (Text, unpack)
+import Data.Text as T (Text, pack, unpack)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Text.Read (readMaybe)
+
 
 -- | A plain-text password.
 --
@@ -121,3 +128,21 @@ toBytes = convert . encodeUtf8
 fromBytes :: Bytes -> Text
 fromBytes = decodeUtf8 . convert
 {-# INLINE fromBytes #-}
+
+-- | Decodes a base64 'Text' to a regular 'ByteString' (if possible)
+from64 :: Text -> Maybe ByteString
+from64 = toMaybe . decodeBase64 . encodeUtf8
+  where
+    toMaybe = either (const Nothing) Just
+{-# INLINE from64 #-}
+
+-- | Same as 'read' but works on 'Text'
+readT :: forall a. Read a => Text -> Maybe a
+readT = readMaybe . T.unpack
+{-# INLINE readT #-}
+
+-- | Same as 'show' but works on 'Text'
+showT :: forall a. Show a => a -> Text
+showT = T.pack . show
+{-# INLINE showT #-}
+

@@ -68,8 +68,18 @@ module Data.Password.Bcrypt (
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.KDF.BCrypt as Bcrypt
 import Data.ByteArray (Bytes, convert)
-import Data.Password.Internal hiding (newSalt)
-import qualified Data.Password.Internal
+
+import Data.Password (
+         PassCheck(..)
+       , PassHash(..)
+       , Salt(..)
+       , mkPass
+       , unsafeShowPassword
+       , unsafeShowPasswordText
+       )
+import Data.Password.Internal (Pass(..), fromBytes, toBytes)
+import qualified Data.Password.Internal (newSalt)
+
 
 -- | Phantom type for __bcrypt__
 --

@@ -1,4 +1,3 @@
-{-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-|
@@ -70,16 +69,22 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.KDF.Scrypt as Scrypt
 import Data.ByteArray (Bytes, convert)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Base64 as Base64
+import Data.ByteString.Base64 (encodeBase64)
 import qualified Data.ByteString.Char8 as C8 (length)
 import Data.Maybe (fromMaybe)
-import Data.Password.Internal hiding (newSalt)
-import qualified Data.Password.Internal
-import Data.Text (Text)
-import qualified Data.Text as T (intercalate, pack, split, unpack)
-import Data.Text.Encoding (encodeUtf8)
+import qualified Data.Text as T (intercalate, split)
 import Data.Word (Word32)
-import Text.Read (readMaybe)
+
+import Data.Password (
+         PassCheck(..)
+       , PassHash(..)
+       , Salt(..)
+       , mkPass
+       , unsafeShowPassword
+       , unsafeShowPasswordText
+       )
+import Data.Password.Internal (Pass(..), from64, readT, showT, toBytes)
+import qualified Data.Password.Internal (newSalt)
 
 -- | Phantom type for __Argon2__
 --
@@ -164,16 +169,13 @@ defaultParams = ScryptParams {
 hashPassWithSalt :: ScryptParams -> Salt Scrypt -> Pass -> PassHash Scrypt
 hashPassWithSalt params@ScryptParams{..} s@(Salt salt) pass =
   PassHash $ T.intercalate "|"
-    [ t scryptRounds
-    , t scryptBlockSize
-    , t scryptParallelism
-    , b64 salt
-    , b64 key
+    [ showT scryptRounds
+    , showT scryptBlockSize
+    , showT scryptParallelism
+    , encodeBase64 salt
+    , encodeBase64 key
     ]
   where
-    t :: forall a. Show a => a -> Text
-    t = T.pack . show
-    b64 = Base64.encodeBase64
     key = hashPassWithSalt' params s pass
 
 -- | Only for internal use
@@ -251,9 +253,6 @@ checkPass pass (PassHash passHash) =
     return PassCheckSuccess
   where
     scryptSalt = 32 -- only here because of warnings
-    from64 = either (\_ -> Nothing) pure . Base64.decodeBase64 . encodeUtf8
-    readT :: forall a. Read a => Text -> Maybe a
-    readT = readMaybe . T.unpack
 
 -- | Generate a random 32-byte @scrypt@ salt
 --

@@ -56,19 +56,27 @@ import Crypto.Error (throwCryptoError)
 import Crypto.KDF.Argon2 as Argon2
 import Data.ByteArray (Bytes, convert)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Base64 as Base64
+import Data.ByteString.Base64 (encodeBase64)
 import qualified Data.ByteString.Char8 as C8 (length)
 import Data.Maybe (fromMaybe)
-import Data.Password.Internal hiding (newSalt)
-import qualified Data.Password.Internal
 #if MIN_VERSION_base(4,9,0)
 import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
-import qualified Data.Text as T (intercalate, length, pack, split, splitAt, unpack)
-import Data.Text.Encoding (encodeUtf8)
+import qualified Data.Text as T (intercalate, length, split, splitAt)
 import Data.Word (Word32)
-import Text.Read (readMaybe)
+
+import Data.Password (
+         PassCheck(..)
+       , PassHash(..)
+       , Salt(..)
+       , mkPass
+       , unsafeShowPassword
+       , unsafeShowPasswordText
+       )
+import Data.Password.Internal (Pass(..), from64, readT, showT, toBytes)
+import qualified Data.Password.Internal (newSalt)
+
 
 -- | Phantom type for __Argon2__
 --
@@ -163,17 +171,14 @@ hashPassWithSalt params@Argon2Params{..} s@(Salt salt) pass =
     [ variantToLetter argon2Variant
     , "v=" <> versionToNum argon2Version
     , parameters
-    , b64 salt
-    , b64 key
+    , encodeBase64 salt
+    , encodeBase64 key
     ]
   where
-    t :: forall a. Show a => a -> Text
-    t = T.pack . show
-    b64 = Base64.encodeBase64
     parameters = T.intercalate ","
-        [ "m=" <> t argon2MemoryCost
-        , "t=" <> t argon2TimeCost
-        , "p=" <> t argon2Parallelism
+        [ "m=" <> showT argon2MemoryCost
+        , "t=" <> showT argon2TimeCost
+        , "p=" <> showT argon2Parallelism
         ]
     key = hashPassWithSalt' params s pass
 
@@ -251,7 +256,6 @@ checkPass pass (PassHash passHash) =
     return PassCheckSuccess
   where
     argon2Salt = 16 -- only here because of warnings
-    from64 = either (\_ -> Nothing) pure . Base64.decodeBase64 . encodeUtf8
     parseVariant = splitMaybe "argon2" letterToVariant
     parseVersion = splitMaybe "v=" numToVersion
     parseParameters params = do
@@ -272,8 +276,6 @@ checkPass pass (PassHash passHash) =
       case T.splitAt (T.length match) t of
         (m, x) | m == match -> f x
         _  -> Nothing
-    readT :: forall a. Read a => Text -> Maybe a
-    readT = readMaybe . T.unpack
 
 -- | Generate a random 16-byte @Argon2@ salt
 --
