@@ -153,7 +153,7 @@ defaultParams = Argon2Params {
 
 -- | Hash a password with the given 'Argon2Params' and also with the given 'Salt'
 -- instead of a random generated salt using 'argon2Salt' from 'Argon2Params'. (cf. 'hashPassWithParams')
--- Using 'hashPassWithSalt' is strongly disadvised and 'hashPassWithParams' should be used instead.
+-- Using 'hashPassWithSalt' is strongly __disadvised__ and 'hashPassWithParams' should be used instead.
 -- /Never use a static salt in production applications!/
 --
 -- __N.B.__: The salt HAS to be 8 bytes or more, or this function will throw an error!

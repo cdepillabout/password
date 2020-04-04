@@ -113,7 +113,7 @@ hashPass :: MonadIO m => Pass -> m (PassHash Bcrypt)
 hashPass = hashPassWithParams 10
 
 -- | Hash a password with the given cost and also with the given 'Salt'
--- instead of generating a random salt. Using 'hashPassWithSalt' is strongly disadvised,
+-- instead of generating a random salt. Using 'hashPassWithSalt' is strongly __disadvised__,
 -- and 'hashPassWithParams' should be used instead. /Never use a static salt/
 -- /in production applications!/
 --

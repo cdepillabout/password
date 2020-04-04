@@ -151,8 +151,8 @@ defaultParams = ScryptParams {
 
 -- | Hash a password with the given 'ScryptParams' and also with the given 'Salt'
 -- instead of generating a random salt using 'scryptSalt' from 'ScryptParams'.
--- Using 'hashPassWithSalt' is strongly disadvised and 'hashPassWithParams' should be used instead.
--- /Never use a static salt in production applications!/
+-- Using 'hashPassWithSalt' is strongly __disadvised__ and 'hashPassWithParams'
+-- should be used instead. /Never use a static salt in production applications!/
 --
 -- The resulting 'PassHash' has the parameters used to hash it, as well as the
 -- 'Salt' appended to it, separated by @|@.
@@ -247,7 +247,7 @@ checkPass pass (PassHash passHash) =
     scryptParallelism <- readT scryptParallelismT
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
-    let scryptOutputLength = fromIntegral $ C8.length hashedKey -- only here because of warnings
+    let scryptOutputLength = fromIntegral $ C8.length hashedKey
         producedKey = hashPassWithSalt' ScryptParams{..} (Salt salt) pass
     guard $ hashedKey == producedKey
     return PassCheckSuccess
