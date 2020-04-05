@@ -41,19 +41,19 @@ module Data.Password.Argon2 (
   -- Algorithm
   Argon2
   -- * Plain-text Password
-  , Pass
-  , mkPass
+  , Password
+  , mkPassword
   -- * Hash Passwords (Argon2)
-  , hashPass
-  , PassHash(..)
+  , hashPassword
+  , PasswordHash(..)
   -- * Verify Passwords (Argon2)
-  , checkPass
-  , PassCheck(..)
+  , checkPassword
+  , PasswordCheck(..)
   -- * Hashing Manually (Argon2)
   --
   -- | If you have any doubt about what the parameters do or mean,
-  -- please just use 'hashPass'.
-  , hashPassWithParams
+  -- please just use 'hashPassword'.
+  , hashPasswordWithParams
   , Argon2Params(..)
   , defaultParams
   , Argon2.Variant(..)
@@ -61,9 +61,9 @@ module Data.Password.Argon2 (
   -- ** Hashing with salt (DISADVISED)
   --
   -- | Hashing with a set 'Salt' is almost never what you want
-  -- to do. Use 'hashPass' or 'hashPassWithParams' to have
+  -- to do. Use 'hashPassword' or 'hashPasswordWithParams' to have
   -- automatic generation of randomized salts.
-  , hashPassWithSalt
+  , hashPasswordWithSalt
   , Salt(..)
   , newSalt
   -- * Unsafe Debugging Functions for Showing a Password
@@ -90,14 +90,14 @@ import qualified Data.Text as T (intercalate, length, split, splitAt)
 import Data.Word (Word32)
 
 import Data.Password (
-         PassCheck(..)
-       , PassHash(..)
+         PasswordCheck(..)
+       , PasswordHash(..)
        , Salt(..)
-       , mkPass
+       , mkPassword
        , unsafeShowPassword
        , unsafeShowPasswordText
        )
-import Data.Password.Internal (Pass(..), from64, readT, showT, toBytes)
+import Data.Password.Internal (Password(..), from64, readT, showT, toBytes)
 import qualified Data.Password.Internal (newSalt)
 
 
@@ -118,16 +118,16 @@ data Argon2
 -- >>> import Test.QuickCheck.Instances.Text ()
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 16
--- >>> instance Arbitrary Pass where arbitrary = fmap Pass arbitrary
+-- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
 -- >>> let testParams = defaultParams {argon2TimeCost = 1}
--- >>> instance Arbitrary (PassHash Argon2) where arbitrary = hashPassWithSalt testParams <$> arbitrary <*> arbitrary
+-- >>> instance Arbitrary (PasswordHash Argon2) where arbitrary = hashPasswordWithSalt testParams <$> arbitrary <*> arbitrary
 
--- | Hash the 'Pass' using the /Argon2/ hash algorithm
+-- | Hash the 'Password' using the /Argon2/ hash algorithm
 --
--- >>> hashPass $ mkPass "foobar"
--- PassHash {unPassHash = "$argon2id$v=19$m=65536,t=2,p=1$...$..."}
-hashPass :: MonadIO m => Pass -> m (PassHash Argon2)
-hashPass = hashPassWithParams defaultParams
+-- >>> hashPassword $ mkPassword "foobar"
+-- PasswordHash {unPasswordHash = "$argon2id$v=19$m=65536,t=2,p=1$...$..."}
+hashPassword :: MonadIO m => Password -> m (PasswordHash Argon2)
+hashPassword = hashPasswordWithParams defaultParams
 
 -- | Parameters used in the /Argon2/ hashing algorithm.
 --
@@ -175,22 +175,22 @@ defaultParams = Argon2Params {
 }
 
 -- | Hash a password with the given 'Argon2Params' and also with the given 'Salt'
--- instead of a random generated salt using 'argon2Salt' from 'Argon2Params'. (cf. 'hashPassWithParams')
--- Using 'hashPassWithSalt' is strongly __disadvised__ and 'hashPassWithParams' should be used instead.
+-- instead of a random generated salt using 'argon2Salt' from 'Argon2Params'. (cf. 'hashPasswordWithParams')
+-- Using 'hashPasswordWithSalt' is strongly __disadvised__ and 'hashPasswordWithParams' should be used instead.
 -- /Never use a static salt in production applications!/
 --
 -- __N.B.__: The salt HAS to be 8 bytes or more, or this function will throw an error!
 --
 -- >>> let salt = Salt "abcdefghijklmnop"
--- >>> hashPassWithSalt defaultParams salt (mkPass "foobar")
--- PassHash {unPassHash = "$argon2id$v=19$m=65536,t=2,p=1$YWJjZGVmZ2hpamtsbW5vcA==$BztdyfEefG5V18ZNlztPrfZaU5duVFKZiI6dJeWht0o="}
+-- >>> hashPasswordWithSalt defaultParams salt (mkPassword "foobar")
+-- PasswordHash {unPasswordHash = "$argon2id$v=19$m=65536,t=2,p=1$YWJjZGVmZ2hpamtsbW5vcA==$BztdyfEefG5V18ZNlztPrfZaU5duVFKZiI6dJeWht0o="}
 --
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
--- example is reproducible, but in general you should use 'hashPass'. 'hashPass'
+-- example is reproducible, but in general you should use 'hashPassword'. 'hashPassword'
 -- generates a new 'Salt' everytime it is called.)
-hashPassWithSalt :: Argon2Params -> Salt Argon2 -> Pass -> PassHash Argon2
-hashPassWithSalt params@Argon2Params{..} s@(Salt salt) pass =
-  PassHash . mappend "$argon2" $ T.intercalate "$"
+hashPasswordWithSalt :: Argon2Params -> Salt Argon2 -> Password -> PasswordHash Argon2
+hashPasswordWithSalt params@Argon2Params{..} s@(Salt salt) pass =
+  PasswordHash . mappend "$argon2" $ T.intercalate "$"
     [ variantToLetter argon2Variant
     , "v=" <> versionToNum argon2Version
     , parameters
@@ -203,11 +203,11 @@ hashPassWithSalt params@Argon2Params{..} s@(Salt salt) pass =
         , "t=" <> showT argon2TimeCost
         , "p=" <> showT argon2Parallelism
         ]
-    key = hashPassWithSalt' params s pass
+    key = hashPasswordWithSalt' params s pass
 
 -- | Only for internal use
-hashPassWithSalt' :: Argon2Params -> Salt Argon2 -> Pass -> ByteString
-hashPassWithSalt' Argon2Params{..} (Salt salt) (Pass pass) =
+hashPasswordWithSalt' :: Argon2Params -> Salt Argon2 -> Password -> ByteString
+hashPasswordWithSalt' Argon2Params{..} (Salt salt) (Password pass) =
     convert (argon2Hash :: Bytes)
   where
     argon2Hash = throwCryptoError $
@@ -223,7 +223,7 @@ hashPassWithSalt' Argon2Params{..} (Salt salt) (Pass pass) =
 -- | Hash a password using the /Argon2/ algorithm with the given 'Argon2Params'.
 --
 -- __N.B.__: If you have any doubt in your knowledge of cryptography and/or the
--- /Argon2/ algorithm, please just use 'hashPass'.
+-- /Argon2/ algorithm, please just use 'hashPassword'.
 --
 -- Advice to set the parameters:
 --
@@ -234,35 +234,35 @@ hashPassWithSalt' Argon2Params{..} (Salt salt) (Pass pass) =
 -- parameter choices.
 --
 -- @since 2.0.0.0
-hashPassWithParams :: MonadIO m => Argon2Params -> Pass -> m (PassHash Argon2)
-hashPassWithParams params pass = liftIO $ do
+hashPasswordWithParams :: MonadIO m => Argon2Params -> Password -> m (PasswordHash Argon2)
+hashPasswordWithParams params pass = liftIO $ do
     salt <- Data.Password.Internal.newSalt . fromIntegral $ argon2Salt params
-    return $ hashPassWithSalt params salt pass
+    return $ hashPasswordWithSalt params salt pass
 
 -- TODO: Parse different kinds of hashes, not only the ones from this library.
 -- e.g. hashes that miss the first $, or have 'argon2$' in front of the 'argon2id' part.
 
--- | Check a 'Pass' against a 'PassHash' 'Argon2'.
+-- | Check a 'Password' against a 'PasswordHash' 'Argon2'.
 --
--- Returns 'PassCheckSuccess' on success.
+-- Returns 'PasswordCheckSuccess' on success.
 --
--- >>> let pass = mkPass "foobar"
--- >>> passHash <- hashPass pass
--- >>> checkPass pass passHash
--- PassCheckSuccess
+-- >>> let pass = mkPassword "foobar"
+-- >>> passHash <- hashPassword pass
+-- >>> checkPassword pass passHash
+-- PasswordCheckSuccess
 --
--- Returns 'PassCheckFail' if an incorrect 'Pass' or 'PassHash' 'Argon2' is used.
+-- Returns 'PasswordCheckFail' if an incorrect 'Password' or 'PasswordHash' 'Argon2' is used.
 --
--- >>> let badpass = mkPass "incorrect-password"
--- >>> checkPass badpass passHash
--- PassCheckFail
+-- >>> let badpass = mkPassword "incorrect-password"
+-- >>> checkPassword badpass passHash
+-- PasswordCheckFail
 --
 -- This should always fail if an incorrect password is given.
 --
--- prop> \(Blind badpass) -> let correctPassHash = hashPassWithSalt testParams salt "foobar" in checkPass badpass correctPassHash == PassCheckFail
-checkPass :: Pass -> PassHash Argon2 -> PassCheck
-checkPass pass (PassHash passHash) =
-  fromMaybe PassCheckFail $ do
+-- prop> \(Blind badpass) -> let correctPasswordHash = hashPasswordWithSalt testParams salt "foobar" in checkPassword badpass correctPasswordHash == PasswordCheckFail
+checkPassword :: Password -> PasswordHash Argon2 -> PasswordCheck
+checkPassword pass (PasswordHash passHash) =
+  fromMaybe PasswordCheckFail $ do
     let paramList = T.split (== '$') passHash
     guard $ length paramList == 6
     let [ _,
@@ -277,9 +277,9 @@ checkPass pass (PassHash passHash) =
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
     let argon2OutputLength = fromIntegral $ C8.length hashedKey -- only here because of warnings
-        producedKey = hashPassWithSalt' Argon2Params{..} (Salt salt) pass
+        producedKey = hashPasswordWithSalt' Argon2Params{..} (Salt salt) pass
     guard $ hashedKey == producedKey
-    return PassCheckSuccess
+    return PasswordCheckSuccess
   where
     argon2Salt = 16 -- only here because of warnings
     parseVariant = splitMaybe "argon2" letterToVariant

@@ -38,28 +38,28 @@ module Data.Password.PBKDF2 (
   -- Algorithm
   PBKDF2
   -- * Plain-text Password
-  , Pass
-  , mkPass
+  , Password
+  , mkPassword
   -- * Hash Passwords (PBKDF2)
-  , hashPass
-  , PassHash(..)
+  , hashPassword
+  , PasswordHash(..)
   -- * Verify Passwords (PBKDF2)
-  , checkPass
-  , PassCheck(..)
+  , checkPassword
+  , PasswordCheck(..)
   -- * Hashing Manually (PBKDF2)
   --
   -- | If you have any doubt about what the parameters do or mean,
-  -- please just use 'hashPass'.
-  , hashPassWithParams
+  -- please just use 'hashPassword'.
+  , hashPasswordWithParams
   , PBKDF2Params(..)
   , PBKDF2Algorithm(..)
   , defaultParams
   -- ** Hashing with salt (DISADVISED)
   --
   -- | Hashing with a set 'Salt' is almost never what you want
-  -- to do. Use 'hashPass' or 'hashPassWithParams' to have
+  -- to do. Use 'hashPassword' or 'hashPasswordWithParams' to have
   -- automatic generation of randomized salts.
-  , hashPassWithSalt
+  , hashPasswordWithSalt
   , Salt(..)
   , newSalt
   -- * Unsafe Debugging Functions for Showing a Password
@@ -83,14 +83,14 @@ import qualified Data.Text as T (intercalate, pack, split)
 import Data.Word (Word32)
 
 import Data.Password (
-         PassCheck(..)
-       , PassHash(..)
+         PasswordCheck(..)
+       , PasswordHash(..)
        , Salt(..)
-       , mkPass
+       , mkPassword
        , unsafeShowPassword
        , unsafeShowPasswordText
        )
-import Data.Password.Internal (Pass(..), from64, readT, toBytes)
+import Data.Password.Internal (Password(..), from64, readT, toBytes)
 import qualified Data.Password.Internal (newSalt)
 
 
@@ -111,15 +111,15 @@ data PBKDF2
 -- >>> import Test.QuickCheck.Instances.Text ()
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 16
--- >>> instance Arbitrary Pass where arbitrary = fmap Pass arbitrary
--- >>> instance Arbitrary (PassHash PBKDF2) where arbitrary = hashPassWithSalt defaultParams <$> arbitrary <*> arbitrary
+-- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
+-- >>> instance Arbitrary (PasswordHash PBKDF2) where arbitrary = hashPasswordWithSalt defaultParams <$> arbitrary <*> arbitrary
 
--- | Hash the 'Pass' using the /PBKDF2/ hash algorithm
+-- | Hash the 'Password' using the /PBKDF2/ hash algorithm
 --
--- >>> hashPass $ mkPass "foobar"
--- PassHash {unPassHash = "sha512:25000:...:..."}
-hashPass :: MonadIO m => Pass -> m (PassHash PBKDF2)
-hashPass = hashPassWithParams defaultParams
+-- >>> hashPassword $ mkPassword "foobar"
+-- PasswordHash {unPasswordHash = "sha512:25000:...:..."}
+hashPassword :: MonadIO m => Password -> m (PasswordHash PBKDF2)
+hashPassword = hashPasswordWithParams defaultParams
 
 -- TODO: Add way to parse the following:
 -- $pbkdf2-md5$29000$...$...
@@ -158,20 +158,20 @@ defaultParams = PBKDF2Params {
 }
 
 -- | Hash a password with the given 'PBKDF2Params' and also with the given 'Salt'
--- instead of a random generated salt using 'pbkdf2Salt' from 'PBKDF2Params'. (cf. 'hashPassWithParams')
--- Using 'hashPassWithSalt' is strongly __disadvised__ and 'hashPassWithParams' should be used instead.
+-- instead of a random generated salt using 'pbkdf2Salt' from 'PBKDF2Params'. (cf. 'hashPasswordWithParams')
+-- Using 'hashPasswordWithSalt' is strongly __disadvised__ and 'hashPasswordWithParams' should be used instead.
 -- /Never use a static salt in production applications!/
 --
 -- >>> let salt = Salt "abcdefghijklmnop"
--- >>> hashPassWithSalt defaultParams salt (mkPass "foobar")
--- PassHash {unPassHash = "sha512:25000:"}
+-- >>> hashPasswordWithSalt defaultParams salt (mkPassword "foobar")
+-- PasswordHash {unPasswordHash = "sha512:25000:"}
 --
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
--- example is reproducible, but in general you should use 'hashPass'. 'hashPass'
+-- example is reproducible, but in general you should use 'hashPassword'. 'hashPassword'
 -- generates a new 'Salt' everytime it is called.)
-hashPassWithSalt :: PBKDF2Params -> Salt PBKDF2 -> Pass -> PassHash PBKDF2
-hashPassWithSalt params@PBKDF2Params{..} s@(Salt salt) pass =
-  PassHash $ T.intercalate ":"
+hashPasswordWithSalt :: PBKDF2Params -> Salt PBKDF2 -> Password -> PasswordHash PBKDF2
+hashPasswordWithSalt params@PBKDF2Params{..} s@(Salt salt) pass =
+  PasswordHash $ T.intercalate ":"
     [ algToText pbkdf2Algorithm
     , T.pack $ show pbkdf2Iterations
     , b64 salt
@@ -179,11 +179,11 @@ hashPassWithSalt params@PBKDF2Params{..} s@(Salt salt) pass =
     ]
   where
     b64 = Base64.encodeBase64
-    key = hashPassWithSalt' params s pass
+    key = hashPasswordWithSalt' params s pass
 
 -- | Only for internal use
-hashPassWithSalt' :: PBKDF2Params -> Salt PBKDF2 -> Pass -> ByteString
-hashPassWithSalt' PBKDF2Params{..} (Salt salt) (Pass pass) =
+hashPasswordWithSalt' :: PBKDF2Params -> Salt PBKDF2 -> Password -> ByteString
+hashPasswordWithSalt' PBKDF2Params{..} (Salt salt) (Password pass) =
     convert (pbkdf2Hash :: Bytes)
   where
     pbkdf2Hash = algToFunc pbkdf2Algorithm params (toBytes pass) (convert salt :: Bytes)
@@ -195,35 +195,35 @@ hashPassWithSalt' PBKDF2Params{..} (Salt salt) (Pass pass) =
 -- | Hash a password using the /PBKDF2/ algorithm with the given 'PBKDF2Params'.
 --
 -- __N.B.__: If you have any doubt in your knowledge of cryptography and/or the
--- /PBKDF2/ algorithm, please just use 'hashPass'.
+-- /PBKDF2/ algorithm, please just use 'hashPassword'.
 --
 -- @since 2.0.0.0
-hashPassWithParams :: MonadIO m => PBKDF2Params -> Pass -> m (PassHash PBKDF2)
-hashPassWithParams params pass = liftIO $ do
+hashPasswordWithParams :: MonadIO m => PBKDF2Params -> Password -> m (PasswordHash PBKDF2)
+hashPasswordWithParams params pass = liftIO $ do
     salt <- Data.Password.Internal.newSalt . fromIntegral $ pbkdf2Salt params
-    return $ hashPassWithSalt params salt pass
+    return $ hashPasswordWithSalt params salt pass
 
--- | Check a 'Pass' against a 'PassHash' 'PBKDF2'.
+-- | Check a 'Password' against a 'PasswordHash' 'PBKDF2'.
 --
--- Returns 'PassCheckSuccess' on success.
+-- Returns 'PasswordCheckSuccess' on success.
 --
--- >>> let pass = mkPass "foobar"
--- >>> passHash <- hashPass pass
--- >>> checkPass pass passHash
--- PassCheckSuccess
+-- >>> let pass = mkPassword "foobar"
+-- >>> passHash <- hashPassword pass
+-- >>> checkPassword pass passHash
+-- PasswordCheckSuccess
 --
--- Returns 'PassCheckFail' if an incorrect 'Pass' or 'PassHash' 'PBKDF2' is used.
+-- Returns 'PasswordCheckFail' if an incorrect 'Password' or 'PasswordHash' 'PBKDF2' is used.
 --
--- >>> let badpass = mkPass "incorrect-password"
--- >>> checkPass badpass passHash
--- PassCheckFail
+-- >>> let badpass = mkPassword "incorrect-password"
+-- >>> checkPassword badpass passHash
+-- PasswordCheckFail
 --
 -- This should always fail if an incorrect password is given.
 --
--- prop> \(Blind badpass) -> let correctPassHash = hashPassWithSalt testParams salt "foobar" in checkPass badpass correctPassHash == PassCheckFail
-checkPass :: Pass -> PassHash PBKDF2 -> PassCheck
-checkPass pass (PassHash passHash) =
-  fromMaybe PassCheckFail $ do
+-- prop> \(Blind badpass) -> let correctPasswordHash = hashPasswordWithSalt testParams salt "foobar" in checkPassword badpass correctPasswordHash == PasswordCheckFail
+checkPassword :: Password -> PasswordHash PBKDF2 -> PasswordCheck
+checkPassword pass (PasswordHash passHash) =
+  fromMaybe PasswordCheckFail $ do
     let paramList = T.split (== ':') passHash
     guard $ length paramList == 4
     let [ algT,
@@ -235,9 +235,9 @@ checkPass pass (PassHash passHash) =
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
     let pbkdf2OutputLength = fromIntegral $ C8.length hashedKey
-        producedKey = hashPassWithSalt' PBKDF2Params{..} (Salt salt) pass
+        producedKey = hashPasswordWithSalt' PBKDF2Params{..} (Salt salt) pass
     guard $ hashedKey == producedKey
-    return PassCheckSuccess
+    return PasswordCheckSuccess
   where
     pbkdf2Salt = 16
 

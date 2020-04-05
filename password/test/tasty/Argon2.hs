@@ -10,11 +10,14 @@ import Internal
 
 testArgon2 :: TestTree
 testArgon2 = testGroup "Argon2"
-  [ testCorrectPass "Argon2 (hashPass)" hashPass checkPass
-  , testIncorrectPass "Argon2 (hashPass) fail" hashPass checkPass
-  , testWithSalt "Argon2 (hashPassWithSalt)" (hashPassWithSalt defaultParams) checkPass
+  [ testCorrectPassword "Argon2 (hashPassword)" hashPassword checkPassword
+  , testIncorrectPassword "Argon2 (hashPassword) fail" hashPassword checkPassword
+  , testWithSalt "Argon2 (hashPasswordWithSalt)"
+                 (hashPasswordWithSalt defaultParams)
+                 checkPassword
   , testWithParams "Argon2 (Argon2i)" $ defaultParams {argon2Variant = Argon2i}
   , testWithParams "Argon2 (Argon2d)" $ defaultParams {argon2Variant = Argon2d}
   ]
   where
-    testWithParams s params = testWithSalt s (hashPassWithSalt params) checkPass
+    testWithParams s params =
+      testWithSalt s (hashPasswordWithSalt params) checkPassword

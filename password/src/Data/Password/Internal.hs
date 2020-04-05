@@ -13,10 +13,10 @@ Portability : POSIX
 
 module Data.Password.Internal (
     -- * Global types
-    Pass(..)
-  , mkPass
-  , PassHash(..)
-  , PassCheck(..)
+    Password(..)
+  , mkPassword
+  , PasswordHash(..)
+  , PasswordCheck(..)
   , Salt(..)
   , newSalt
   -- * Unsafe functions
@@ -45,30 +45,30 @@ import Text.Read (readMaybe)
 --
 -- This represents a plain-text password that has /NOT/ been hashed.
 --
--- You should be careful with 'Pass'. Make sure not to write it to logs or
+-- You should be careful with 'Password'. Make sure not to write it to logs or
 -- store it in a database.
 --
--- You can construct a 'Pass' by using the 'mkPass' function or as literal strings together with the
+-- You can construct a 'Password' by using the 'mkPassword' function or as literal strings together with the
 -- OverloadedStrings pragma (or manually, by using 'fromString' on a 'String').
 -- Alternatively, you could also use some of the instances in the @password-instances@ library.
-newtype Pass = Pass Text
+newtype Password = Password Text
   deriving (IsString)
 
--- | CAREFUL: 'Show'-ing a 'Pass' will always print @"**PASSWORD**"@
+-- | CAREFUL: 'Show'-ing a 'Password' will always print @"**PASSWORD**"@
 --
--- >>> show ("hello" :: Pass)
+-- >>> show ("hello" :: Password)
 -- "**PASSWORD**"
 --
 -- @since 1.0.0.0
-instance Show Pass where
+instance Show Password where
  show _ = "**PASSWORD**"
 
--- | Construct a 'Pass'
+-- | Construct a 'Password'
 --
 -- @since 1.0.0.0
-mkPass :: Text -> Pass
-mkPass = Pass
-{-# INLINE mkPass #-}
+mkPassword :: Text -> Password
+mkPassword = Password
+{-# INLINE mkPassword #-}
 
 -- | A salt used by a hashing algorithm.
 --
@@ -85,35 +85,35 @@ newSalt i = liftIO $ Salt <$> getRandomBytes i
 
 -- | This is an unsafe function that shows a password in plain-text.
 --
--- >>> unsafeShowPasswordText ("foobar" :: Pass)
+-- >>> unsafeShowPasswordText ("foobar" :: Password)
 -- "foobar"
 --
 -- You should generally not use this function.
-unsafeShowPassword :: Pass -> String
+unsafeShowPassword :: Password -> String
 unsafeShowPassword = unpack . unsafeShowPasswordText
 {-# INLINE unsafeShowPassword #-}
 
 -- | This is like 'unsafeShowPassword' but produces a 'Text' instead of a
 -- 'String'.
-unsafeShowPasswordText :: Pass -> Text
-unsafeShowPasswordText (Pass pass) = pass
+unsafeShowPasswordText :: Password -> Text
+unsafeShowPasswordText (Password pass) = pass
 {-# INLINE unsafeShowPasswordText #-}
 
 -- | A hashed password.
 --
 -- This represents a password that has been put through a hashing function.
 -- The hashed password can be stored in a database.
-newtype PassHash a = PassHash
-  { unPassHash :: Text
+newtype PasswordHash a = PasswordHash
+  { unPasswordHash :: Text
   } deriving (Eq, Ord, Read, Show)
 
 -- | The result of a checking a password against a hashed version. This is
--- returned by checkPass.
-data PassCheck
-  = PassCheckSuccess
+-- returned by checkPassword.
+data PasswordCheck
+  = PasswordCheckSuccess
   -- ^ The password check was successful. The plain-text password matches the
   -- hashed password.
-  | PassCheckFail
+  | PasswordCheckFail
   -- ^ The password check failed. The plain-text password does not match the
   -- hashed password.
   deriving (Eq, Read, Show)

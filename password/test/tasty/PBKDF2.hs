@@ -17,21 +17,34 @@ import Internal
 
 testPBKDF2 :: TestTree
 testPBKDF2 = testGroup "PBKDF2"
-  [ testCorrectPass "PBKDF2 (hashPass)" hashPass checkPass
-  , testIncorrectPass "PBKDF2 (hashPass) fail" hashPass checkPass
-  , testWithSalt "PBKDF2 (hashPassWithSalt)" (hashPassWithSalt defaultParams) checkPass
+  [ testCorrectPassword "PBKDF2 (hashPassword)" hashPassword checkPassword
+  , testIncorrectPassword "PBKDF2 (hashPassword) fail" hashPassword checkPassword
+  , testWithSalt "PBKDF2 (hashPasswordWithSalt)"
+                 (hashPasswordWithSalt defaultParams)
+                 checkPassword
   , let params = defaultParams{ pbkdf2Algorithm = PBKDF2_MD5, pbkdf2Iterations = 5000 }
-    in testCorrectPass "PBKDF2 (md5)" (hashPassWithParams params) checkPass
-  , testCorrectPass "PBKDF2 (sha1)" (hashPassWithParams defaultParams{pbkdf2Algorithm = PBKDF2_SHA1}) checkPass
-  , testCorrectPass "PBKDF2 (sha256)" (hashPassWithParams defaultParams{pbkdf2Algorithm = PBKDF2_SHA256}) checkPass
+    in testCorrectPassword "PBKDF2 (md5)" (hashPasswordWithParams params) checkPassword
+  , testCorrectPassword "PBKDF2 (sha1)"
+                        (hashPasswordWithParams
+                            defaultParams{pbkdf2Algorithm = PBKDF2_SHA1})
+                        checkPassword
+  , testCorrectPassword "PBKDF2 (sha256)"
+                        (hashPasswordWithParams
+                            defaultParams{pbkdf2Algorithm = PBKDF2_SHA256})
+                        checkPassword
   , testFast Crypto.SHA1 20 PBKDF2.fastPBKDF2_SHA1
   , testFast Crypto.SHA256 32 PBKDF2.fastPBKDF2_SHA256
   , testFast Crypto.SHA512 64 PBKDF2.fastPBKDF2_SHA512
   ]
 
-testFast :: (HashAlgorithm a, Show a) => a -> Int -> (Parameters -> ByteString -> ByteString -> ByteString) -> TestTree
+testFast :: (HashAlgorithm a, Show a)
+         => a
+         -> Int
+         -> (Parameters -> ByteString -> ByteString -> ByteString)
+         -> TestTree
 testFast alg i f = testProperty s $ \pass salt -> run10 $
-    return $ f params pass salt === PBKDF2.generate (PBKDF2.prfHMAC alg) params pass salt
+    return $ f params pass salt ===
+             PBKDF2.generate (PBKDF2.prfHMAC alg) params pass salt
   where
     params = cryptoParams i
     s = sAlg ++ " HMAC == fast_" ++ sAlg

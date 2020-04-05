@@ -35,27 +35,27 @@ module Data.Password.Scrypt (
   -- * Algorithm
   Scrypt
   -- * Plain-text Password
-  , Pass
-  , mkPass
+  , Password
+  , mkPassword
   -- * Hash Passwords (scrypt)
-  , hashPass
-  , PassHash(..)
+  , hashPassword
+  , PasswordHash(..)
   -- * Verify Passwords (scrypt)
-  , checkPass
-  , PassCheck(..)
+  , checkPassword
+  , PasswordCheck(..)
   -- * Hashing Manually (scrypt)
   --
   -- | If you have any doubt about what the parameters do or mean,
-  -- please just use 'hashPass'.
-  , hashPassWithParams
+  -- please just use 'hashPassword'.
+  , hashPasswordWithParams
   , ScryptParams(..)
   , defaultParams
   -- ** Hashing with salt (DISADVISED)
   --
   -- | Hashing with a set 'Salt' is almost never what you want
-  -- to do. Use 'hashPass' or 'hashPassWithParams' to have
+  -- to do. Use 'hashPassword' or 'hashPasswordWithParams' to have
   -- automatic generation of randomized salts.
-  , hashPassWithSalt
+  , hashPasswordWithSalt
   , Salt(..)
   , newSalt
     -- * Unsafe Debugging Functions for Showing a Password
@@ -77,14 +77,14 @@ import qualified Data.Text as T (intercalate, split)
 import Data.Word (Word32)
 
 import Data.Password (
-         PassCheck(..)
-       , PassHash(..)
+         PasswordCheck(..)
+       , PasswordHash(..)
        , Salt(..)
-       , mkPass
+       , mkPassword
        , unsafeShowPassword
        , unsafeShowPasswordText
        )
-import Data.Password.Internal (Pass(..), from64, readT, showT, toBytes)
+import Data.Password.Internal (Password(..), from64, readT, showT, toBytes)
 import qualified Data.Password.Internal (newSalt)
 
 -- | Phantom type for __Argon2__
@@ -104,16 +104,16 @@ data Scrypt
 -- >>> import Test.QuickCheck.Instances.Text ()
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 32
--- >>> instance Arbitrary Pass where arbitrary = fmap Pass arbitrary
+-- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
 -- >>> let testParams = defaultParams {scryptRounds = 10}
--- >>> instance Arbitrary (PassHash Scrypt) where arbitrary = hashPassWithSalt testParams <$> arbitrary <*> arbitrary
+-- >>> instance Arbitrary (PasswordHash Scrypt) where arbitrary = hashPasswordWithSalt testParams <$> arbitrary <*> arbitrary
 
--- | Hash the 'Pass' using the /scrypt/ hash algorithm
+-- | Hash the 'Password' using the /scrypt/ hash algorithm
 --
--- >>> hashPass $ mkPass "foobar"
--- PassHash {unPassHash = "16|8|1|...|..."}
-hashPass :: MonadIO m => Pass -> m (PassHash Scrypt)
-hashPass = hashPassWithParams defaultParams
+-- >>> hashPassword $ mkPassword "foobar"
+-- PasswordHash {unPasswordHash = "16|8|1|...|..."}
+hashPassword :: MonadIO m => Password -> m (PasswordHash Scrypt)
+hashPassword = hashPasswordWithParams defaultParams
 
 -- TODO: Add way to parse the following. From [https://hashcat.net/wiki/doku.php?id=example_hashes]
 -- SCRYPT:1024:1:1:MDIwMzMwNTQwNDQyNQ==:5FW+zWivLxgCWj7qLiQbeC8zaNQ+qdO0NUinvqyFcfo=
@@ -152,24 +152,24 @@ defaultParams = ScryptParams {
 
 -- | Hash a password with the given 'ScryptParams' and also with the given 'Salt'
 -- instead of generating a random salt using 'scryptSalt' from 'ScryptParams'.
--- Using 'hashPassWithSalt' is strongly __disadvised__ and 'hashPassWithParams'
+-- Using 'hashPasswordWithSalt' is strongly __disadvised__ and 'hashPasswordWithParams'
 -- should be used instead. /Never use a static salt in production applications!/
 --
--- The resulting 'PassHash' has the parameters used to hash it, as well as the
+-- The resulting 'PasswordHash' has the parameters used to hash it, as well as the
 -- 'Salt' appended to it, separated by @|@.
 --
--- The input 'Salt' and resulting 'PassHash' are both base64 encoded.
+-- The input 'Salt' and resulting 'PasswordHash' are both base64 encoded.
 --
 -- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
--- >>> hashPassWithSalt defaultParams salt (mkPass "foobar")
--- PassHash {unPassHash = "16|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|BH0oidcU/4Ec7Co4EM+LQ6xp39//MnOUhqmNeOnOz/nl4JHNXEJBw5dPdi3wTStYr+e1SmJkzHJrMvUJYNxK1w=="}
+-- >>> hashPasswordWithSalt defaultParams salt (mkPassword "foobar")
+-- PasswordHash {unPasswordHash = "16|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|BH0oidcU/4Ec7Co4EM+LQ6xp39//MnOUhqmNeOnOz/nl4JHNXEJBw5dPdi3wTStYr+e1SmJkzHJrMvUJYNxK1w=="}
 --
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
--- example is reproducible, but in general you should use 'hashPass'. 'hashPass'
+-- example is reproducible, but in general you should use 'hashPassword'. 'hashPassword'
 -- generates a new 'Salt' everytime it is called.)
-hashPassWithSalt :: ScryptParams -> Salt Scrypt -> Pass -> PassHash Scrypt
-hashPassWithSalt params@ScryptParams{..} s@(Salt salt) pass =
-  PassHash $ T.intercalate "|"
+hashPasswordWithSalt :: ScryptParams -> Salt Scrypt -> Password -> PasswordHash Scrypt
+hashPasswordWithSalt params@ScryptParams{..} s@(Salt salt) pass =
+  PasswordHash $ T.intercalate "|"
     [ showT scryptRounds
     , showT scryptBlockSize
     , showT scryptParallelism
@@ -177,11 +177,11 @@ hashPassWithSalt params@ScryptParams{..} s@(Salt salt) pass =
     , encodeBase64 key
     ]
   where
-    key = hashPassWithSalt' params s pass
+    key = hashPasswordWithSalt' params s pass
 
 -- | Only for internal use
-hashPassWithSalt' :: ScryptParams -> Salt Scrypt -> Pass -> ByteString
-hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
+hashPasswordWithSalt' :: ScryptParams -> Salt Scrypt -> Password -> ByteString
+hashPasswordWithSalt' ScryptParams{..} (Salt salt) (Password pass) =
     convert (scryptHash :: Bytes)
   where
     scryptHash = Scrypt.generate params (toBytes pass) (convert salt :: Bytes)
@@ -196,7 +196,7 @@ hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
 -- | Hash a password using the /scrypt/ algorithm with the given 'ScryptParams'.
 --
 -- __N.B.__: If you have any doubt in your knowledge of cryptography and/or the
--- /scrypt/ algorithm, please just use 'hashPass'.
+-- /scrypt/ algorithm, please just use 'hashPassword'.
 --
 -- Advice for setting the parameters:
 --
@@ -208,34 +208,34 @@ hashPassWithSalt' ScryptParams{..} (Salt salt) (Pass pass) =
 --   sequence, not in parallel)
 --
 -- @since 2.0.0.0
-hashPassWithParams :: MonadIO m => ScryptParams -> Pass -> m (PassHash Scrypt)
-hashPassWithParams params pass = liftIO $ do
+hashPasswordWithParams :: MonadIO m => ScryptParams -> Password -> m (PasswordHash Scrypt)
+hashPasswordWithParams params pass = liftIO $ do
     salt <- Data.Password.Internal.newSalt saltLength
-    return $ hashPassWithSalt params salt pass
+    return $ hashPasswordWithSalt params salt pass
   where
     saltLength = fromIntegral $ scryptSalt params
 
--- | Check a 'Pass' against a 'PassHash' 'Scrypt'.
+-- | Check a 'Password' against a 'PasswordHash' 'Scrypt'.
 --
--- Returns 'PassCheckSuccess' on success.
+-- Returns 'PasswordCheckSuccess' on success.
 --
--- >>> let pass = mkPass "foobar"
--- >>> passHash <- hashPass pass
--- >>> checkPass pass passHash
--- PassCheckSuccess
+-- >>> let pass = mkPassword "foobar"
+-- >>> passHash <- hashPassword pass
+-- >>> checkPassword pass passHash
+-- PasswordCheckSuccess
 --
--- Returns 'PassCheckFail' if an incorrect 'Pass' or 'PassHash' 'Scrypt' is used.
+-- Returns 'PasswordCheckFail' if an incorrect 'Password' or 'PasswordHash' 'Scrypt' is used.
 --
--- >>> let badpass = mkPass "incorrect-password"
--- >>> checkPass badpass passHash
--- PassCheckFail
+-- >>> let badpass = mkPassword "incorrect-password"
+-- >>> checkPassword badpass passHash
+-- PasswordCheckFail
 --
 -- This should always fail if an incorrect password is given.
 --
--- prop> \(Blind badpass) -> let correctPassHash = hashPassWithSalt testParams salt "foobar" in checkPass badpass correctPassHash == PassCheckFail
-checkPass :: Pass -> PassHash Scrypt -> PassCheck
-checkPass pass (PassHash passHash) =
-  fromMaybe PassCheckFail $ do
+-- prop> \(Blind badpass) -> let correctPasswordHash = hashPasswordWithSalt testParams salt "foobar" in checkPassword badpass correctPasswordHash == PasswordCheckFail
+checkPassword :: Password -> PasswordHash Scrypt -> PasswordCheck
+checkPassword pass (PasswordHash passHash) =
+  fromMaybe PasswordCheckFail $ do
     let paramList = T.split (== '|') passHash
     guard $ length paramList == 5
     let [ scryptRoundsT,
@@ -249,9 +249,9 @@ checkPass pass (PassHash passHash) =
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
     let scryptOutputLength = fromIntegral $ C8.length hashedKey
-        producedKey = hashPassWithSalt' ScryptParams{..} (Salt salt) pass
+        producedKey = hashPasswordWithSalt' ScryptParams{..} (Salt salt) pass
     guard $ hashedKey == producedKey
-    return PassCheckSuccess
+    return PasswordCheckSuccess
   where
     scryptSalt = 32 -- only here because of warnings
 

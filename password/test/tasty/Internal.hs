@@ -9,28 +9,38 @@ import Test.QuickCheck.Instances.Text ()
 import Data.Password
 
 
-testCorrectPass :: String -> (Pass -> IO (PassHash a)) -> (Pass -> PassHash a -> PassCheck) -> TestTree
-testCorrectPass s hashF checkF = testProperty s $
+testCorrectPassword :: String
+                    -> (Password -> IO (PasswordHash a))
+                    -> (Password -> PasswordHash a -> PasswordCheck)
+                    -> TestTree
+testCorrectPassword s hashF checkF = testProperty s $
   \pass -> run10 $ do
-    let pw = mkPass pass
+    let pw = mkPassword pass
     hpw <- hashF pw
-    return $ checkF pw hpw === PassCheckSuccess
+    return $ checkF pw hpw === PasswordCheckSuccess
 
-testIncorrectPass :: String -> (Pass -> IO (PassHash a)) -> (Pass -> PassHash a -> PassCheck) -> TestTree
-testIncorrectPass s hashF checkF = testProperty s $
+testIncorrectPassword :: String
+                      -> (Password -> IO (PasswordHash a))
+                      -> (Password -> PasswordHash a -> PasswordCheck)
+                      -> TestTree
+testIncorrectPassword s hashF checkF = testProperty s $
   \pass pass2 -> run10 $ do
-    let pw = mkPass pass
-        pw2 = mkPass pass2
-        result = if pass == pass2 then PassCheckSuccess else PassCheckFail
+    let pw = mkPassword pass
+        pw2 = mkPassword pass2
+        result = if pass == pass2 then PasswordCheckSuccess
+                                  else PasswordCheckFail
     hpw <- hashF pw
     return $ checkF pw2 hpw === result
 
-testWithSalt :: String -> (Salt a -> Pass -> PassHash a) -> (Pass -> PassHash a -> PassCheck) -> TestTree
+testWithSalt :: String
+             -> (Salt a -> Password -> PasswordHash a)
+             -> (Password -> PasswordHash a -> PasswordCheck)
+             -> TestTree
 testWithSalt s hashWithSalt checkF = testProperty s $
   \pass salt -> withMaxSuccess 10 $
-    let pw = mkPass pass
+    let pw = mkPassword pass
         hpw = hashWithSalt salt pw
-    in checkF pw hpw === PassCheckSuccess
+    in checkF pw hpw === PasswordCheckSuccess
 
 run10 :: Testable prop => IO prop -> Property
 run10 = withMaxSuccess 10 . ioProperty
