@@ -2,7 +2,6 @@
 {-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
-
 {-|
 Module      : Data.Password.Internal
 Copyright   : (c) Dennis Gosnell, 2019
@@ -109,7 +108,7 @@ newtype PassHash a = PassHash
   } deriving (Eq, Ord, Read, Show)
 
 -- | The result of a checking a password against a hashed version. This is
--- returned by 'checkPass'.
+-- returned by checkPass.
 data PassCheck
   = PassCheckSuccess
   -- ^ The password check was successful. The plain-text password matches the

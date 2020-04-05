@@ -5,11 +5,34 @@
 {-# LANGUAGE RecordWildCards #-}
 {-|
 Module      : Data.Password.Argon2
-Copyright   : (c) Dennis Gosnell, Felix Paulusma, 2020
+Copyright   : (c) Felix Paulusma, 2020
 License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
 Portability : POSIX
+
+= Argon2
+
+@Argon2@ is probably the newest password algorithm out there. Argon2 was
+selected as the winner of the Password Hashing Competition in July 2015.
+
+It has three variants, namely Argon2d, Argon2i and Argon2id. These protect
+against GPU cracking attacks, side-channel attacks, and both, respectively.
+
+All three modes allow specification by three parameters that control:
+
+* execution time
+* memory required
+* degree of parallelism
+
+== Other algorithms
+
+In comparison to other algorithms, Argon2 is the least "battle-tested",
+being the newest algorithm out there.
+
+It is, however, recommended over @scrypt@ most of the time, and it also seems
+like it will become the go-to password algorithm if no vulnarabilities are
+discovered within the next couple of years.
 -}
 
 -- I think the portability is broadened to
@@ -215,6 +238,9 @@ hashPassWithParams :: MonadIO m => Argon2Params -> Pass -> m (PassHash Argon2)
 hashPassWithParams params pass = liftIO $ do
     salt <- Data.Password.Internal.newSalt . fromIntegral $ argon2Salt params
     return $ hashPassWithSalt params salt pass
+
+-- TODO: Parse different kinds of hashes, not only the ones from this library.
+-- e.g. hashes that miss the first $, or have 'argon2$' in front of the 'argon2id' part.
 
 -- | Check a 'Pass' against a 'PassHash' 'Argon2'.
 --

@@ -29,8 +29,6 @@ the default cost (12) and a decently long password, the amount of
 time to brute-force would still be significant.
 -}
 
--- I think the portability is broadened to
--- whatever, now that we use cryptonite... I think
 module Data.Password.Bcrypt (
   -- * Algorithm
   Bcrypt

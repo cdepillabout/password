@@ -11,12 +11,29 @@ Portability : POSIX
 
 = PBKDF2
 
+The PBKDF2 algorithm is one of the oldest and most solid password
+algorithms out there. It has also, however, been shown to be
+the least secure out of all major password algorithms. The main
+reason for this is that is doesn't make use of any memory cost
+or other method of making it difficult for specialized hardware
+attacks, like GPU cracking attacks.
+
+It is still, however used all over the world, since it has been
+shown to be a very reliable way to encrypt passwords. Though it is
+most definitely better than trying to develop a password algorithm
+on your own, or god-forbid, not using /any/ encryption on your stored
+passwords.
+
 == Other algorithms
 
+Seeing as PBKDF2 is shown to be very weak in terms of protection
+against GPU cracking attacks, it is generally advised to go with
+@bcrypt@, if not @scrypt@ or @Argon2@. When unsure, @bcrypt@ would
+probably be the safest option, as it has no memory cost which
+could become a problem if not properly calibrated to the machine
+doing the password verifications.
 -}
 
--- I think the portability is broadened to
--- whatever, now that we use cryptonite... I think
 module Data.Password.PBKDF2 (
   -- Algorithm
   PBKDF2

@@ -26,10 +26,11 @@ seems to be the winner in that search.
 That is not to say using @scrypt@ somehow means your passwords
 won't be properly protected. The cryptography is sound and
 thus is fine for protection against brute-force attacks.
+Because of the memory cost, it is generally advised to use
+@bcrypt@ if you're not sure this might be a problem on your
+system.
 -}
 
--- I think the portability is broadened to
--- whatever, now that we use cryptonite... I think
 module Data.Password.Scrypt (
   -- * Algorithm
   Scrypt
