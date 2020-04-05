@@ -7,19 +7,19 @@ Stability   : experimental
 Portability : POSIX
 
 This library provides an easy way for interacting with passwords from Haskell.
-It provides the types 'Pass' and 'PassHash', which correspond to plain-text and
+It provides the types 'Password' and 'PasswordHash', which correspond to plain-text and
 hashed passwords.
 
 == API
 
 Every supported hashing algorithm has its own module (e.g. "Data.Password.BCrypt")
-which exports its own @hashPass@ and @checkPass@ functions, as well as all the
+which exports its own @hashPassword@ and @checkPassword@ functions, as well as all the
 types and functions in this module. If you are not sure about the specifics of an
-algorithm you want to use, you can rest assured that by using the @hashPass@ function
+algorithm you want to use, you can rest assured that by using the @hashPassword@ function
 of the respective algorithm you are not making any big mistakes, security-wise.
 
 Of course, if you know what you're doing and you want more fine-grained control
-over the hashing function, you can adjust it using the @hashPassWithParams@
+over the hashing function, you can adjust it using the @hashPasswordWithParams@
 function of the respective algorithm.
 
 == Algorithms
@@ -40,7 +40,7 @@ topic. (And if you're already knowledgeable enough, you know what to do)
 The real benefit of this module is that there is a corresponding
 <http://hackage.haskell.org/package/password-instances password-instances>
 module that provides canonical typeclass instances for
-'Pass' and 'PassHash' for many common typeclasses, like
+'Password' and 'PasswordHash' for many common typeclasses, like
 <http://hackage.haskell.org/package/aeson/docs/Data-Aeson.html#t:FromJSON FromJSON> from
 <http://hackage.haskell.org/package/aeson aeson>,
 <http://hackage.haskell.org/package/persistent/docs/Database-Persist-Class.html#t:PersistField PersistField>
@@ -52,11 +52,11 @@ See the <http://hackage.haskell.org/package/password-instances password-instance
 
 module Data.Password (
     -- * Plain-text Password
-    Pass
-  , mkPass
+    Password
+  , mkPassword
     -- * Password Hashing
-  , PassHash(..)
-  , PassCheck(..)
+  , PasswordHash(..)
+  , PasswordCheck(..)
   , Salt(..)
   , newSalt
     -- * Unsafe Debugging Functions for Showing a Password
@@ -69,7 +69,7 @@ import Data.Password.Internal
 -- TODO: Create code for checking that plaintext passwords conform to some sort of
 -- password policy.
 
--- data PassPolicy = PassPolicy
+-- data PasswordPolicy = PasswordPolicy
 --   { passPolicyLength :: Int
 --   , passPolicyCharReqs :: [PolicyCharReq]
 --   , passPolicyCharSet :: PolicyCharSet

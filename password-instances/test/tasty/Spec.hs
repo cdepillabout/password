@@ -10,7 +10,7 @@ import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
 import Web.HttpApiData (FromHttpApiData(..))
 
-import Data.Password (Pass, PassHash(..), unsafeShowPasswordText)
+import Data.Password (Password, PasswordHash(..), unsafeShowPasswordText)
 import Data.Password.Instances()
 
 
@@ -23,7 +23,7 @@ main = defaultMain $ testGroup "Password Instances"
 
 data TestUser = TestUser {
   name :: Text,
-  password :: Pass
+  password :: Password
 } deriving (Show)
 
 instance FromJSON TestUser where
@@ -32,24 +32,24 @@ instance FromJSON TestUser where
 
 
 aesonTest :: TestTree
-aesonTest = testCase "Pass (Aeson)" $
-    assertEqual "password doesn't match" (Just testPass) $
+aesonTest = testCase "Password (Aeson)" $
+    assertEqual "password doesn't match" (Just testPassword) $
       unsafeShowPasswordText . password <$> parseMaybe parseJSON testUser
   where
-    testPass = "testpass"
+    testPassword = "testpass"
     testUser = object
       [ "name" .= String "testname"
-      , "password" .= String testPass
+      , "password" .= String testPassword
       ]
 
 fromHttpApiDataTest :: TestTree
-fromHttpApiDataTest = testCase "Pass (FromHttpApiData)" $
-    assertEqual "password doesn't match" (Right testPass) $
-      unsafeShowPasswordText <$> parseUrlPiece testPass
+fromHttpApiDataTest = testCase "Password (FromHttpApiData)" $
+    assertEqual "password doesn't match" (Right testPassword) $
+      unsafeShowPasswordText <$> parseUrlPiece testPassword
   where
-    testPass = "passtest"
+    testPassword = "passtest"
 
 persistTest :: TestTree
-persistTest = testProperty "PassHash (PersistField)" $ \pass ->
-    let pwd = PassHash pass
+persistTest = testProperty "PasswordHash (PersistField)" $ \pass ->
+    let pwd = PasswordHash pass
     in fromPersistValue (toPersistValue pwd) === Right pwd
