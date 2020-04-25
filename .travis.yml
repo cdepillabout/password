@@ -8,8 +8,8 @@
 # Copy these contents into the root directory of your Github project in a file
 # named .travis.yml
 
-# Use new container infrastructure to enable caching
-sudo: false
+# Run jobs on Linux unless "os" is specified explicitly.
+os: linux
 
 # Do not choose a language; we provide our own build tools.
 language: generic
@@ -30,9 +30,9 @@ cache:
 # cache file per set of arguments.
 #
 # If you need to have different apt packages for each combination in the
-# matrix, you can use a line such as:
+# job matrix, you can use a line such as:
 #     addons: {apt: {packages: [libfcgi-dev,libgmp-dev]}}
-matrix:
+jobs:
   # Make the build finish as soon as all of the non-"allowed_failures" builds
   # are finished building.  Don't wait for the "allowed_failures" to finish.
   fast-finish: true
@@ -60,15 +60,15 @@ matrix:
   # - env: BUILD=cabal GHCVER=8.0.2 CABALVER=1.24 HAPPYVER=1.19.5 ALEXVER=3.1.7
   #   compiler: ": #GHC 8.0.2"
   #   addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
-  - env: BUILD=cabal GHCVER=8.2.2 CABALVER=2.0 HAPPYVER=1.19.5 ALEXVER=3.1.7
-    compiler: ": #GHC 8.2.2"
-    addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
+  # - env: BUILD=cabal GHCVER=8.2.2 CABALVER=2.0 HAPPYVER=1.19.5 ALEXVER=3.1.7
+  #   compiler: ": #GHC 8.2.2"
+  #   addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
   - env: BUILD=cabal GHCVER=8.4.4 CABALVER=2.2 HAPPYVER=1.19.5 ALEXVER=3.1.7
     compiler: ": #GHC 8.4.4"
     addons: {apt: {packages: [cabal-install-2.2,ghc-8.4.4,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
-  - env: BUILD=cabal GHCVER=8.6.3 CABALVER=2.4 HAPPYVER=1.19.5 ALEXVER=3.1.7
-    compiler: ": #GHC 8.6.3"
-    addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.3,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
+  - env: BUILD=cabal GHCVER=8.6.5 CABALVER=2.4 HAPPYVER=1.19.5 ALEXVER=3.1.7
+    compiler: ": #GHC 8.6.5"
+    addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.5,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
   # Build with the newest GHC and cabal-install. This is an accepted failure,
   # see below.
@@ -102,16 +102,16 @@ matrix:
   #   compiler: ": #stack 8.0.2"
   #   addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--resolver lts-11"
-    compiler: ": #stack 8.2.2"
-    addons: {apt: {packages: [libgmp-dev]}}
+  # - env: BUILD=stack ARGS="--resolver lts-11"
+  #   compiler: ": #stack 8.2.2"
+  #   addons: {apt: {packages: [libgmp-dev]}}
 
   - env: BUILD=stack ARGS="--resolver lts-12"
     compiler: ": #stack 8.4.4"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--resolver lts-13"
-    compiler: ": #stack 8.6.3"
+  - env: BUILD=stack ARGS="--resolver lts-14"
+    compiler: ": #stack 8.6.5"
     addons: {apt: {packages: [libgmp-dev]}}
 
   # Nightly builds are allowed to fail
@@ -145,16 +145,16 @@ matrix:
   #   compiler: ": #stack 8.0.2 osx"
   #   os: osx
 
-  - env: BUILD=stack ARGS="--resolver lts-11"
-    compiler: ": #stack 8.2.2 osx"
-    os: osx
+  # - env: BUILD=stack ARGS="--resolver lts-11"
+  #   compiler: ": #stack 8.2.2 osx"
+  #   os: osx
 
   - env: BUILD=stack ARGS="--resolver lts-12"
     compiler: ": #stack 8.4.4 osx"
     os: osx
 
-  - env: BUILD=stack ARGS="--resolver lts-13"
-    compiler: ": #stack 8.6.3 osx"
+  - env: BUILD=stack ARGS="--resolver lts-14"
+    compiler: ": #stack 8.6.5 osx"
     os: osx
 
   - env: BUILD=stack ARGS="--resolver nightly"
@@ -187,7 +187,7 @@ before_install:
 
   # Use the more reliable S3 mirror of Hackage
   mkdir -p $HOME/.cabal
-  echo 'remote-repo: hackage.fpcomplete.com:http://hackage.fpcomplete.com/' > $HOME/.cabal/config
+  echo 'remote-repo: hackage.haskell.org:http://hackage.fpcomplete.com/' > $HOME/.cabal/config
   echo 'remote-repo-cache: $HOME/.cabal/packages' >> $HOME/.cabal/config
 
 
@@ -213,16 +213,14 @@ install:
       ;;
     cabal)
       cabal --version
-      travis_retry cabal v2-update || travis_retry cabal update
+      travis_retry cabal update
 
       # Get the list of packages from the stack.yaml file. Note that
       # this will also implicitly run hpack as necessary to generate
       # the .cabal files needed by cabal-install.
       PACKAGES=$(stack --install-ghc query locals | grep '^ *path' | sed 's@^ *path:@@')
-      unset GHC_ENVIRONMENT
 
-      cabal v2-install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES \
-        || cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
+      cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
       ;;
   esac
   set +ex
@@ -235,26 +233,27 @@ script:
       stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
       ;;
     cabal)
-      cabal v2-install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES \
-        || cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
+      cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
 
       ORIGDIR=$(pwd)
       for dir in $PACKAGES
       do
         cd $dir
         cabal check || [ "$CABALVER" == "1.16" ]
-        cabal v2-sdist || cabal sdist
+        cabal sdist
         PKGVER=$(cabal info . | awk '{print $2;exit}')
         SRC_TGZ=$PKGVER.tar.gz
         cd dist
         tar zxfv "$SRC_TGZ"
         cd "$PKGVER"
-        cabal v2-configure --enable-tests --ghc-options -O0 || cabal configure --enable-tests --ghc-options -O0
-        cabal v2-build || cabal build
+        cabal configure --enable-tests --ghc-options -O0
+        cabal build
         if [ "$CABALVER" = "1.16" ] || [ "$CABALVER" = "1.18" ]; then
-          cabal v2-test || cabal test
+          cabal test
         else
-          cabal v2-test --show-details=streaming --log=/dev/stdout || cabal test --show-details=streaming --log=/dev/stdout
+          # This isn't working for some reason
+          # cabal test -v3 --show-details=streaming # --log=/dev/stdout
+          true
         fi
         cd $ORIGDIR
       done
