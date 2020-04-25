@@ -1,5 +1,14 @@
 # Changelog for password
 
+## 2.0.0.0
+
+-   Complete overhaul of the library to include hashing and checking
+    passwords with not just `scrypt`, but also `PBKDF2`, `bcrypt` and
+    `Argon2`.
+    [#8](https://github.com/cdepillabout/password/pull/8)
+-   `cryptonite` is now used as a dependency, instead of the `scrypt` package.
+-   Done away with abbreviating password (`Pass/pass` -> `Password/password`)
+
 ## 1.0.0.0
 
 -   `hashPassWithSalt` has switched function arguments for better currying.

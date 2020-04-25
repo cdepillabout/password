@@ -1,5 +1,11 @@
 # Changelog for password-instances
 
+## 2.0.0.0
+
+-   No longer re-exports anything from `password` to be
+    more predictable and in line with other `...-instances`
+    packages like `quickcheck-instances` and `vector-instances`.
+
 ## 1.0.0.0
 
 -   Various changes re-exported from the `password` package.
