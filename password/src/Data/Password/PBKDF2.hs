@@ -79,7 +79,7 @@ import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Char8 as C8 (length)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import qualified Data.Text as T (intercalate, pack, split)
+import qualified Data.Text as T (intercalate, pack, split, stripPrefix)
 import Data.Word (Word32)
 
 import Data.Password (
@@ -112,7 +112,10 @@ data PBKDF2
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 16
 -- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
--- >>> instance Arbitrary (PasswordHash PBKDF2) where arbitrary = hashPasswordWithSalt defaultParams <$> arbitrary <*> arbitrary
+-- >>> let testParams = defaultParams{ pbkdf2Iterations = 5000 }
+-- >>> let salt = Salt "abcdefghijklmnop"
+--
+-- -- >>> instance Arbitrary (PasswordHash PBKDF2) where arbitrary = hashPasswordWithSalt defaultParams <$> arbitrary <*> arbitrary
 
 -- | Hash the 'Password' using the /PBKDF2/ hash algorithm
 --
@@ -126,7 +129,6 @@ hashPassword = hashPasswordWithParams defaultParams
 -- $pbkdf2$25000$...$... (SHA1)
 -- $pbkdf2-sha256$29000$x9h7j/Ge8x6DMEao1VqrdQ$kra3R1wEnY8mPdDWOpTqOTINaAmZvRMcYd8u5OBQP9A
 -- $pbkdf2-sha512$25000$LyWE0HrP2RsjZCxlDGFMKQ$1vC5Ohk2mCS9b6akqsEfgeb4l74SF8XjH.SljXf3dMLHdlY1GK9ojcCKts6/asR4aPqBmk74nCDddU3tvSCJvw
--- pbkdf2:sha256:150000:etc.etc.
 
 -- | Parameters used in the /PBKDF2/ hashing algorithm.
 --
@@ -224,7 +226,10 @@ hashPasswordWithParams params pass = liftIO $ do
 checkPassword :: Password -> PasswordHash PBKDF2 -> PasswordCheck
 checkPassword pass (PasswordHash passHash) =
   fromMaybe PasswordCheckFail $ do
-    let paramList = T.split (== ':') passHash
+    -- This step makes it possible to also check the following format:
+    -- "pbkdf2:sha256:150000:etc.etc."
+    let passHash' = fromMaybe passHash $ "pbkdf2:" `T.stripPrefix` passHash
+        paramList = T.split (== ':') passHash'
     guard $ length paramList == 4
     let [ algT,
           iterationsT,

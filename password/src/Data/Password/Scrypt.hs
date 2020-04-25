@@ -105,8 +105,10 @@ data Scrypt
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 32
 -- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
+-- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
 -- >>> let testParams = defaultParams {scryptRounds = 10}
--- >>> instance Arbitrary (PasswordHash Scrypt) where arbitrary = hashPasswordWithSalt testParams <$> arbitrary <*> arbitrary
+--
+-- -- >>> instance Arbitrary (PasswordHash Scrypt) where arbitrary = hashPasswordWithSalt testParams <$> arbitrary <*> arbitrary
 
 -- | Hash the 'Password' using the /scrypt/ hash algorithm
 --

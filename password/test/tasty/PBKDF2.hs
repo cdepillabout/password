@@ -33,6 +33,11 @@ testPBKDF2 = testGroup "PBKDF2"
   , testFast Crypto.SHA1   20 PBKDF2.fastPBKDF2_SHA1
   , testFast Crypto.SHA256 32 PBKDF2.fastPBKDF2_SHA256
   , testFast Crypto.SHA512 64 PBKDF2.fastPBKDF2_SHA512
+  -- Check to see if a hash with "pbkdf2:" prefixed also works
+  , testCorrectPassword
+      "PBKDF2 (pbkdf2:sha-...)"
+      (hashPasswordWithParams $ _10k defaultParams)
+      (\pass (PasswordHash hash) -> checkPassword pass . PasswordHash $ "pbkdf2:" <> hash)
   ]
   where
     testIt s params = testCorrectPassword s (hashPasswordWithParams params) checkPassword

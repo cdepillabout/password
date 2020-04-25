@@ -100,6 +100,7 @@ data Bcrypt
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 16
 -- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
+-- >>> let salt = Salt "abcdefghijklmnop"
 --
 -- -- >>> instance Arbitrary (PasswordHash Bcrypt) where arbitrary = hashPasswordWithSalt 8 <$> arbitrary <*> arbitrary
 

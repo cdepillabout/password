@@ -31,7 +31,7 @@ In comparison to other algorithms, Argon2 is the least "battle-tested",
 being the newest algorithm out there.
 
 It is, however, recommended over @scrypt@ most of the time, and it also seems
-like it will become the go-to password algorithm if no vulnarabilities are
+like it might become the go-to password algorithm if no vulnarabilities are
 discovered within the next couple of years.
 -}
 
@@ -120,7 +120,9 @@ data Argon2
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 16
 -- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
 -- >>> let testParams = defaultParams {argon2TimeCost = 1}
--- >>> instance Arbitrary (PasswordHash Argon2) where arbitrary = hashPasswordWithSalt testParams <$> arbitrary <*> arbitrary
+-- >>> let salt = Salt "abcdefghijklmnop"
+--
+-- -- >>> instance Arbitrary (PasswordHash Argon2) where arbitrary = hashPasswordWithSalt testParams <$> arbitrary <*> arbitrary
 
 -- | Hash the 'Password' using the /Argon2/ hash algorithm
 --
