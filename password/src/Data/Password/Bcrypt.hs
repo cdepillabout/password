@@ -111,7 +111,7 @@ data Bcrypt
 -- >>> hashPassword $ mkPassword "foobar"
 -- PasswordHash {unPasswordHash = "$2b$08$..."}
 hashPassword :: MonadIO m => Password -> m (PasswordHash Bcrypt)
-hashPassword = hashPasswordWithParams 8
+hashPassword = hashPasswordWithParams 10
 
 -- | Hash a password with the given cost and also with the given 'Salt'
 -- instead of generating a random salt. Using 'hashPasswordWithSalt' is strongly __disadvised__,

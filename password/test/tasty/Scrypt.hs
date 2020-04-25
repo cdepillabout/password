@@ -16,20 +16,22 @@ import Internal
 
 testScrypt :: TestTree
 testScrypt = testGroup "scrypt"
-  [ testCorrectPassword "Scrypt (hashPassword)" hashPassword checkPassword
-  , testIncorrectPassword "Scrypt (hashPassword) fail" hashPassword checkPassword
+  [ testCorrectPassword "Scrypt (hashPassword)" hash8Rounds checkPassword
+  , testIncorrectPassword "Scrypt (hashPassword) fail" hash8Rounds checkPassword
   , testWithSalt "Scrypt (hashPasswordWithSalt)"
-                 (hashPasswordWithSalt defaultParams)
+                 (hashPasswordWithSalt defaultParams{ scryptRounds = 8 })
                  checkPassword
-  , testProperty "scrypt <-> cryptonite" $ withMaxSuccess 10 $ checkScrypt
+  , testProperty "scrypt <-> cryptonite" $ withMaxSuccess 10 checkScrypt
   ]
+  where
+    hash8Rounds = hashPasswordWithParams defaultParams{ scryptRounds = 8 }
 
 checkScrypt :: Text -> Property
 checkScrypt pass = ioProperty $ do
   s@(Scrypt.Salt salt) <- Scrypt.newSalt
-  let params = fromJust $ Scrypt.scryptParams 16 8 1
+  let params = fromJust $ Scrypt.scryptParams 8 8 1
       Scrypt.EncryptedPass scryptHash =
         Scrypt.encryptPass params s $ Scrypt.Pass $ encodeUtf8 pass
       PasswordHash ourHash =
-        hashPasswordWithSalt defaultParams (Salt salt) $ mkPassword pass
+        hashPasswordWithSalt defaultParams{ scryptRounds = 8 } (Salt salt) $ mkPassword pass
   return $ scryptHash === encodeUtf8 ourHash

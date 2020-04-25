@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 module PBKDF2 where
 
 import Crypto.Hash.Algorithms as Crypto (HashAlgorithm, SHA1(..), SHA256(..), SHA512(..))
@@ -14,28 +13,30 @@ import Data.Password.PBKDF2
 
 import Internal
 
+_10k :: Num a => a
+_10k = 10 * 1000
 
 testPBKDF2 :: TestTree
 testPBKDF2 = testGroup "PBKDF2"
-  [ testCorrectPassword "PBKDF2 (hashPassword)" hashPassword checkPassword
-  , testIncorrectPassword "PBKDF2 (hashPassword) fail" hashPassword checkPassword
-  , testWithSalt "PBKDF2 (hashPasswordWithSalt)"
-                 (hashPasswordWithSalt defaultParams)
-                 checkPassword
-  , let params = defaultParams{ pbkdf2Algorithm = PBKDF2_MD5, pbkdf2Iterations = 5000 }
-    in testCorrectPassword "PBKDF2 (md5)" (hashPasswordWithParams params) checkPassword
-  , testCorrectPassword "PBKDF2 (sha1)"
-                        (hashPasswordWithParams
-                            defaultParams{pbkdf2Algorithm = PBKDF2_SHA1})
-                        checkPassword
-  , testCorrectPassword "PBKDF2 (sha256)"
-                        (hashPasswordWithParams
-                            defaultParams{pbkdf2Algorithm = PBKDF2_SHA256})
-                        checkPassword
-  , testFast Crypto.SHA1 20 PBKDF2.fastPBKDF2_SHA1
+  [ testIt "PBKDF2 (hashPassword)" $ _10k defaultParams -- This is PBKDF2_SHA512
+  , testIncorrectPassword
+      "PBKDF2 (hashPassword) fail"
+      (hashPasswordWithParams $ _10k defaultParams)
+      checkPassword
+  , testWithSalt
+      "PBKDF2 (hashPasswordWithSalt)"
+      (hashPasswordWithSalt $ _10k defaultParams)
+      checkPassword
+  , testIt "PBKDF2 (md5)"    (defaultParams{ pbkdf2Algorithm = PBKDF2_MD5, pbkdf2Iterations = 5000 })
+  , testIt "PBKDF2 (sha1)"   (_10k defaultParams{ pbkdf2Algorithm = PBKDF2_SHA1 })
+  , testIt "PBKDF2 (sha256)" (_10k defaultParams{ pbkdf2Algorithm = PBKDF2_SHA256 })
+  , testFast Crypto.SHA1   20 PBKDF2.fastPBKDF2_SHA1
   , testFast Crypto.SHA256 32 PBKDF2.fastPBKDF2_SHA256
   , testFast Crypto.SHA512 64 PBKDF2.fastPBKDF2_SHA512
   ]
+  where
+    testIt s params = testCorrectPassword s (hashPasswordWithParams params) checkPassword
+    _10k params = params{ pbkdf2Iterations = 10 * 1000 }
 
 testFast :: (HashAlgorithm a, Show a)
          => a
@@ -52,6 +53,6 @@ testFast alg i f = testProperty s $ \pass salt -> run10 $
 
 cryptoParams :: Int -> PBKDF2.Parameters
 cryptoParams i = PBKDF2.Parameters {
-    PBKDF2.iterCounts = 25 * 1000,
+    PBKDF2.iterCounts = 5000,
     PBKDF2.outputLength = i
   }

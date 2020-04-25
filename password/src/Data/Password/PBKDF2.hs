@@ -267,10 +267,10 @@ algToText = \case
 
 textToAlg :: Text -> Maybe PBKDF2Algorithm
 textToAlg = \case
-  "md5" -> Just $ PBKDF2_MD5
-  "sha1" -> Just $ PBKDF2_SHA1
-  "sha256" -> Just $ PBKDF2_SHA256
-  "sha512" -> Just $ PBKDF2_SHA512
+  "md5" -> Just PBKDF2_MD5
+  "sha1" -> Just PBKDF2_SHA1
+  "sha256" -> Just PBKDF2_SHA256
+  "sha512" -> Just PBKDF2_SHA512
   _ -> Nothing
 
 -- Which function to use, based on the given algorithm
