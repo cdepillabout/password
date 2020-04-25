@@ -164,7 +164,7 @@ defaultParams = PBKDF2Params {
 --
 -- >>> let salt = Salt "abcdefghijklmnop"
 -- >>> hashPasswordWithSalt defaultParams salt (mkPassword "foobar")
--- PasswordHash {unPasswordHash = "sha512:25000:"}
+-- PasswordHash {unPasswordHash = "sha512:25000:YWJjZGVmZ2hpamtsbW5vcA==:JRElYYrOMe9OIV4LDxaLTgO9ho8fFBVofXoQcdngi7AcuH6Amvmlj2B0y6y1UtQciXXBepSCS+rpy8/vDDQvoA=="}
 --
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
 -- example is reproducible, but in general you should use 'hashPassword'. 'hashPassword'

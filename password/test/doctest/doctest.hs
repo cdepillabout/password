@@ -1,7 +1,7 @@
 module Main where
 
 import Build_doctests (flags, pkgs, module_sources)
-import Data.Foldable (traverse_)
+-- import Data.Foldable (traverse_)
 import System.Environment.Compat (unsetEnv)
 import Test.DocTest (doctest)
 

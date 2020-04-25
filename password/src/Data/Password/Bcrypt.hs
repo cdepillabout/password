@@ -100,6 +100,7 @@ data Bcrypt
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 16
 -- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
+--
 -- -- >>> instance Arbitrary (PasswordHash Bcrypt) where arbitrary = hashPasswordWithSalt 8 <$> arbitrary <*> arbitrary
 
 -- | Hash the 'Password' using the /bcrypt/ hash algorithm.
@@ -109,7 +110,7 @@ data Bcrypt
 -- or longer will match as long as the first 72 bytes are the same.
 --
 -- >>> hashPassword $ mkPassword "foobar"
--- PasswordHash {unPasswordHash = "$2b$08$..."}
+-- PasswordHash {unPasswordHash = "$2b$10$..."}
 hashPassword :: MonadIO m => Password -> m (PasswordHash Bcrypt)
 hashPassword = hashPasswordWithParams 10
 
