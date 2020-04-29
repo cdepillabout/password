@@ -58,9 +58,8 @@ module Data.Password.Scrypt (
   , hashPasswordWithSalt
   , Salt(..)
   , newSalt
-    -- * Unsafe Debugging Functions for Showing a Password
+  -- * Unsafe debugging function to show a Password
   , unsafeShowPassword
-  , unsafeShowPasswordText
   , -- * Setup for doctests.
     -- $setup
   ) where
@@ -82,7 +81,6 @@ import Data.Password (
        , Salt(..)
        , mkPassword
        , unsafeShowPassword
-       , unsafeShowPasswordText
        )
 import Data.Password.Internal (Password(..), from64, readT, showT, toBytes)
 import qualified Data.Password.Internal (newSalt)
@@ -113,7 +111,7 @@ data Scrypt
 -- | Hash the 'Password' using the /scrypt/ hash algorithm
 --
 -- >>> hashPassword $ mkPassword "foobar"
--- PasswordHash {unPasswordHash = "16|8|1|...|..."}
+-- PasswordHash {unPasswordHash = "14|8|1|...|..."}
 hashPassword :: MonadIO m => Password -> m (PasswordHash Scrypt)
 hashPassword = hashPasswordWithParams defaultParams
 
@@ -127,7 +125,7 @@ data ScryptParams = ScryptParams {
   scryptSalt :: Word32,
   -- ^ Bytes to randomly generate as a unique salt, default is __32__
   scryptRounds :: Word32,
-  -- ^ log2(N) rounds to hash, default is __16__ (i.e. 2^16 rounds)
+  -- ^ log2(N) rounds to hash, default is __14__ (i.e. 2^14 rounds)
   scryptBlockSize :: Word32,
   -- ^ Block size, default is __8__
   --
@@ -142,11 +140,14 @@ data ScryptParams = ScryptParams {
 
 -- | Default parameters for the /scrypt/ algorithm.
 --
+-- >>> defaultParams
+-- ScryptParams {scryptSalt = 32, scryptRounds = 14, scryptBlockSize = 8, scryptParallelism = 1, scryptOutputLength = 64}
+--
 -- @since 2.0.0.0
 defaultParams :: ScryptParams
 defaultParams = ScryptParams {
   scryptSalt = 32,
-  scryptRounds = 16,
+  scryptRounds = 14,
   scryptBlockSize = 8,
   scryptParallelism = 1,
   scryptOutputLength = 64
@@ -164,7 +165,7 @@ defaultParams = ScryptParams {
 --
 -- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
 -- >>> hashPasswordWithSalt defaultParams salt (mkPassword "foobar")
--- PasswordHash {unPasswordHash = "16|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|BH0oidcU/4Ec7Co4EM+LQ6xp39//MnOUhqmNeOnOz/nl4JHNXEJBw5dPdi3wTStYr+e1SmJkzHJrMvUJYNxK1w=="}
+-- PasswordHash {unPasswordHash = "14|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|nENDaqWBmPKapAqQ3//H0iBImweGjoTqn5SvBS8Mc9FPFbzq6w65maYPZaO+SPamVZRXQjARQ8Y+5rhuDhjIhw=="}
 --
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
 -- example is reproducible, but in general you should use 'hashPassword'. 'hashPassword'

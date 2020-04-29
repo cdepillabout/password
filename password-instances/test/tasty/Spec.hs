@@ -10,7 +10,7 @@ import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
 import Web.HttpApiData (FromHttpApiData(..))
 
-import Data.Password (Password, PasswordHash(..), unsafeShowPasswordText)
+import Data.Password (Password, PasswordHash(..), unsafeShowPassword)
 import Data.Password.Instances()
 
 
@@ -34,7 +34,7 @@ instance FromJSON TestUser where
 aesonTest :: TestTree
 aesonTest = testCase "Password (Aeson)" $
     assertEqual "password doesn't match" (Just testPassword) $
-      unsafeShowPasswordText . password <$> parseMaybe parseJSON testUser
+      unsafeShowPassword . password <$> parseMaybe parseJSON testUser
   where
     testPassword = "testpass"
     testUser = object
@@ -45,7 +45,7 @@ aesonTest = testCase "Password (Aeson)" $
 fromHttpApiDataTest :: TestTree
 fromHttpApiDataTest = testCase "Password (FromHttpApiData)" $
     assertEqual "password doesn't match" (Right testPassword) $
-      unsafeShowPasswordText <$> parseUrlPiece testPassword
+      unsafeShowPassword <$> parseUrlPiece testPassword
   where
     testPassword = "passtest"
 

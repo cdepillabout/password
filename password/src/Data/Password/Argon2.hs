@@ -66,9 +66,8 @@ module Data.Password.Argon2 (
   , hashPasswordWithSalt
   , Salt(..)
   , newSalt
-  -- * Unsafe Debugging Functions for Showing a Password
+  -- * Unsafe debugging function to show a Password
   , unsafeShowPassword
-  , unsafeShowPasswordText
   , -- * Setup for doctests.
     -- $setup
   ) where
@@ -82,7 +81,7 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Base64 (encodeBase64)
 import qualified Data.ByteString.Char8 as C8 (length)
 import Data.Maybe (fromMaybe)
-#if MIN_VERSION_base(4,9,0)
+#if! MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
@@ -95,7 +94,6 @@ import Data.Password (
        , Salt(..)
        , mkPassword
        , unsafeShowPassword
-       , unsafeShowPasswordText
        )
 import Data.Password.Internal (Password(..), from64, readT, showT, toBytes)
 import qualified Data.Password.Internal (newSalt)
@@ -163,6 +161,9 @@ data Argon2Params = Argon2Params {
 } deriving (Eq, Show)
 
 -- | Default parameters for the /Argon2/ algorithm.
+--
+-- >>> defaultParams
+-- Argon2Params {argon2Salt = 16, argon2Variant = Argon2id, argon2Version = Version13, argon2MemoryCost = 65536, argon2TimeCost = 2, argon2Parallelism = 1, argon2OutputLength = 32}
 --
 -- @since 2.0.0.0
 defaultParams :: Argon2Params

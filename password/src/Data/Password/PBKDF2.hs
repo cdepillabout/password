@@ -62,9 +62,8 @@ module Data.Password.PBKDF2 (
   , hashPasswordWithSalt
   , Salt(..)
   , newSalt
-  -- * Unsafe Debugging Functions for Showing a Password
+  -- * Unsafe debugging function to show a Password
   , unsafeShowPassword
-  , unsafeShowPasswordText
   , -- * Setup for doctests.
     -- $setup
   ) where
@@ -88,7 +87,6 @@ import Data.Password (
        , Salt(..)
        , mkPassword
        , unsafeShowPassword
-       , unsafeShowPasswordText
        )
 import Data.Password.Internal (Password(..), from64, readT, toBytes)
 import qualified Data.Password.Internal (newSalt)
@@ -149,6 +147,9 @@ data PBKDF2Params = PBKDF2Params {
 } deriving (Eq, Show)
 
 -- | Default parameters for the /PBKDF2/ algorithm.
+--
+-- >>> defaultParams
+-- PBKDF2Params {pbkdf2Salt = 16, pbkdf2Algorithm = PBKDF2_SHA512, pbkdf2Iterations = 25000, pbkdf2OutputLength = 64}
 --
 -- @since 2.0.0.0
 defaultParams :: PBKDF2Params

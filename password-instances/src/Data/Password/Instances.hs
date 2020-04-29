@@ -91,7 +91,7 @@ instance TypeError (ErrMsg "HttpApiData") => ToHttpApiData Password where
 -- >>> let pass = mkPassword "foobar"
 -- >>> let hashedPassword = hashPasswordWithSalt defaultParams salt pass
 -- >>> toPersistValue hashedPassword
--- PersistText "16|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|BH0oidcU/4Ec7Co4EM+LQ6xp39//MnOUhqmNeOnOz/nl4JHNXEJBw5dPdi3wTStYr+e1SmJkzHJrMvUJYNxK1w=="
+-- PersistText "14|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|nENDaqWBmPKapAqQ3//H0iBImweGjoTqn5SvBS8Mc9FPFbzq6w65maYPZaO+SPamVZRXQjARQ8Y+5rhuDhjIhw=="
 --
 -- In the example above, the long 'PersistText' will be the value you store in
 -- the database.

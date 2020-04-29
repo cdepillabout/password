@@ -13,7 +13,7 @@ main :: IO ()
 main = defaultMain $ localOption (NumThreads 1) $
   testGroup "Password"
     [ testProperty "Password" $ \pass ->
-        unsafeShowPasswordText (mkPassword pass) === pass
+        unsafeShowPassword (mkPassword pass) === pass
     , testArgon2
     , testBcrypt
     , testPBKDF2

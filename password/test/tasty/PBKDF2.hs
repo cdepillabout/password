@@ -5,7 +5,7 @@ module PBKDF2 where
 import Crypto.Hash.Algorithms as Crypto (HashAlgorithm, SHA1(..), SHA256(..), SHA512(..))
 import Crypto.KDF.PBKDF2 as PBKDF2
 import Data.ByteString (ByteString)
-#if MIN_VERSION_base(4,9,0)
+#if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
 import Test.Tasty

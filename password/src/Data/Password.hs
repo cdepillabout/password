@@ -37,9 +37,9 @@ topic. (And if you're already knowledgeable enough, you know what to do)
 
 == Special instances
 
-The real benefit of this module is that there is a corresponding
+The real benefit of this module is that there is an accompanying
 <http://hackage.haskell.org/package/password-instances password-instances>
-module that provides canonical typeclass instances for
+package that provides canonical typeclass instances for
 'Password' and 'PasswordHash' for many common typeclasses, like
 <http://hackage.haskell.org/package/aeson/docs/Data-Aeson.html#t:FromJSON FromJSON> from
 <http://hackage.haskell.org/package/aeson aeson>,
@@ -47,7 +47,7 @@ module that provides canonical typeclass instances for
 from
 <http://hackage.haskell.org/package/persistent persistent>, etc.
 
-See the <http://hackage.haskell.org/package/password-instances password-instances> module for more information.
+See the <http://hackage.haskell.org/package/password-instances password-instances> package for more information.
 -}
 
 module Data.Password (
@@ -59,9 +59,8 @@ module Data.Password (
   , PasswordCheck(..)
   , Salt(..)
   , newSalt
-    -- * Unsafe Debugging Functions for Showing a Password
+    -- * Unsafe debugging function to show a Password
   , unsafeShowPassword
-  , unsafeShowPasswordText
   ) where
 
 import Data.Password.Internal

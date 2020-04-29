@@ -19,9 +19,8 @@ module Data.Password.Internal (
   , PasswordCheck(..)
   , Salt(..)
   , newSalt
-  -- * Unsafe functions
+  -- * Unsafe function
   , unsafeShowPassword
-  , unsafeShowPasswordText
   -- * Utility
   , toBytes
   , fromBytes
@@ -85,19 +84,13 @@ newSalt i = liftIO $ Salt <$> getRandomBytes i
 
 -- | This is an unsafe function that shows a password in plain-text.
 --
--- >>> unsafeShowPasswordText ("foobar" :: Password)
+-- >>> unsafeShowPassword ("foobar" :: Password)
 -- "foobar"
 --
 -- You should generally not use this function.
-unsafeShowPassword :: Password -> String
-unsafeShowPassword = unpack . unsafeShowPasswordText
+unsafeShowPassword :: Password -> Text
+unsafeShowPassword (Password pass) = pass
 {-# INLINE unsafeShowPassword #-}
-
--- | This is like 'unsafeShowPassword' but produces a 'Text' instead of a
--- 'String'.
-unsafeShowPasswordText :: Password -> Text
-unsafeShowPasswordText (Password pass) = pass
-{-# INLINE unsafeShowPasswordText #-}
 
 -- | A hashed password.
 --

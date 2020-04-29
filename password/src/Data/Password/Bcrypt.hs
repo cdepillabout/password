@@ -57,11 +57,8 @@ module Data.Password.Bcrypt (
   , hashPasswordWithSalt
   , Salt(..)
   , newSalt
-  -- * Unsafe Debugging Functions for Showing a Password
-  --
-  -- | Use at your own risk
+  -- * Unsafe debugging function to show a Password
   , unsafeShowPassword
-  , unsafeShowPasswordText
   , -- * Setup for doctests.
     -- $setup
   ) where
@@ -76,7 +73,6 @@ import Data.Password (
        , Salt(..)
        , mkPassword
        , unsafeShowPassword
-       , unsafeShowPasswordText
        )
 import Data.Password.Internal (Password(..), fromBytes, toBytes)
 import qualified Data.Password.Internal (newSalt)
