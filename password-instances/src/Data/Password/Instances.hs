@@ -1,9 +1,12 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-|
@@ -22,13 +25,14 @@ See the "Data.Password" module for more information.
 
 module Data.Password.Instances () where
 
-import Data.Aeson (FromJSON(..))
+import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Password (Password, PasswordHash(..), mkPassword)
 import Data.Text.Encoding as TE (decodeUtf8)
 import Database.Persist (PersistValue(..))
 import Database.Persist.Class (PersistField(..))
 import Database.Persist.Sql (PersistFieldSql(..))
-import Web.HttpApiData (FromHttpApiData(..))
+import GHC.TypeLits (TypeError, ErrorMessage(..))
+import Web.HttpApiData (FromHttpApiData(..), ToHttpApiData(..))
 
 
 -- $setup
@@ -58,6 +62,15 @@ import Web.HttpApiData (FromHttpApiData(..))
 instance FromJSON Password where
   parseJSON = fmap mkPassword . parseJSON
 
+type ErrMsg e = 'Text "Warning! Tried to convert plain-text Password to " ':<>: 'Text e ':<>: 'Text "!"
+          ':$$: 'Text "  This is likely a security leak. Please make sure whether this was intended."
+          ':$$: 'Text "  If this is intended, please use 'unsafeShowPassword' before converting to " ':<>: 'Text e
+          ':$$: 'Text ""
+
+-- | Type error! Do not use 'toJSON' on a 'Password'!
+instance TypeError (ErrMsg "JSON") => ToJSON Password where
+  toJSON = error "unreachable"
+
 -- | This instance allows a 'Password' to be created with functions like
 -- 'Web.HttpApiData.parseUrlPiece' or 'Web.HttpApiData.parseQueryParam'.
 --
@@ -66,6 +79,10 @@ instance FromJSON Password where
 -- Right "foobar"
 instance FromHttpApiData Password where
   parseUrlPiece = fmap mkPassword . parseUrlPiece
+
+-- | Type error! Do not transmit plain-text 'Password's over HTTP!
+instance TypeError (ErrMsg "HttpApiData") => ToHttpApiData Password where
+  toUrlPiece = error "unreachable"
 
 -- | This instance allows a 'PasswordHash' to be stored as a field in a database using
 -- "Database.Persist".
@@ -90,3 +107,8 @@ instance PersistField (PasswordHash a) where
 -- | This instance allows a 'PasswordHash' to be stored as a field in an SQL
 -- database in "Database.Persist.Sql".
 deriving newtype instance PersistFieldSql (PasswordHash a)
+
+-- | Type error! Do not store plain-text 'Password's in your database!
+instance TypeError (ErrMsg "PersistValue") => PersistField Password where
+  toPersistValue = error "unreachable"
+  fromPersistValue = error "unreachable"
