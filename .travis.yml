@@ -102,15 +102,15 @@ jobs:
   #   compiler: ": #stack 8.0.2"
   #   addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--resolver lts-11"
+  - env: BUILD=stack ARGS="--resolver lts-11 --stack-yaml stack-lts-14.yaml"
     compiler: ": #stack 8.2.2"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--resolver lts-12"
+  - env: BUILD=stack ARGS="--resolver lts-12 --stack-yaml stack-lts-14.yaml"
     compiler: ": #stack 8.4.4"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--resolver lts-14"
+  - env: BUILD=stack ARGS="--resolver lts-14 --stack-yaml stack-lts-14.yaml"
     compiler: ": #stack 8.6.5"
     addons: {apt: {packages: [libgmp-dev]}}
 
@@ -149,15 +149,15 @@ jobs:
   #   compiler: ": #stack 8.0.2 osx"
   #   os: osx
 
-  - env: BUILD=stack ARGS="--resolver lts-11"
+  - env: BUILD=stack ARGS="--resolver lts-11 --stack-yaml stack-lts-14.yaml"
     compiler: ": #stack 8.2.2 osx"
     os: osx
 
-  - env: BUILD=stack ARGS="--resolver lts-12"
+  - env: BUILD=stack ARGS="--resolver lts-12 --stack-yaml stack-lts-14.yaml"
     compiler: ": #stack 8.4.4 osx"
     os: osx
 
-  - env: BUILD=stack ARGS="--resolver lts-14"
+  - env: BUILD=stack ARGS="--resolver lts-14 --stack-yaml stack-lts-14.yaml"
     compiler: ": #stack 8.6.5 osx"
     os: osx
 
@@ -170,7 +170,7 @@ jobs:
     os: osx
 
   allow_failures:
-  - env: BUILD=cabal GHCVER=head  CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
+  - env: BUILD=cabal GHCVER=head CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
   - env: BUILD=stack ARGS="--resolver nightly"
   - os: osx
 
