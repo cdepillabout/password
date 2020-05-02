@@ -18,17 +18,17 @@ designed to be costly by requiring large amounts of memory.
 == Other algorithms
 
 @scrypt@ does increase the memory requirement in contrast to
-@bcrypt@ and @PBKDF2@, but it turns out it is not as optimal
-as it could be, and thus others have set out to search for
-other algorithms that do fulfill on their promises. @Argon2@
-seems to be the winner in that search.
+@"Bcrypt"@ and @"PBKDF2"@, but it turns out it is not as optimal
+as it could be, and thus others have set out to search for other
+algorithms that do fulfill on their promises. @"Argon2"@ seems
+to be the winner in that search.
 
 That is not to say using @scrypt@ somehow means your passwords
 won't be properly protected. The cryptography is sound and
 thus is fine for protection against brute-force attacks.
 Because of the memory cost, it is generally advised to use
-@bcrypt@ if you're not sure this might be a problem on your
-system.
+@"Bcrypt"@ if you're not sure this might be a
+problem on your system.
 -}
 
 module Data.Password.Scrypt (
@@ -44,20 +44,17 @@ module Data.Password.Scrypt (
   , checkPassword
   , PasswordCheck(..)
   -- * Hashing Manually (scrypt)
-  --
-  -- | If you have any doubt about what the parameters do or mean,
-  -- please just use 'hashPassword'.
   , hashPasswordWithParams
-  , ScryptParams(..)
   , defaultParams
+  , ScryptParams(..)
   -- ** Hashing with salt (DISADVISED)
   --
   -- | Hashing with a set 'Salt' is almost never what you want
   -- to do. Use 'hashPassword' or 'hashPasswordWithParams' to have
   -- automatic generation of randomized salts.
   , hashPasswordWithSalt
-  , Salt(..)
   , newSalt
+  , Salt(..)
   -- * Unsafe debugging function to show a Password
   , unsafeShowPassword
   , -- * Setup for doctests.
@@ -105,10 +102,10 @@ data Scrypt
 -- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
 -- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
 -- >>> let testParams = defaultParams {scryptRounds = 10}
---
+
 -- -- >>> instance Arbitrary (PasswordHash Scrypt) where arbitrary = hashPasswordWithSalt testParams <$> arbitrary <*> arbitrary
 
--- | Hash the 'Password' using the /scrypt/ hash algorithm
+-- | Hash the 'Password' using the 'Scrypt' hash algorithm
 --
 -- >>> hashPassword $ mkPassword "foobar"
 -- PasswordHash {unPasswordHash = "14|8|1|...|..."}
@@ -118,7 +115,7 @@ hashPassword = hashPasswordWithParams defaultParams
 -- TODO: Add way to parse the following. From [https://hashcat.net/wiki/doku.php?id=example_hashes]
 -- SCRYPT:1024:1:1:MDIwMzMwNTQwNDQyNQ==:5FW+zWivLxgCWj7qLiQbeC8zaNQ+qdO0NUinvqyFcfo=
 
--- | Parameters used in the /scrypt/ hashing algorithm.
+-- | Parameters used in the 'Scrypt' hashing algorithm.
 --
 -- @since 2.0.0.0
 data ScryptParams = ScryptParams {
@@ -138,7 +135,7 @@ data ScryptParams = ScryptParams {
   -- ^ Output key length in bytes, default is __64__
 } deriving (Eq, Show)
 
--- | Default parameters for the /scrypt/ algorithm.
+-- | Default parameters for the 'Scrypt' algorithm.
 --
 -- >>> defaultParams
 -- ScryptParams {scryptSalt = 32, scryptRounds = 14, scryptBlockSize = 8, scryptParallelism = 1, scryptOutputLength = 64}
@@ -154,7 +151,7 @@ defaultParams = ScryptParams {
 }
 
 -- | Hash a password with the given 'ScryptParams' and also with the given 'Salt'
--- instead of generating a random salt using 'scryptSalt' from 'ScryptParams'.
+-- instead of a randomly generated salt using 'scryptSalt' from 'ScryptParams'.
 -- Using 'hashPasswordWithSalt' is strongly __disadvised__ and 'hashPasswordWithParams'
 -- should be used instead. /Never use a static salt in production applications!/
 --
@@ -196,14 +193,14 @@ hashPasswordWithSalt' ScryptParams{..} (Salt salt) (Password pass) =
       }
 
 
--- | Hash a password using the /scrypt/ algorithm with the given 'ScryptParams'.
+-- | Hash a password using the 'Scrypt' algorithm with the given 'ScryptParams'.
 --
 -- __N.B.__: If you have any doubt in your knowledge of cryptography and/or the
--- /scrypt/ algorithm, please just use 'hashPassword'.
+-- 'Scrypt' algorithm, please just use 'hashPassword'.
 --
 -- Advice for setting the parameters:
 --
--- * Memory used is about @2 ^ 'scryptRounds' * 'scryptBlockSize' * 128@
+-- * Memory used is about: @(2 ^ 'scryptRounds') * 'scryptBlockSize' * 128@
 -- * Increasing 'scryptBlockSize' and 'scryptRounds' will increase CPU time
 --   and memory used.
 -- * Increasing 'scryptParallelism' will increase CPU time. (since this

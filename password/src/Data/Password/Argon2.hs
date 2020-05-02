@@ -16,7 +16,7 @@ Portability : POSIX
 @Argon2@ is probably the newest password algorithm out there. Argon2 was
 selected as the winner of the Password Hashing Competition in July 2015.
 
-It has three variants, namely Argon2d, Argon2i and Argon2id. These protect
+It has three variants, namely 'Argon2d', 'Argon2i' and 'Argon2id'. These protect
 against GPU cracking attacks, side-channel attacks, and both, respectively.
 
 All three modes allow specification by three parameters that control:
@@ -30,9 +30,9 @@ All three modes allow specification by three parameters that control:
 In comparison to other algorithms, Argon2 is the least "battle-tested",
 being the newest algorithm out there.
 
-It is, however, recommended over @scrypt@ most of the time, and it also seems
-like it might become the go-to password algorithm if no vulnarabilities are
-discovered within the next couple of years.
+It is, however, recommended over @"Scrypt"@ most of the time,
+and it also seems like it might become the go-to password algorithm if no
+vulnarabilities are discovered within the next couple of years.
 -}
 
 -- I think the portability is broadened to
@@ -50,12 +50,9 @@ module Data.Password.Argon2 (
   , checkPassword
   , PasswordCheck(..)
   -- * Hashing Manually (Argon2)
-  --
-  -- | If you have any doubt about what the parameters do or mean,
-  -- please just use 'hashPassword'.
   , hashPasswordWithParams
-  , Argon2Params(..)
   , defaultParams
+  , Argon2Params(..)
   , Argon2.Variant(..)
   , Argon2.Version(..)
   -- ** Hashing with salt (DISADVISED)
@@ -64,8 +61,8 @@ module Data.Password.Argon2 (
   -- to do. Use 'hashPassword' or 'hashPasswordWithParams' to have
   -- automatic generation of randomized salts.
   , hashPasswordWithSalt
-  , Salt(..)
   , newSalt
+  , Salt(..)
   -- * Unsafe debugging function to show a Password
   , unsafeShowPassword
   , -- * Setup for doctests.
@@ -119,48 +116,48 @@ data Argon2
 -- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
 -- >>> let testParams = defaultParams {argon2TimeCost = 1}
 -- >>> let salt = Salt "abcdefghijklmnop"
---
+
 -- -- >>> instance Arbitrary (PasswordHash Argon2) where arbitrary = hashPasswordWithSalt testParams <$> arbitrary <*> arbitrary
 
--- | Hash the 'Password' using the /Argon2/ hash algorithm
+-- | Hash the 'Password' using the 'Argon2' hash algorithm
 --
 -- >>> hashPassword $ mkPassword "foobar"
 -- PasswordHash {unPasswordHash = "$argon2id$v=19$m=65536,t=2,p=1$...$..."}
 hashPassword :: MonadIO m => Password -> m (PasswordHash Argon2)
 hashPassword = hashPasswordWithParams defaultParams
 
--- | Parameters used in the /Argon2/ hashing algorithm.
+-- | Parameters used in the 'Argon2' hashing algorithm.
 --
 -- @since 2.0.0.0
 data Argon2Params = Argon2Params {
   argon2Salt :: Word32,
   -- ^ Bytes to randomly generate as a unique salt, default is __16__
   --
-  -- Limits are min: @8@, and max: @2 ^ 32 -1@
+  -- Limits are min: @8@, and max: @(2 ^ 32) - 1@
   argon2Variant :: Argon2.Variant,
-  -- ^ Which variant of Argon2 to use ('Argon2d', 'Argon2i' or 'Argon2id')
+  -- ^ Which variant of Argon2 to use, default is __'Argon2id'__
   argon2Version :: Argon2.Version,
-  -- ^ Which version of Argon2 to use ('Version10' or 'Version13')
+  -- ^ Which version of Argon2 to use, default is __'Version13'__
   argon2MemoryCost :: Word32,
-  -- ^ Memory cost, default is __65536__ (i.e. 64MB)
+  -- ^ Memory cost, given in /kibibytes/, default is __65536__ (i.e. 64MB)
   --
   -- Limits are min: @8 * 'argon2Parallelism'@, and max is addressing
-  -- space / 2, or @2 ^ 32 - 1@, whichever is lower.
+  -- space / 2, or @(2 ^ 32) - 1@, whichever is lower.
   argon2TimeCost :: Word32,
   -- ^ Amount of computation realized, default is __2__
   --
-  -- Limits are min: @1@, and max: @2 ^ 32 - 1@
+  -- Limits are min: @1@, and max: @(2 ^ 32) - 1@
   argon2Parallelism :: Word32,
   -- ^ Parallelism factor, default is __1__
   --
-  -- Limits are min: @1@, and max: @2 ^ 24 - 1@
+  -- Limits are min: @1@, and max: @(2 ^ 24) - 1@
   argon2OutputLength :: Word32
   -- ^ Output key length in bytes, default is __32__
   --
-  -- Limits are min: @4@, and max: @2 ^ 32 - 1@
+  -- Limits are min: @4@, and max: @(2 ^ 32) - 1@
 } deriving (Eq, Show)
 
--- | Default parameters for the /Argon2/ algorithm.
+-- | Default parameters for the 'Argon2' algorithm.
 --
 -- >>> defaultParams
 -- Argon2Params {argon2Salt = 16, argon2Variant = Argon2id, argon2Version = Version13, argon2MemoryCost = 65536, argon2TimeCost = 2, argon2Parallelism = 1, argon2OutputLength = 32}
@@ -223,10 +220,10 @@ hashPasswordWithSalt' Argon2Params{..} (Salt salt) (Password pass) =
         version = argon2Version
       }
 
--- | Hash a password using the /Argon2/ algorithm with the given 'Argon2Params'.
+-- | Hash a password using the 'Argon2' algorithm with the given 'Argon2Params'.
 --
 -- __N.B.__: If you have any doubt in your knowledge of cryptography and/or the
--- /Argon2/ algorithm, please just use 'hashPassword'.
+-- 'Argon2' algorithm, please just use 'hashPassword'.
 --
 -- Advice to set the parameters:
 --

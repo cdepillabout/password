@@ -12,7 +12,7 @@ hashed passwords.
 
 == API
 
-Every supported hashing algorithm has its own module (e.g. "Data.Password.BCrypt")
+Every supported hashing algorithm has its own module (e.g. "Data.Password.Bcrypt")
 which exports its own @hashPassword@ and @checkPassword@ functions, as well as all the
 types and functions in this module. If you are not sure about the specifics of an
 algorithm you want to use, you can rest assured that by using the @hashPassword@ function
@@ -24,16 +24,17 @@ function of the respective algorithm.
 
 == Algorithms
 
-Generally, the most "secure" algorithm is believed to be @Argon2@, then @scrypt@,
-then @bcrypt@, and lastly @PBKDF2@. @bcrypt@ and @PBKDF2@ are the most established
-algorithms, so they have been tried and tested, though they both lack a memory cost,
-and therefore have a greater vulnerability to specialized hardware attacks.
+Generally, the most "secure" algorithm is believed to be @"Argon2"@,
+then @"Scrypt"@, then @"Bcrypt"@, and lastly @"PBKDF2"@. @"Bcrypt"@ and @"PBKDF2"@
+are the most established algorithms, so they have been tried and tested, though
+they both lack a memory cost, and therefore have a greater vulnerability to
+specialized hardware attacks.
 
-When choosing an algorithm, and you have no idea which to pick, just go for @bcrypt@
-if your password does not need the highest security possible. It's still a fine way
-for hashing passwords, and the cost is easily adjustable if needed. If your needs
-do require stronger protection, you should find someone who can advise you on this
-topic. (And if you're already knowledgeable enough, you know what to do)
+When choosing an algorithm, and you have no idea which to pick, just go for
+@"Bcrypt"@ if your password does not need the highest security possible.
+It's still a fine way for hashing passwords, and the cost is easily adjustable if needed.
+If your needs do require stronger protection, you should find someone who can advise you
+on this topic. (And if you're already knowledgeable enough, you know what to do)
 
 == Special instances
 
@@ -65,7 +66,7 @@ module Data.Password (
 
 import Data.Password.Internal
 
--- TODO: Create code for checking that plaintext passwords conform to some sort of
+-- TODO: Create code for checking that plain-text passwords conform to some sort of
 -- password policy.
 
 -- data PasswordPolicy = PasswordPolicy

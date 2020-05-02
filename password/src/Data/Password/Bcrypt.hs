@@ -20,16 +20,16 @@ and generally considered to provide a good amount of security.
 
 == Other algorithms
 
-@bcrypt@, together with @PBKDF2@, are only computationally intensive.
+@bcrypt@, together with @"PBKDF2"@, are only computationally intensive.
 And to protect from specialized hardware, new algorithms have been
-developed that are also resource intensive, like @scrypt@ and @Argon2@.
-Not having high resource demands, means an attacker with specialized
-software could take less time to brute-force a password, though with
-the default cost (8) and a decently long password, the amount of
-time to brute-force would still be significant.
+developed that are also resource intensive, like @"Scrypt"@ and
+@"Argon2"@. Not having high resource demands, means an attacker with
+specialized software could take less time to brute-force a password,
+though with the default cost (10) and a decently long password,
+the amount of time to brute-force would still be significant.
 
 This the algorithm to use if you're not sure about your needs, but
-just want a decent, proven, way to encrypt your passwords.
+just want a decent, proven way to encrypt your passwords.
 -}
 
 module Data.Password.Bcrypt (
@@ -45,9 +45,6 @@ module Data.Password.Bcrypt (
   , checkPassword
   , PasswordCheck(..)
   -- * Hashing Manually (bcrypt)
-  --
-  -- | If you have any doubt about what the cost does or means,
-  -- please just use 'hashPassword'.
   , hashPasswordWithParams
   -- ** Hashing with salt (DISADVISED)
   --
@@ -55,8 +52,8 @@ module Data.Password.Bcrypt (
   -- to do. Use 'hashPassword' or 'hashPasswordWithParams' to have
   -- automatic generation of randomized salts.
   , hashPasswordWithSalt
-  , Salt(..)
   , newSalt
+  , Salt(..)
   -- * Unsafe debugging function to show a Password
   , unsafeShowPassword
   , -- * Setup for doctests.
@@ -97,7 +94,7 @@ data Bcrypt
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 16
 -- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
 -- >>> let salt = Salt "abcdefghijklmnop"
---
+
 -- -- >>> instance Arbitrary (PasswordHash Bcrypt) where arbitrary = hashPasswordWithSalt 8 <$> arbitrary <*> arbitrary
 
 -- | Hash the 'Password' using the /bcrypt/ hash algorithm.

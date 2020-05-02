@@ -47,9 +47,11 @@ import Text.Read (readMaybe)
 -- You should be careful with 'Password'. Make sure not to write it to logs or
 -- store it in a database.
 --
--- You can construct a 'Password' by using the 'mkPassword' function or as literal strings together with the
--- OverloadedStrings pragma (or manually, by using 'fromString' on a 'String').
--- Alternatively, you could also use some of the instances in the @password-instances@ library.
+-- You can construct a 'Password' by using the 'mkPassword' function or as literal
+-- strings together with the OverloadedStrings pragma (or manually, by using
+-- 'fromString' on a 'String'). Alternatively, you could also use some of the
+-- instances in the <http://hackage.haskell.org/package/password-instances password-instances>
+-- library.
 newtype Password = Password Text
   deriving (IsString)
 
@@ -100,8 +102,8 @@ newtype PasswordHash a = PasswordHash
   { unPasswordHash :: Text
   } deriving (Eq, Ord, Read, Show)
 
--- | The result of a checking a password against a hashed version. This is
--- returned by checkPassword.
+-- | The result of checking a password against a hashed version. This is
+-- returned by the @checkPassword@ functions.
 data PasswordCheck
   = PasswordCheckSuccess
   -- ^ The password check was successful. The plain-text password matches the

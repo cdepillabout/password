@@ -28,8 +28,8 @@ passwords.
 
 Seeing as PBKDF2 is shown to be very weak in terms of protection
 against GPU cracking attacks, it is generally advised to go with
-@bcrypt@, if not @scrypt@ or @Argon2@. When unsure, @bcrypt@ would
-probably be the safest option, as it has no memory cost which
+@"Bcrypt"@, if not @"Scrypt"@ or @"Argon2"@. When unsure, @"Bcrypt"@
+would probably be the safest option, as it has no memory cost which
 could become a problem if not properly calibrated to the machine
 doing the password verifications.
 -}
@@ -47,21 +47,18 @@ module Data.Password.PBKDF2 (
   , checkPassword
   , PasswordCheck(..)
   -- * Hashing Manually (PBKDF2)
-  --
-  -- | If you have any doubt about what the parameters do or mean,
-  -- please just use 'hashPassword'.
   , hashPasswordWithParams
+  , defaultParams
   , PBKDF2Params(..)
   , PBKDF2Algorithm(..)
-  , defaultParams
   -- ** Hashing with salt (DISADVISED)
   --
   -- | Hashing with a set 'Salt' is almost never what you want
   -- to do. Use 'hashPassword' or 'hashPasswordWithParams' to have
   -- automatic generation of randomized salts.
   , hashPasswordWithSalt
-  , Salt(..)
   , newSalt
+  , Salt(..)
   -- * Unsafe debugging function to show a Password
   , unsafeShowPassword
   , -- * Setup for doctests.
@@ -112,10 +109,10 @@ data PBKDF2
 -- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
 -- >>> let testParams = defaultParams{ pbkdf2Iterations = 5000 }
 -- >>> let salt = Salt "abcdefghijklmnop"
---
+
 -- -- >>> instance Arbitrary (PasswordHash PBKDF2) where arbitrary = hashPasswordWithSalt defaultParams <$> arbitrary <*> arbitrary
 
--- | Hash the 'Password' using the /PBKDF2/ hash algorithm
+-- | Hash the 'Password' using the 'PBKDF2' hash algorithm
 --
 -- >>> hashPassword $ mkPassword "foobar"
 -- PasswordHash {unPasswordHash = "sha512:25000:...:..."}
@@ -128,7 +125,7 @@ hashPassword = hashPasswordWithParams defaultParams
 -- $pbkdf2-sha256$29000$x9h7j/Ge8x6DMEao1VqrdQ$kra3R1wEnY8mPdDWOpTqOTINaAmZvRMcYd8u5OBQP9A
 -- $pbkdf2-sha512$25000$LyWE0HrP2RsjZCxlDGFMKQ$1vC5Ohk2mCS9b6akqsEfgeb4l74SF8XjH.SljXf3dMLHdlY1GK9ojcCKts6/asR4aPqBmk74nCDddU3tvSCJvw
 
--- | Parameters used in the /PBKDF2/ hashing algorithm.
+-- | Parameters used in the 'PBKDF2' hashing algorithm.
 --
 -- @since 2.0.0.0
 data PBKDF2Params = PBKDF2Params {
@@ -146,7 +143,7 @@ data PBKDF2Params = PBKDF2Params {
   -- for __MD5, SHA1, SHA256, SHA512__, respectively.
 } deriving (Eq, Show)
 
--- | Default parameters for the /PBKDF2/ algorithm.
+-- | Default parameters for the 'PBKDF2' algorithm.
 --
 -- >>> defaultParams
 -- PBKDF2Params {pbkdf2Salt = 16, pbkdf2Algorithm = PBKDF2_SHA512, pbkdf2Iterations = 25000, pbkdf2OutputLength = 64}
@@ -161,7 +158,7 @@ defaultParams = PBKDF2Params {
 }
 
 -- | Hash a password with the given 'PBKDF2Params' and also with the given 'Salt'
--- instead of a random generated salt using 'pbkdf2Salt' from 'PBKDF2Params'. (cf. 'hashPasswordWithParams')
+-- instead of a randomly generated salt using 'pbkdf2Salt' from 'PBKDF2Params'. (cf. 'hashPasswordWithParams')
 -- Using 'hashPasswordWithSalt' is strongly __disadvised__ and 'hashPasswordWithParams' should be used instead.
 -- /Never use a static salt in production applications!/
 --
@@ -171,7 +168,7 @@ defaultParams = PBKDF2Params {
 --
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
 -- example is reproducible, but in general you should use 'hashPassword'. 'hashPassword'
--- generates a new 'Salt' everytime it is called.)
+-- (and 'hashPasswordWithParams') generates a new 'Salt' everytime it is called.)
 hashPasswordWithSalt :: PBKDF2Params -> Salt PBKDF2 -> Password -> PasswordHash PBKDF2
 hashPasswordWithSalt params@PBKDF2Params{..} s@(Salt salt) pass =
   PasswordHash $ T.intercalate ":"
@@ -195,10 +192,10 @@ hashPasswordWithSalt' PBKDF2Params{..} (Salt salt) (Password pass) =
         PBKDF2.outputLength = fromIntegral $ maxOutputLength pbkdf2Algorithm pbkdf2OutputLength
       }
 
--- | Hash a password using the /PBKDF2/ algorithm with the given 'PBKDF2Params'.
+-- | Hash a password using the 'PBKDF2' algorithm with the given 'PBKDF2Params'.
 --
 -- __N.B.__: If you have any doubt in your knowledge of cryptography and/or the
--- /PBKDF2/ algorithm, please just use 'hashPassword'.
+-- 'PBKDF2' algorithm, please just use 'hashPassword'.
 --
 -- @since 2.0.0.0
 hashPasswordWithParams :: MonadIO m => PBKDF2Params -> Password -> m (PasswordHash PBKDF2)
@@ -249,6 +246,8 @@ checkPassword pass (PasswordHash passHash) =
 
 
 -- | Type of algorithm to use for hashing PBKDF2 passwords.
+--
+-- N.B.: 'PBKDF2_MD5' and 'PBKDF2_SHA1' are not considered very secure.
 data PBKDF2Algorithm =
     PBKDF2_MD5
   | PBKDF2_SHA1
