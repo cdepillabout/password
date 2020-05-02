@@ -1,4 +1,3 @@
-{-# LANGUAGE ExplicitForAll #-}
 {-|
 Module      : Data.Password.Bcrypt
 Copyright   : (c) Felix Paulusma, 2020
