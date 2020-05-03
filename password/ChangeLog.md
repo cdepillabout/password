@@ -1,5 +1,21 @@
 # Changelog for password
 
+## 2.0.0.0
+
+-   Complete overhaul of the library to include hashing and checking
+    passwords with not just `scrypt`, but also `PBKDF2`, `bcrypt` and
+    `Argon2`.
+    [#8](https://github.com/cdepillabout/password/pull/8)
+-   `cryptonite` is now used as a dependency, instead of the `scrypt` package.
+    [#8](https://github.com/cdepillabout/password/pull/8)
+-   Done away with abbreviating "password" (`Pass/pass` -> `Password/password`)
+    [#8](https://github.com/cdepillabout/password/pull/8)
+-   Removed `unsafeShowPasswordText` and changed `unsafeShowPassword` to be
+    `Password -> Text`. (Anyone who needs it to be a `String` knows where to
+    find `Data.Text.unpack`)
+    [#8](https://github.com/cdepillabout/password/pull/8)
+-   GHC versions < 8.2 are no longer actively supported. (Tested to work for GHC 8.2.2)
+
 ## 1.0.0.0
 
 -   `hashPassWithSalt` has switched function arguments for better currying.
