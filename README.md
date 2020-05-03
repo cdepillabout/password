@@ -21,7 +21,7 @@ The [password-instances](./password-instances) package and
 module adds convenient instances for passwords, like
 [`FromJSON`](http://hackage.haskell.org/package/aeson/docs/Data-Aeson.html#t:FromJSON)
 and
-[`PersistField`](http://hackage.haskell.org/package/persistent/docs/Database-Persist-Class.html#t:PersistEntity).
+[`PersistField`](http://hackage.haskell.org/package/persistent/docs/Database-Persist-Class.html#t:PersistField).
 
 In general, if you are writing a web application and need to handle passwords,
 you should use the `password` package together with `password-instances`.
