@@ -1,6 +1,6 @@
 {-|
 Module      : Data.Password
-Copyright   : (c) Dennis Gosnell, 2019
+Copyright   : (c) Dennis Gosnell, 2019; Felix Paulusma, 2020
 License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental

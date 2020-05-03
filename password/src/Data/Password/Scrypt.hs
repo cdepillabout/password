@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-|
 Module      : Data.Password.Scrypt
-Copyright   : (c) Dennis Gosnell, Felix Paulusma 2020
+Copyright   : (c) Dennis Gosnell, 2019; Felix Paulusma, 2020
 License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
