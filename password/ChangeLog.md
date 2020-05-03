@@ -8,7 +8,7 @@
     [#8](https://github.com/cdepillabout/password/pull/8)
 -   `cryptonite` is now used as a dependency, instead of the `scrypt` package.
     [#8](https://github.com/cdepillabout/password/pull/8)
--   Done away with abbreviating password (`Pass/pass` -> `Password/password`)
+-   Done away with abbreviating "password" (`Pass/pass` -> `Password/password`)
     [#8](https://github.com/cdepillabout/password/pull/8)
 -   Removed `unsafeShowPasswordText` and changed `unsafeShowPassword` to be
     `Password -> Text`. (Anyone who needs it to be a `String` knows where to
