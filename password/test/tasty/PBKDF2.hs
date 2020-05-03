@@ -23,7 +23,7 @@ _10k = 10 * 1000
 testPBKDF2 :: TestTree
 testPBKDF2 = testGroup "PBKDF2"
   [ testIt "PBKDF2 (hashPassword)" $ _10k defaultParams -- This is PBKDF2_SHA512
-  , testIncorrectPassword
+  , testIncorrectPassword_
       "PBKDF2 (hashPassword) fail"
       (hashPasswordWithParams $ _10k defaultParams)
       checkPassword

@@ -1,7 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Internal where
 
 import Data.ByteArray (pack)
+import Data.Text (Text)
 import Test.Tasty
 import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
@@ -23,8 +25,26 @@ testIncorrectPassword :: String
                       -> (Password -> IO (PasswordHash a))
                       -> (Password -> PasswordHash a -> PasswordCheck)
                       -> TestTree
-testIncorrectPassword s hashF checkF = testProperty s $
-  \pass pass2 -> run10 $ do
+testIncorrectPassword s hashF checkF =
+    testProperty s $ testIncorrectPassword' hashF checkF
+
+-- Similar to 'testIncorrectPassword', but exempts the comparison of
+-- "" and "\NUL", since 'bcrypt' and 'PBKDF2' match those as well.
+testIncorrectPassword_ :: String
+                       -> (Password -> IO (PasswordHash a))
+                       -> (Password -> PasswordHash a -> PasswordCheck)
+                       -> TestTree
+testIncorrectPassword_ s hashF checkF =
+    testProperty s $ \pass pass2 ->
+      not (all isEmpty [pass, pass2]) ==>
+        testIncorrectPassword' hashF checkF pass pass2
+  where
+    isEmpty c = c `elem` ["", "\NUL"]
+
+testIncorrectPassword' :: (Password -> IO (PasswordHash a))
+                       -> (Password -> PasswordHash a -> PasswordCheck)
+                       -> Text -> Text -> Property
+testIncorrectPassword' hashF checkF pass pass2 = run10 $ do
     let pw = mkPassword pass
         pw2 = mkPassword pass2
         result = if pass == pass2 then PasswordCheckSuccess
