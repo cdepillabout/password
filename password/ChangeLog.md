@@ -1,5 +1,9 @@
 # Changelog for password
 
+## 2.0.0.1
+
+-   Fixed README markdown for hackage.
+
 ## 2.0.0.0
 
 -   Complete overhaul of the library to include hashing and checking

@@ -1,5 +1,9 @@
 # Changelog for password-instances
 
+## 2.0.0.1
+
+-   Fixed README markdown for hackage.
+
 ## 2.0.0.0
 
 -   No longer re-exports anything from `password` to be
