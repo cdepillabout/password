@@ -7,4 +7,5 @@
 [![BSD3 license](https://img.shields.io/badge/license-BSD3-blue.svg)](./LICENSE)
 
 This package provides various typeclass instances for the plain-text password
-and hashed password datatypes from the [password](../password) package.
+and hashed password datatypes from the
+[password](https://hackage.haskell.org/package/password) package.
