@@ -16,5 +16,5 @@ Currently supports the following algorithms:
 * `scrypt`
 * `Argon2`
 
-Also, see the [password-instances](../password-instances) package for instances
-for common typeclasses.
+Also, see the [password-instances](https://hackage.haskell.org/package/password-instances)
+package for instances for common typeclasses.
