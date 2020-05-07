@@ -73,7 +73,7 @@ import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.Error (throwCryptoError)
 import Crypto.KDF.Argon2 as Argon2
-import Data.ByteArray (Bytes, convert)
+import Data.ByteArray (Bytes, constEq, convert)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64 (encodeBase64)
 import qualified Data.ByteString.Char8 as C8 (length)
@@ -278,7 +278,7 @@ checkPassword pass (PasswordHash passHash) =
     hashedKey <- from64 hashedKey64
     let argon2OutputLength = fromIntegral $ C8.length hashedKey -- only here because of warnings
         producedKey = hashPasswordWithSalt' Argon2Params{..} (Salt salt) pass
-    guard $ hashedKey == producedKey
+    guard $ hashedKey `constEq` producedKey
     return PasswordCheckSuccess
   where
     argon2Salt = 16 -- only here because of warnings
