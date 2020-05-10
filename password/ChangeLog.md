@@ -1,5 +1,13 @@
 # Changelog for password
 
+## 2.0.1.0
+
+-   Switched checking hashes to using `Data.ByteArray.constEq`, instead of
+    the default `(==)` method of `ByteString`. This is to make it more secure
+    against timing attacks. [#16](https://github.com/cdepillabout/password/pull/16)
+-   Thanks to maralorn ([@maralorn](https://github.com/maralorn)) for bringing
+    this up.
+
 ## 2.0.0.1
 
 -   Fixed README markdown for hackage.
@@ -47,4 +55,3 @@
 ## 0.1.0.0
 
 - Initial version.
-

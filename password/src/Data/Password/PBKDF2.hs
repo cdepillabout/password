@@ -69,7 +69,7 @@ import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.Hash.Algorithms as Crypto (MD5(..))
 import Crypto.KDF.PBKDF2 as PBKDF2
-import Data.ByteArray (ByteArray, ByteArrayAccess, Bytes, convert)
+import Data.ByteArray (ByteArray, ByteArrayAccess, Bytes, constEq, convert)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Char8 as C8 (length)
@@ -239,7 +239,7 @@ checkPassword pass (PasswordHash passHash) =
     hashedKey <- from64 hashedKey64
     let pbkdf2OutputLength = fromIntegral $ C8.length hashedKey
         producedKey = hashPasswordWithSalt' PBKDF2Params{..} (Salt salt) pass
-    guard $ hashedKey == producedKey
+    guard $ hashedKey `constEq` producedKey
     return PasswordCheckSuccess
   where
     pbkdf2Salt = 16

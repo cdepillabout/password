@@ -64,7 +64,7 @@ module Data.Password.Scrypt (
 import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.KDF.Scrypt as Scrypt
-import Data.ByteArray (Bytes, convert)
+import Data.ByteArray (Bytes, constEq, convert)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64 (encodeBase64)
 import qualified Data.ByteString.Char8 as C8 (length)
@@ -250,7 +250,7 @@ checkPassword pass (PasswordHash passHash) =
     hashedKey <- from64 hashedKey64
     let scryptOutputLength = fromIntegral $ C8.length hashedKey
         producedKey = hashPasswordWithSalt' ScryptParams{..} (Salt salt) pass
-    guard $ hashedKey == producedKey
+    guard $ hashedKey `constEq` producedKey
     return PasswordCheckSuccess
   where
     scryptSalt = 32 -- only here because of warnings

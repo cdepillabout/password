@@ -29,8 +29,9 @@ module Data.Password.Internal (
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.Random (getRandomBytes)
-import Data.ByteArray (Bytes, convert)
+import Data.ByteArray (Bytes, constEq, convert)
 import Data.ByteString (ByteString)
+import Data.Function (on)
 import Data.ByteString.Base64 (decodeBase64)
 import Data.String (IsString(..))
 import Data.Text as T (Text, pack, unpack)
@@ -98,7 +99,10 @@ unsafeShowPassword (Password pass) = pass
 -- The hashed password can be stored in a database.
 newtype PasswordHash a = PasswordHash
   { unPasswordHash :: Text
-  } deriving (Eq, Ord, Read, Show)
+  } deriving (Ord, Read, Show)
+
+instance Eq (PasswordHash a)  where
+  (==) = constEq `on` encodeUtf8 . unPasswordHash
 
 -- | The result of checking a password against a hashed version. This is
 -- returned by the @checkPassword@ functions.
