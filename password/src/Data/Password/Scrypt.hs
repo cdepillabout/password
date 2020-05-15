@@ -18,16 +18,16 @@ designed to be costly by requiring large amounts of memory.
 == Other algorithms
 
 @scrypt@ does increase the memory requirement in contrast to
-@"Data.Password.Bcrypt"@ and @"Data.Password.PBKDF2"@, but it
+@'Data.Password.Bcrypt.Bcrypt'@ and @'Data.Password.PBKDF2.PBKDF2'@, but it
 turns out it is not as optimal as it could be, and thus others have set out
 to search for other algorithms that do fulfill on their promises.
-@"Data.Password.Argon2"@ seems to be the winner in that search.
+@'Data.Password.Argon2.Argon2'@ seems to be the winner in that search.
 
 That is not to say using @scrypt@ somehow means your passwords
 won't be properly protected. The cryptography is sound and
 thus is fine for protection against brute-force attacks.
 Because of the memory cost, it is generally advised to use
-@"Data.Password.Bcrypt"@ if you're not sure this might be a
+@'Data.Password.Bcrypt.Bcrypt'@ if you're not sure this might be a
 problem on your system.
 -}
 
