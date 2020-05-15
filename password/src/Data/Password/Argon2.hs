@@ -30,7 +30,7 @@ All three modes allow specification by three parameters that control:
 In comparison to other algorithms, Argon2 is the least "battle-tested",
 being the newest algorithm out there.
 
-It is, however, recommended over @"Scrypt"@ most of the time,
+It is, however, recommended over @"Data.Password.Scrypt"@ most of the time,
 and it also seems like it might become the go-to password algorithm if no
 vulnarabilities are discovered within the next couple of years.
 -}

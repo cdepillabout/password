@@ -28,7 +28,8 @@ passwords.
 
 Seeing as PBKDF2 is shown to be very weak in terms of protection
 against GPU cracking attacks, it is generally advised to go with
-@"Bcrypt"@, if not @"Scrypt"@ or @"Argon2"@. When unsure, @"Bcrypt"@
+@"Data.Password.Bcrypt"@, if not @"Data.Password.Scrypt"@ or @"Data.Password.Argon2"@.
+When unsure, @"Data.Password.Bcrypt"@
 would probably be the safest option, as it has no memory cost which
 could become a problem if not properly calibrated to the machine
 doing the password verifications.

@@ -19,10 +19,10 @@ and generally considered to provide a good amount of security.
 
 == Other algorithms
 
-@bcrypt@, together with @"PBKDF2"@, are only computationally intensive.
+@bcrypt@, together with @"Data.Password.PBKDF2"@, are only computationally intensive.
 And to protect from specialized hardware, new algorithms have been
-developed that are also resource intensive, like @"Scrypt"@ and
-@"Argon2"@. Not having high resource demands, means an attacker with
+developed that are also resource intensive, like @"Data.Password.Scrypt"@ and
+@"Data.Password.Argon2"@. Not having high resource demands, means an attacker with
 specialized software could take less time to brute-force a password,
 though with the default cost (10) and a decently long password,
 the amount of time to brute-force would still be significant.
