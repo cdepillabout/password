@@ -24,14 +24,15 @@ function of the respective algorithm.
 
 == Algorithms
 
-Generally, the most "secure" algorithm is believed to be @"Argon2"@,
-then @"Scrypt"@, then @"Bcrypt"@, and lastly @"PBKDF2"@. @"Bcrypt"@ and @"PBKDF2"@
-are the most established algorithms, so they have been tried and tested, though
-they both lack a memory cost, and therefore have a greater vulnerability to
-specialized hardware attacks.
+Generally, the most "secure" algorithm is believed to be @'Data.Password.Argon2.Argon2'@,
+then @'Data.Password.Scrypt.Scrypt'@, then @'Data.Password.Bcrypt.Bcrypt'@, and lastly
+@'Data.Password.PBKDF2.PBKDF2'@. @'Data.Password.Bcrypt.Bcrypt'@
+and @'Data.Password.PBKDF2.PBKDF2'@ are the most established algorithms, so they have
+been tried and tested, though they both lack a memory cost, and therefore have a
+greater vulnerability to specialized hardware attacks.
 
 When choosing an algorithm, and you have no idea which to pick, just go for
-@"Bcrypt"@ if your password does not need the highest security possible.
+@'Data.Password.Bcrypt.Bcrypt'@ if your password does not need the highest security possible.
 It's still a fine way for hashing passwords, and the cost is easily adjustable if needed.
 If your needs do require stronger protection, you should find someone who can advise you
 on this topic. (And if you're already knowledgeable enough, you know what to do)
