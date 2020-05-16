@@ -1,11 +1,17 @@
 # Changelog for password
 
+## 2.0.1.1
+
+-   Fixed cross-module links in the haddocks
+    [#19](https://github.com/cdepillabout/password/pull/19).  Thanks to
+    [@TristanCacqueray](https://github.com/TristanCacqueray) for fixing this.
+
 ## 2.0.1.0
 
 -   Switched checking hashes to using `Data.ByteArray.constEq`, instead of
     the default `(==)` method of `ByteString`. This is to make it more secure
     against timing attacks. [#16](https://github.com/cdepillabout/password/pull/16)
--   Thanks to maralorn ([@maralorn](https://github.com/maralorn)) for bringing
+    Thanks to maralorn ([@maralorn](https://github.com/maralorn)) for bringing
     this up.
 
 ## 2.0.0.1
