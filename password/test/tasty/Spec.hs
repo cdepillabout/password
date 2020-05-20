@@ -8,6 +8,7 @@ import Argon2
 import Bcrypt
 import PBKDF2
 import Scrypt
+import Validate
 
 main :: IO ()
 main = defaultMain $ localOption (NumThreads 1) $
@@ -18,4 +19,5 @@ main = defaultMain $ localOption (NumThreads 1) $
     , testBcrypt
     , testPBKDF2
     , testScrypt
+    , testValidate
     ]
