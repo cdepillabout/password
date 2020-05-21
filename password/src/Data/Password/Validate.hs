@@ -1,4 +1,5 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
@@ -21,20 +22,25 @@ Validate module provides set of functions which enables you to validate them.
 
 module Data.Password.Validate
   ( PasswordPolicy (..),
-    FailedPolicies (..),
+    InvalidReason (..),
     CharacterCategory(..),
     defaultPasswordPolicy,
     valid,
     validatePassword,
     isValidPasswordPolicy,
+    defaultCharSet,
   ) where
 
-import Data.Char (isDigit, isLower, isUpper)
-import Data.Maybe (catMaybes, fromMaybe)
-import Data.Password.Internal (Password (..))
-import qualified Data.Text as T
-import Test.Tasty.QuickCheck (Arbitrary(..), Gen, choose, oneof, elements)
-import Data.Text (Text)
+import           Data.Char              (isDigit, isLower, isUpper)
+import           Data.Maybe             (catMaybes, fromMaybe)
+import           Data.Password.Internal (Password (..))
+#if! MIN_VERSION_base(4,13,0)
+import           Data.Semigroup         ((<>))
+#endif
+import           Data.Text              (Text)
+import qualified Data.Text              as T
+import           Test.Tasty.QuickCheck  (Arbitrary (..), Gen, choose, elements,
+                                         oneof)
 
 -- $setup
 -- >>> :set -XOverloadedStrings
@@ -44,23 +50,23 @@ import Data.Text (Text)
 -- >>> import Data.Password
 
 -- | Set of policies used to validate 'Password'
-data PasswordPolicy
-  = PasswordPolicy
-      { passPolicyMinimumLength :: !Int,
-        -- ^ Required password minimum length
-        passPolicyMaximumLength :: !Int,
-        -- ^ Required password maximum length
-        passPolicyCharUppercase :: !(Maybe Int),
-        -- ^ Required number of upper-case characters
-        passPolicyCharLowercase :: !(Maybe Int),
-        -- ^ Required number of lower-case characters
-        passPolicyCharSpecial :: !(Maybe Int),
-        -- ^ Required number of special characters
-        passPolicyCharDigit :: !(Maybe Int),
-        -- ^ Required number of ASCII-digit characters
-        passPolicyCharSet :: !Text
-        -- ^ Set of characters that can be used for password
-      } deriving (Eq, Ord, Show)
+data PasswordPolicy = PasswordPolicy
+    { passPolicyMinimumLength :: !Int
+    -- ^ Required password minimum length
+    , passPolicyMaximumLength :: !Int
+    -- ^ Required password maximum length
+    , passPolicyCharUppercase :: !(Maybe Int)
+    -- ^ Required number of upper-case characters
+    , passPolicyCharLowercase :: !(Maybe Int)
+    -- ^ Required number of lower-case characters
+    , passPolicyCharSpecial   :: !(Maybe Int)
+    -- ^ Required number of special characters
+    , passPolicyCharDigit     :: !(Maybe Int)
+    -- ^ Required number of ASCII-digit characters
+    , passPolicyCharSet       :: !Text
+    -- ^ Set of characters that can be used for password
+    }
+    deriving (Eq, Ord, Show)
 
 -- | Generate valid PasswordPolicy
 instance Arbitrary PasswordPolicy where
@@ -100,29 +106,22 @@ specialChars :: String
 specialChars = " !\"#$%&'()*+,-./:;<=>?@[]^_`{|}~"
 
 -- | Character Category
-data CharacterCategory
-  = Uppercase
-  | Lowercase
-  | Special
-  | Digit
-  deriving (Eq, Ord, Show)
+data CharacterCategory = Uppercase
+    | Lowercase
+    | Special
+    | Digit
+    deriving (Eq, Ord, Show)
 
 instance Arbitrary CharacterCategory where
   arbitrary = elements [Uppercase, Lowercase, Special, Digit]
 
 -- | Data type representing how password are invalid
-data FailedPolicies
-  = PasswordTooShort Int Int
-  -- ^ Password is too short
-  | PasswordTooLong Int Int
-  -- ^ Password is too long
-  | NotEnoughReqChars CharacterCategory Int Int
-  -- ^ Password does not contain characters that are required
-  | InvalidChar Text
-  -- ^ Password contains invalid character sets
-  | InvalidPasswordPolicy
-  -- ^ Password policy is invalid
-  deriving (Eq, Ord, Show)
+data InvalidReason = PasswordTooShort Int Int
+    | PasswordTooLong Int Int
+    | NotEnoughReqChars CharacterCategory Int Int
+    | InvalidChar Text
+    | InvalidPasswordPolicy PasswordPolicy
+    deriving (Eq, Ord, Show)
 
 -- | Check if given 'Password' fullfills all the Policies,
 -- return true if given password is valid
@@ -136,12 +135,12 @@ valid :: PasswordPolicy -> Password -> Bool
 valid policy pass = null $ validatePassword policy pass
 
 -- | Check if given 'Password' fulfills all of the Policies, returns list of
--- policies that failed.
+-- reasons why it's invalid.
 --
 -- >>> let pass = mkPassword "This_Is_Valid_Password1234"
 -- >>> validatePassword defaultPasswordPolicy pass
 -- []
-validatePassword :: PasswordPolicy -> Password -> [FailedPolicies]
+validatePassword :: PasswordPolicy -> Password -> [InvalidReason]
 validatePassword passwordPolicy (Password password) =
   catMaybes
     [ isValidLength,
@@ -154,37 +153,37 @@ validatePassword passwordPolicy (Password password) =
       hasRequiredChar (passPolicyCharDigit passwordPolicy) Digit
     ]
   where
-    isValidLength :: Maybe FailedPolicies
+    isValidLength :: Maybe InvalidReason
     isValidLength =
       if isValidPasswordPolicy passwordPolicy
         then Nothing
-        else Just $ InvalidPasswordPolicy
-    isTooLong :: Maybe FailedPolicies
+        else Just $ InvalidPasswordPolicy passwordPolicy
+    isTooLong :: Maybe InvalidReason
     isTooLong =
       let requiredMaxLength = passPolicyMaximumLength passwordPolicy
       in if T.length password <= requiredMaxLength
         then Nothing
         else Just $ PasswordTooLong requiredMaxLength (T.length password)
-    isTooShort :: Maybe FailedPolicies
+    isTooShort :: Maybe InvalidReason
     isTooShort =
       let requiredMinLength = passPolicyMinimumLength passwordPolicy
        in if T.length password >= requiredMinLength
             then Nothing
             else Just $ PasswordTooShort requiredMinLength (T.length password)
-    isUsingPolicyCharSet :: Maybe FailedPolicies
+    isUsingPolicyCharSet :: Maybe InvalidReason
     isUsingPolicyCharSet =
         let filteredText = T.filter (\c -> c `notElem` (T.unpack $ passPolicyCharSet passwordPolicy)) password
         in if T.null filteredText
           then Nothing
           else Just $ InvalidChar filteredText
-    hasRequiredChar :: Maybe Int -> CharacterCategory -> Maybe FailedPolicies
+    hasRequiredChar :: Maybe Int -> CharacterCategory -> Maybe InvalidReason
     hasRequiredChar Nothing _ = Nothing
     hasRequiredChar (Just requiredCharNum) characterCategory =
       let predicate = case characterCategory of
             Uppercase -> isUpper
             Lowercase -> isLower
-            Special -> (\char -> char `elem` specialChars)
-            Digit -> isDigit
+            Special   -> (\char -> char `elem` specialChars)
+            Digit     -> isDigit
           actualRequiredCharNum = T.length $ T.filter predicate password
        in if actualRequiredCharNum >= requiredCharNum
             then Nothing
@@ -235,6 +234,6 @@ isValidPasswordPolicy policy =
       let predicate = case category of
             Uppercase -> isUpper
             Lowercase -> isLower
-            Special -> (\char -> char `elem` specialChars)
-            Digit -> isDigit
+            Special   -> (\char -> char `elem` specialChars)
+            Digit     -> isDigit
       in T.any predicate sets
