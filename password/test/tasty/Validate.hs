@@ -1,28 +1,24 @@
 {-# LANGUAGE CPP        #-}
 {-# LANGUAGE LambdaCase #-}
+
 module Validate where
 
-import           Control.Monad                  (replicateM)
-import           Data.Char                      (isDigit, isLower, isUpper)
-import           Data.Maybe                     (fromMaybe)
-import           Data.Password                  (mkPassword)
-import           Data.Password.Validate         (CharacterCategory (..),
-                                                 InvalidReason (..),
-                                                 PasswordPolicy (..),
-                                                 defaultCharSet,
-                                                 isValidPasswordPolicy,
-                                                 validatePassword)
-import           Data.Text                      (Text)
-import qualified Data.Text                      as T
-import           Test.QuickCheck.Instances.Text ()
-import           Test.Tasty                     (TestTree, testGroup)
-import           Test.Tasty.QuickCheck          (Arbitrary (..), Gen, Property,
-                                                 choose, elements, oneof,
-                                                 shuffle, suchThat,
-                                                 testProperty, withMaxSuccess,
-                                                 (===))
+import Control.Monad (replicateM)
+import Data.Char (isDigit, isLower, isUpper)
+import Data.Maybe (fromMaybe)
+import Data.Password (mkPassword)
+import Data.Password.Validate (CharacterCategory (..), InvalidReason (..),
+                               PasswordPolicy (..), defaultCharSet,
+                               isValidPasswordPolicy, validatePassword)
+import Data.Text (Text)
+import qualified Data.Text as T
+import Test.QuickCheck.Instances.Text ()
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.QuickCheck (Arbitrary (..), Gen, Property, choose, elements,
+                              oneof, shuffle, suchThat, testProperty,
+                              withMaxSuccess, (===))
 #if! MIN_VERSION_base(4,13,0)
-import           Data.Semigroup                 ((<>))
+import Data.Semigroup ((<>))
 #endif
 
 -- | Set of tests used for testing validate module
@@ -48,10 +44,9 @@ prop_ValidPassword (ValidPassword passwordPolicy password) =
 -- | Data type used to generate valid password and 'PasswordPolicy' associated
 -- with it
 data ValidPassword = ValidPassword
-    { validPasswordPolicy :: !PasswordPolicy
-    , validPassText       :: !Text
-    }
-    deriving (Show)
+  { validPasswordPolicy :: !PasswordPolicy
+  , validPassText       :: !Text
+  } deriving (Show)
 
 instance Arbitrary ValidPassword where
   arbitrary = do
@@ -82,11 +77,10 @@ prop_InvalidPassword (InvalidPassword failedReason passwordPolicy password) =
 -- | Data type used to generate password which does not follow one of the policies
 -- as well as 'InvalidReason' and 'PasswordPolicy' associated with it
 data InvalidPassword = InvalidPassword
-    { invalidPassFailedReason :: !InvalidReason
-    , invalidPassPolicy       :: !PasswordPolicy
-    , invalidPassText         :: !Text
-    }
-    deriving (Show)
+  { invalidPassFailedReason :: !InvalidReason
+  , invalidPassPolicy       :: !PasswordPolicy
+  , invalidPassText         :: !Text
+  } deriving (Show)
 
 instance Arbitrary InvalidPassword where
   arbitrary = do
@@ -194,7 +188,7 @@ isValidReason = \case
 --
 -- Required characters are turned off so that it's much more easier to test.
 emptyPolicy :: PasswordPolicy
-emptyPolicy = PasswordPolicy 8 32 Nothing Nothing Nothing Nothing (T.pack defaultCharSet)
+emptyPolicy = PasswordPolicy 8 32 Nothing Nothing Nothing Nothing defaultCharSet
 
 upperCases :: String
 upperCases = ['A' .. 'Z']
