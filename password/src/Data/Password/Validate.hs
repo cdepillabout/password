@@ -43,7 +43,6 @@ import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
 import qualified Data.Text as T
-import Test.Tasty.QuickCheck (Arbitrary (..), Gen, choose, elements, oneof)
 
 -- $setup
 -- >>> :set -XOverloadedStrings
@@ -70,22 +69,6 @@ data PasswordPolicy = PasswordPolicy
     -- ^ Set of characters that can be used for password
     }
     deriving (Eq, Ord, Show)
-
--- | Generate valid PasswordPolicy
-instance Arbitrary PasswordPolicy where
-  arbitrary = do
-    minimumLength <- choose (1, 10)
-    upperCase <- genMaybeInt
-    lowerCase <- genMaybeInt
-    special <- genMaybeInt
-    digit <- genMaybeInt
-    let sumLength = sum $ catMaybes [upperCase, lowerCase, special, digit]
-    let minMaxLength = maximum [minimumLength, sumLength]
-    maximumLength <- choose (minMaxLength, minMaxLength + 10)
-    return $ PasswordPolicy minimumLength maximumLength upperCase lowerCase special digit defaultCharSet
-    where
-      genMaybeInt :: Gen (Maybe Int)
-      genMaybeInt = oneof [return Nothing, Just <$> (choose (1, 10))]
 
 -- | Default value for the 'PasswordPolicy'
 defaultPasswordPolicy :: PasswordPolicy
@@ -115,9 +98,6 @@ data CharacterCategory
   | Special
   | Digit
   deriving (Eq, Ord, Show)
-
-instance Arbitrary CharacterCategory where
-  arbitrary = elements [Uppercase, Lowercase, Special, Digit]
 
 -- | Data type representing how password are invalid
 data InvalidReason

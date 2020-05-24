@@ -1,11 +1,12 @@
 {-# LANGUAGE CPP        #-}
 {-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Validate where
 
 import Control.Monad (replicateM)
 import Data.Char (isDigit, isLower, isUpper)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, catMaybes)
 import Data.Password (mkPassword)
 import Data.Password.Validate (CharacterCategory (..), InvalidReason (..),
                                PasswordPolicy (..), defaultCharSet,
@@ -34,6 +35,33 @@ testValidate =
         (\(InvalidPassword reason _ _) -> isValidReason reason),
       testProperty "validatePassword return appropriate value" prop_InvalidPassword
     ]
+
+--------------------------------------------------------------------------------
+-- Arbitrary instances
+--------------------------------------------------------------------------------
+
+-- | Generate valid PasswordPolicy
+instance Arbitrary PasswordPolicy where
+  arbitrary = do
+    minimumLength <- choose (1, 10)
+    upperCase <- genMaybeInt
+    lowerCase <- genMaybeInt
+    special <- genMaybeInt
+    digit <- genMaybeInt
+    let sumLength = sum $ catMaybes [upperCase, lowerCase, special, digit]
+    let minMaxLength = maximum [minimumLength, sumLength]
+    maximumLength <- choose (minMaxLength, minMaxLength + 10)
+    return $ PasswordPolicy minimumLength maximumLength upperCase lowerCase special digit defaultCharSet
+    where
+      genMaybeInt :: Gen (Maybe Int)
+      genMaybeInt = oneof [return Nothing, Just <$> (choose (1, 10))]
+
+instance Arbitrary CharacterCategory where
+  arbitrary = elements [Uppercase, Lowercase, Special, Digit]
+
+--------------------------------------------------------------------------------
+-- Tests
+--------------------------------------------------------------------------------
 
 -- | Test that 'validatePassword' will always return empty list if the password
 -- is valid
