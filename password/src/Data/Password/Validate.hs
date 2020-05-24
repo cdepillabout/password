@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 {-|
 Module      : Data.Password.Valid
@@ -89,7 +90,7 @@ defaultCharSet = T.pack $ specialLetters <> ['A' .. 'Z'] <> ['a' .. 'z'] <> ['0'
 
 -- | Special characters
 specialLetters :: String
-specialLetters = " !\"#$%&'()*+,-./:;<=>?@[]^_`{|}~"
+specialLetters = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 
 -- | Character Category
 data CharacterCategory
@@ -114,7 +115,7 @@ data InvalidReason
 -- This is equivalent to @null $ validatePassword policy password@
 --
 -- >>> let pass = mkPassword "This_Is_Valid_PassWord1234"
--- >>> valid defaultPasswordPolicy pass
+-- >>> isValidPassword defaultPasswordPolicy pass
 -- True
 isValidPassword :: PasswordPolicy -> Password -> Bool
 isValidPassword policy pass = null $ validatePassword policy pass
@@ -126,16 +127,16 @@ isValidPassword policy pass = null $ validatePassword policy pass
 -- >>> validatePassword defaultPasswordPolicy pass
 -- []
 validatePassword :: PasswordPolicy -> Password -> [InvalidReason]
-validatePassword passwordPolicy (Password password) =
+validatePassword passwordPolicy@PasswordPolicy{..} (Password password) =
   catMaybes
     [ isValidLength,
       isTooShort,
       isTooLong,
       isUsingPolicyCharSet,
-      hasRequiredChar (uppercaseChars passwordPolicy) Uppercase,
-      hasRequiredChar (lowercaseChars passwordPolicy) Lowercase,
-      hasRequiredChar (specialChars passwordPolicy) Special,
-      hasRequiredChar (digitChars passwordPolicy) Digit
+      hasRequiredChar uppercaseChars Uppercase,
+      hasRequiredChar lowercaseChars Lowercase,
+      hasRequiredChar specialChars Special,
+      hasRequiredChar digitChars Digit
     ]
   where
     isValidLength :: Maybe InvalidReason
@@ -145,19 +146,17 @@ validatePassword passwordPolicy (Password password) =
         else Just $ InvalidPasswordPolicy passwordPolicy
     isTooLong :: Maybe InvalidReason
     isTooLong =
-      let requiredMaxLength = maximumLength passwordPolicy
-      in if T.length password <= requiredMaxLength
+      if T.length password <= maximumLength
         then Nothing
-        else Just $ PasswordTooLong requiredMaxLength (T.length password)
+        else Just $ PasswordTooLong maximumLength (T.length password)
     isTooShort :: Maybe InvalidReason
     isTooShort =
-      let requiredMinLength = minimumLength passwordPolicy
-       in if T.length password >= requiredMinLength
+      if T.length password >= minimumLength
           then Nothing
-          else Just $ PasswordTooShort requiredMinLength (T.length password)
+          else Just $ PasswordTooShort minimumLength (T.length password)
     isUsingPolicyCharSet :: Maybe InvalidReason
     isUsingPolicyCharSet =
-        let filteredText = T.filter (\c -> c `notElem` (T.unpack $ charSet passwordPolicy)) password
+        let filteredText = T.filter (\c -> c `notElem` (T.unpack charSet)) password
         in if T.null filteredText
           then Nothing
           else Just $ InvalidChar filteredText
@@ -179,17 +178,15 @@ validatePassword passwordPolicy (Password password) =
 -- >>> isValidPasswordPolicy defaultPasswordPolicy
 -- True
 isValidPasswordPolicy :: PasswordPolicy -> Bool
-isValidPasswordPolicy policy =
-  let minLength = minimumLength policy
-      maxLength = maximumLength policy
-  in and
-   [ maximum [minLength, sumRequiredChars] <= maxLength
-   , minLength > 0
-   , maxLength > 0
-   , isPositive (uppercaseChars policy)
-   , isPositive (lowercaseChars policy)
-   , isPositive (specialChars policy)
-   , isPositive (digitChars policy)
+isValidPasswordPolicy PasswordPolicy{..} =
+  and
+   [ maximum [minimumLength, sumRequiredChars] <= maximumLength
+   , minimumLength > 0
+   , maximumLength > 0
+   , isPositive uppercaseChars
+   , isPositive lowercaseChars
+   , isPositive specialChars
+   , isPositive digitChars
    , requiredCharsetValid
    ]
   where
@@ -197,21 +194,21 @@ isValidPasswordPolicy policy =
     isPositive mNum = maybe True (> 0) mNum
     sumRequiredChars :: Int
     sumRequiredChars =
-      let uppercaseLength = fromMaybe 0 (uppercaseChars policy)
-          lowercaseLength = fromMaybe 0 (lowercaseChars policy)
-          specialLength = fromMaybe 0 (specialChars policy)
-          digitLength = fromMaybe 0 (digitChars policy)
+      let uppercaseLength = fromMaybe 0 uppercaseChars
+          lowercaseLength = fromMaybe 0 lowercaseChars
+          specialLength = fromMaybe 0 specialChars
+          digitLength = fromMaybe 0 digitChars
       in uppercaseLength + lowercaseLength + specialLength + digitLength
     -- Check that character set fulfills the requirement
     -- (e.g. If policy states that it requires uppercase letters, check that
     -- the character set contain at least 1 uppercase letter)
     requiredCharsetValid :: Bool
     requiredCharsetValid =
-      let charsets = charSet policy
-          hasUpperCase = hasChar (uppercaseChars policy) Uppercase charsets
-          hasLowerCase = hasChar (lowercaseChars policy) Lowercase charsets
-          hasSpecial = hasChar (specialChars policy) Special charsets
-          hasDigits = hasChar (digitChars policy) Digit charsets
+      let charsets = charSet
+          hasUpperCase = hasChar uppercaseChars Uppercase charsets
+          hasLowerCase = hasChar lowercaseChars Lowercase charsets
+          hasSpecial = hasChar specialChars Special charsets
+          hasDigits = hasChar digitChars Digit charsets
       in and [hasUpperCase, hasLowerCase, hasSpecial, hasDigits]
     hasChar :: Maybe Int -> CharacterCategory -> Text -> Bool
     hasChar Nothing _ _ = True

@@ -1,5 +1,6 @@
-{-# LANGUAGE CPP        #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP             #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Validate where
@@ -16,8 +17,8 @@ import qualified Data.Text as T
 import Test.QuickCheck.Instances.Text ()
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.QuickCheck (Arbitrary (..), Gen, Property, choose, elements,
-                              oneof, shuffle, suchThat, testProperty,
-                              withMaxSuccess, (===))
+                              liftArbitrary, oneof, shuffle, suchThat,
+                              testProperty, withMaxSuccess, (===))
 #if! MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
@@ -54,7 +55,7 @@ instance Arbitrary PasswordPolicy where
     return $ PasswordPolicy minLength maxLength upperCase lowerCase special digit defaultCharSet
     where
       genMaybeInt :: Gen (Maybe Int)
-      genMaybeInt = oneof [return Nothing, Just <$> (choose (1, 10))]
+      genMaybeInt = liftArbitrary (choose (1, 10))
 
 instance Arbitrary CharacterCategory where
   arbitrary = elements [Uppercase, Lowercase, Special, Digit]
@@ -78,22 +79,20 @@ data ValidPassword = ValidPassword
 
 instance Arbitrary ValidPassword where
   arbitrary = do
-    policy <- arbitrary
-    let minLength = minimumLength policy
-    let maxLength = maximumLength policy
-    passLength <- choose (minLength, maxLength)
+    policy@PasswordPolicy{..} <- arbitrary
+    passLength <- choose (minimumLength, maximumLength)
     passwordText <- genPassword passLength policy
     return $ ValidPassword policy passwordText
     where
       genPassword :: Int -> PasswordPolicy -> Gen Text
-      genPassword passLength policy = do
-        upperCase <- genStr (uppercaseChars policy) upperCases
-        lowerCase <- genStr (lowercaseChars policy) lowerCases
-        specialChar <- genStr (specialChars policy) specialLetters
-        digit <- genStr (digitChars policy) digits
+      genPassword passLength PasswordPolicy{..} = do
+        upperCase <- genStr uppercaseChars upperCases
+        lowerCase <- genStr lowercaseChars lowerCases
+        specialChar <- genStr specialChars specialLetters
+        digit <- genStr digitChars digits
         let requiredChars = upperCase <> lowerCase <> specialChar <> digit
         let toFill = passLength - (length requiredChars)
-        fillChars <- replicateM toFill (elements $ T.unpack $ charSet policy)
+        fillChars <- replicateM toFill (elements $ T.unpack charSet)
         T.pack <$> shuffle (fillChars <> requiredChars)
       genStr :: Maybe Int -> String -> Gen String
       genStr mNum set = replicateM (fromMaybe 0 mNum) (elements set)
@@ -118,12 +117,12 @@ instance Arbitrary InvalidPassword where
     return $ InvalidPassword reason updatedPolicy (T.pack passText)
     where
       genFailedReason :: PasswordPolicy -> Gen InvalidReason
-      genFailedReason policy =
+      genFailedReason PasswordPolicy{..} =
         oneof
-          [ genTooShort (maximumLength policy),
-            genTooLong (minimumLength policy),
+          [ genTooShort maximumLength,
+            genTooLong minimumLength,
             genNotEnoughRequiredChars,
-            genInvalidChar (T.unpack $ charSet policy),
+            genInvalidChar (T.unpack charSet),
             genInvalidPolicy
           ]
       genInvalidPolicy :: Gen InvalidReason
@@ -155,8 +154,8 @@ instance Arbitrary InvalidPassword where
         PasswordTooShort req _actual -> policy {minimumLength = req}
         PasswordTooLong req _actual -> policy {maximumLength = req}
         InvalidPasswordPolicy invalidPolicy -> invalidPolicy
-        InvalidChar chrs ->
-          let charset = T.filter (\c -> c `notElem` (T.unpack chrs)) $ charSet policy
+        InvalidChar invalidChars ->
+          let charset = T.filter (\c -> c `notElem` (T.unpack invalidChars)) $ charSet policy
           in policy { charSet = charset }
         NotEnoughReqChars category req _actual ->
           case category of
@@ -165,9 +164,9 @@ instance Arbitrary InvalidPassword where
             Special   -> policy {specialChars = Just req}
             Digit     -> policy {digitChars = Just req}
       genInvalidPassword :: PasswordPolicy -> InvalidReason -> Gen String
-      genInvalidPassword policy = \case
-        PasswordTooShort _req actual -> genPassword actual (charSet policy)
-        PasswordTooLong _req actual -> genPassword actual (charSet policy)
+      genInvalidPassword policy@PasswordPolicy{..} = \case
+        PasswordTooShort _req actual -> genPassword actual charSet
+        PasswordTooLong _req actual -> genPassword actual charSet
         NotEnoughReqChars category _req actual -> do
           passwordLength <- genPasswordLength policy
           let predicate = case category of
@@ -175,32 +174,29 @@ instance Arbitrary InvalidPassword where
                 Lowercase -> isLower
                 Special   -> (\char -> char `elem` specialLetters)
                 Digit     -> isDigit
-          let usableCharsets = T.filter (not . predicate) (charSet policy)
-          let requiredCharsets = T.filter predicate (charSet policy)
+          let usableCharsets = T.filter (not . predicate) charSet
+          let requiredCharsets = T.filter predicate charSet
           requiredChars <- replicateM actual (elements $ T.unpack $ requiredCharsets)
           passwordText <- genPassword (passwordLength - actual) usableCharsets
           shuffle (passwordText <> requiredChars)
         InvalidChar chrs -> do
           passwordLength <- genPasswordLength policy
-          passwordText <- genPassword (passwordLength - T.length chrs) (charSet policy)
+          passwordText <- genPassword (passwordLength - T.length chrs) charSet
           -- Here, we make sure that the order of invalid characters are apporiate
           -- or else the test will fail. For instance this will make the test fail
           -- since the order of the characters are different
           -- e.g. [InvalidChar "一二三"] /= [InvalidChar "三二一"]
-          shuffle (passwordText <> (T.unpack chrs)) `suchThat` (checkOrder policy (T.unpack chrs))
+          shuffle (passwordText <> (T.unpack chrs)) `suchThat` (checkOrder charSet (T.unpack chrs))
         InvalidPasswordPolicy _invalidPolicy -> do
           passwordLength <- genPasswordLength policy
-          genPassword passwordLength (charSet policy)
+          genPassword passwordLength charSet
       genPassword :: Int -> Text -> Gen String
       genPassword num set = replicateM num (elements $ T.unpack set)
       genPasswordLength :: PasswordPolicy -> Gen Int
-      genPasswordLength policy = do
-        let minLength = minimumLength policy
-        let maxLength = maximumLength policy
-        choose (minLength, maxLength)
-      checkOrder :: PasswordPolicy -> String -> String -> Bool
-      checkOrder policy invalidChars pass =
-        let filteredChars = filter (\c -> c `notElem` (T.unpack $ charSet policy)) pass
+      genPasswordLength PasswordPolicy{..} = choose (minimumLength, maximumLength)
+      checkOrder :: Text -> String -> String -> Bool
+      checkOrder charSet invalidChars password =
+        let filteredChars = filter (\c -> c `notElem` (T.unpack charSet)) password
          in invalidChars == filteredChars
 
 -- | Check if given 'InvalidReason' is valid
@@ -226,7 +222,7 @@ lowerCases = ['a' .. 'z']
 
 -- | Special characters
 specialLetters :: String
-specialLetters = " !\"#$%&'()*+,-./:;<=>?@[]^_`{|}~"
+specialLetters = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 
 digits :: String
 digits = ['0' .. '9']
