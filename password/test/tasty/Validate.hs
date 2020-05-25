@@ -6,7 +6,7 @@
 module Validate where
 
 import Control.Monad (replicateM)
-import Data.Char (isDigit, isLower, isUpper)
+import Data.Char (isDigit, isAsciiLower, isAsciiUpper)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Password (mkPassword)
 import Data.Password.Validate (CharacterCategory (..), InvalidReason (..),
@@ -28,7 +28,9 @@ testValidate :: TestTree
 testValidate =
   testGroup
     "validate"
-    [ testProperty
+    [ testProperty "Length of default character set is valid" $
+        (T.length defaultCharSet) === 95,
+      testProperty
         "Generator will always generate valid passwordPolicy"
         (\policy -> isValidPasswordPolicy policy),
       testProperty "Valid password always true" prop_ValidPassword,
@@ -170,8 +172,8 @@ instance Arbitrary InvalidPassword where
         NotEnoughReqChars category _req actual -> do
           passwordLength <- genPasswordLength policy
           let predicate = case category of
-                Uppercase -> isUpper
-                Lowercase -> isLower
+                Uppercase -> isAsciiUpper
+                Lowercase -> isAsciiLower
                 Special   -> (\char -> char `elem` specialLetters)
                 Digit     -> isDigit
           let usableCharsets = T.filter (not . predicate) charSet
