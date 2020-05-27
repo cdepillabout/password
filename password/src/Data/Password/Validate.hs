@@ -26,17 +26,22 @@ module Data.Password.Validate
     PasswordPolicy (..),
     InvalidReason (..),
     CharacterCategory(..),
+    -- * Rules
+    CharSetPredicate(..),
+    mkCharSetPredicate,
     -- * Default
     defaultPasswordPolicy,
+    defaultCharSetPredicate,
     -- * Functions
     isValidPassword,
     validatePassword,
     -- * Utility
     isValidPasswordPolicy,
-    defaultCharSet,
+    specialCharacterSet,
+    defaultCharacterSet,
   ) where
 
-import Data.Char (isDigit, isAsciiLower, isAsciiUpper)
+import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Password.Internal (Password (..))
 #if! MIN_VERSION_base(4,13,0)
@@ -66,10 +71,7 @@ data PasswordPolicy = PasswordPolicy
     -- ^ Required number of special characters
     , digitChars     :: !(Maybe Int)
     -- ^ Required number of ASCII-digit characters
-    , charSet        :: !Text
-    -- ^ Set of characters that can be used for password
-    }
-    deriving (Eq, Ord, Show)
+    } deriving (Eq, Ord, Show)
 
 -- | Default value for the 'PasswordPolicy'
 defaultPasswordPolicy :: PasswordPolicy
@@ -79,18 +81,31 @@ defaultPasswordPolicy = PasswordPolicy
     uppercaseChars = Just 1,
     lowercaseChars = Just 1,
     specialChars = Nothing,
-    digitChars = Just 1,
-    charSet = defaultCharSet
+    digitChars = Just 1
   }
+
+-- | Predicate which defines the characters that can be used for a password.
+newtype CharSetPredicate = CharSetPredicate
+  { getCharSetPredicate :: Char -> Bool
+  }
+
+-- | Construct 'CharSetPredicate'
+mkCharSetPredicate :: (Char -> Bool) -> CharSetPredicate
+mkCharSetPredicate = CharSetPredicate
+{-# INLINE mkCharSetPredicate #-}
 
 -- | Default character sets consist of uppercase, lowercase letters, numbers,
 -- and special characters
-defaultCharSet :: Text
-defaultCharSet = T.pack $ specialLetters <> ['A' .. 'Z'] <> ['a' .. 'z'] <> ['0' .. '9']
+defaultCharSetPredicate :: CharSetPredicate
+defaultCharSetPredicate = mkCharSetPredicate $ \c -> c `elem` defaultCharacterSet
+
+-- | Set of characters
+defaultCharacterSet :: String
+defaultCharacterSet = [' ' .. '~']
 
 -- | Set of special characters
-specialLetters :: String
-specialLetters = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+specialCharacterSet :: String
+specialCharacterSet = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 
 -- | Character Category
 data CharacterCategory
@@ -103,11 +118,11 @@ data CharacterCategory
 -- | Possible reason of password being invalid
 data InvalidReason
   = PasswordTooShort !Int !Int
-  -- ^ Length of password is too short. 
+  -- ^ Length of password is too short.
   --
   -- Expected at least 'Int' characters but the actual length is 'Int'
   | PasswordTooLong !Int !Int
-  -- ^ Length of password is too long. 
+  -- ^ Length of password is too long.
   --
   -- Expected at maximum of 'Int' characters, but the actual length is 'Int'
   | NotEnoughReqChars CharacterCategory !Int !Int
@@ -128,24 +143,25 @@ data InvalidReason
 -- This is equivalent to @null $ validatePassword policy password@
 --
 -- >>> let pass = mkPassword "This_Is_Valid_PassWord1234"
--- >>> isValidPassword defaultPasswordPolicy pass
+-- >>> isValidPassword defaultPasswordPolicy defaultCharSetPredicate pass
 -- True
-isValidPassword :: PasswordPolicy -> Password -> Bool
-isValidPassword policy pass = null $ validatePassword policy pass
+isValidPassword :: PasswordPolicy -> CharSetPredicate -> Password -> Bool
+isValidPassword policy pre pass = null $ validatePassword policy pre pass
+{-# INLINE isValidPassword #-}
 
 -- | Check if given 'Password' fulfills all of the Policies, returns list of
 -- reasons why it's invalid.
 --
 -- >>> let pass = mkPassword "This_Is_Valid_Password1234"
--- >>> validatePassword defaultPasswordPolicy pass
+-- >>> validatePassword defaultPasswordPolicy defaultCharSetPredicate　pass
 -- []
-validatePassword :: PasswordPolicy -> Password -> [InvalidReason]
-validatePassword passwordPolicy@PasswordPolicy{..} (Password password) =
+validatePassword :: PasswordPolicy -> CharSetPredicate -> Password -> [InvalidReason]
+validatePassword passwordPolicy@PasswordPolicy{..} charSetPredicate (Password password) =
   catMaybes
     [ isValidPolicy,
       isTooShort,
       isTooLong,
-      isUsingPolicyCharSet,
+      isUsingPolicyCharSetPredicate,
       hasRequiredChar uppercaseChars Uppercase,
       hasRequiredChar lowercaseChars Lowercase,
       hasRequiredChar specialChars Special,
@@ -154,7 +170,7 @@ validatePassword passwordPolicy@PasswordPolicy{..} (Password password) =
   where
     isValidPolicy :: Maybe InvalidReason
     isValidPolicy =
-      if isValidPasswordPolicy passwordPolicy
+      if isValidPasswordPolicy passwordPolicy charSetPredicate
         then Nothing
         else Just $ InvalidPasswordPolicy passwordPolicy
     isTooLong :: Maybe InvalidReason
@@ -167,9 +183,9 @@ validatePassword passwordPolicy@PasswordPolicy{..} (Password password) =
       if T.length password >= minimumLength
           then Nothing
           else Just $ PasswordTooShort minimumLength (T.length password)
-    isUsingPolicyCharSet :: Maybe InvalidReason
-    isUsingPolicyCharSet =
-        let filteredText = T.filter (\c -> c `notElem` (T.unpack charSet)) password
+    isUsingPolicyCharSetPredicate :: Maybe InvalidReason
+    isUsingPolicyCharSetPredicate =
+        let filteredText = T.filter (\c -> not $ (getCharSetPredicate charSetPredicate) c) password
         in if T.null filteredText
           then Nothing
           else Just $ InvalidChar filteredText
@@ -179,7 +195,7 @@ validatePassword passwordPolicy@PasswordPolicy{..} (Password password) =
       let predicate = case characterCategory of
             Uppercase -> isAsciiUpper
             Lowercase -> isAsciiLower
-            Special   -> (\char -> char `elem` specialLetters)
+            Special   -> (\char -> char `elem` specialCharacterSet)
             Digit     -> isDigit
           actualRequiredCharNum = T.length $ T.filter predicate password
        in if actualRequiredCharNum >= requiredCharNum
@@ -188,15 +204,14 @@ validatePassword passwordPolicy@PasswordPolicy{..} (Password password) =
 
 -- | Checks if given 'PasswordPolicy' is valid
 --
--- >>> isValidPasswordPolicy defaultPasswordPolicy
+-- >>> isValidPasswordPolicy defaultPasswordPolicy defaultCharSetPredicate
 -- True
-isValidPasswordPolicy :: PasswordPolicy -> Bool
-isValidPasswordPolicy PasswordPolicy{..} =
+isValidPasswordPolicy :: PasswordPolicy -> CharSetPredicate -> Bool
+isValidPasswordPolicy PasswordPolicy{..} charSetPredicate =
   and
    [ maximum [minimumLength, sumRequiredChars] <= maximumLength
    , minimumLength > 0
    , maximumLength > 0
-   , T.length charSet > 0
    , isPositive uppercaseChars
    , isPositive lowercaseChars
    , isPositive specialChars
@@ -218,18 +233,21 @@ isValidPasswordPolicy PasswordPolicy{..} =
     -- the character set contain at least 1 uppercase letter)
     requiredCharsetValid :: Bool
     requiredCharsetValid =
-      let charsets = charSet
-          hasUpperCase = hasChar uppercaseChars Uppercase charsets
-          hasLowerCase = hasChar lowercaseChars Lowercase charsets
-          hasSpecial = hasChar specialChars Special charsets
-          hasDigits = hasChar digitChars Digit charsets
-      in and [hasUpperCase, hasLowerCase, hasSpecial, hasDigits]
-    hasChar :: Maybe Int -> CharacterCategory -> Text -> Bool
-    hasChar Nothing _ _ = True
-    hasChar (Just _) category sets =
-      let predicate = case category of
-            Uppercase -> isAsciiUpper
-            Lowercase -> isAsciiLower 
-            Special   -> (\char -> char `elem` specialLetters)
-            Digit     -> isDigit
-      in T.any predicate sets
+      let predicates = accumulatePredicates
+            [ (uppercaseChars, isAsciiUpper)
+            , (lowercaseChars, isAsciiLower)
+            , (specialChars, (\c -> c `elem` specialCharacterSet))
+            , (digitChars, isDigit)
+            ]
+      in any (\c -> matchAny predicates c && (getCharSetPredicate charSetPredicate) c) [' ' .. '~']
+
+accumulatePredicates :: [(Maybe Int, Char -> Bool)] -> [Char -> Bool]
+accumulatePredicates = foldr f mempty
+  where
+    f :: (Maybe Int, Char -> Bool) -> [Char -> Bool] -> [Char -> Bool]
+    f (Nothing, _) accum = accum
+    f (Just _, predicate) accum = predicate : accum
+
+matchAny :: [a -> Bool] -> a -> Bool
+matchAny [] _         = True
+matchAny predicates a = or $ map (\predicate -> predicate a) predicates

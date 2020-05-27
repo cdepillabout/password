@@ -6,12 +6,15 @@
 module Validate where
 
 import Control.Monad (replicateM)
-import Data.Char (isDigit, isAsciiLower, isAsciiUpper)
+import Data.Char (isAsciiLower, isAsciiUpper, isControl, isDigit, ord)
+import Data.List (nub)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Password (mkPassword)
-import Data.Password.Validate (CharacterCategory (..), InvalidReason (..),
-                               PasswordPolicy (..), defaultCharSet,
-                               isValidPasswordPolicy, validatePassword)
+import Data.Password.Validate (CharSetPredicate (..), CharacterCategory (..),
+                               InvalidReason (..), PasswordPolicy (..),
+                               defaultCharSetPredicate, defaultCharacterSet,
+                               isValidPasswordPolicy, mkCharSetPredicate,
+                               specialCharacterSet, validatePassword)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Test.QuickCheck.Instances.Text ()
@@ -29,18 +32,24 @@ testValidate =
   testGroup
     "validate"
     [ testProperty "Length of default character set is valid" $
-        (T.length defaultCharSet) === 95,
+        (length $ nub defaultCharacterSet) === 95,
+      testProperty "Length of special character set is valid" $
+        (length $ nub specialCharacterSet) === 33,
+      testProperty "defaultCharacterSet does not contain control characters" $
+        (all (not . isControl) defaultCharacterSet),
+      testProperty "All characters in defaultSet are all ord c < 127" $
+        (all (\c -> ord c < 127) defaultCharacterSet),
       testProperty
         "Generator will always generate valid passwordPolicy"
-        (\policy -> isValidPasswordPolicy policy),
+        (\policy -> isValidPasswordPolicy policy defaultCharSetPredicate),
       testProperty "Valid password always true" prop_ValidPassword,
       testProperty "Generator will always generate valid FailedReason"
-        (\(InvalidPassword reason _ _) -> isValidReason reason),
+        (\(InvalidPassword reason _ predicate _) -> isValidReason predicate reason),
       testProperty "validatePassword return appropriate value" prop_InvalidPassword
     ]
 
 --------------------------------------------------------------------------------
--- Arbitrary instances
+-- Typeclass instances
 --------------------------------------------------------------------------------
 
 -- | Generate valid PasswordPolicy
@@ -54,13 +63,17 @@ instance Arbitrary PasswordPolicy where
     let sumLength = sum $ catMaybes [upperCase, lowerCase, special, digit]
     let minMaxLength = maximum [minLength, sumLength]
     maxLength <- choose (minMaxLength, minMaxLength + 10)
-    return $ PasswordPolicy minLength maxLength upperCase lowerCase special digit defaultCharSet
+    return $ PasswordPolicy minLength maxLength upperCase lowerCase special digit
     where
       genMaybeInt :: Gen (Maybe Int)
       genMaybeInt = liftArbitrary (choose (1, 10))
 
 instance Arbitrary CharacterCategory where
   arbitrary = elements [Uppercase, Lowercase, Special, Digit]
+
+-- This is needed for testing (QuickCheck requires given datatype to have Show instance)
+instance Show CharSetPredicate where
+  show _ = "Character set predicate"
 
 --------------------------------------------------------------------------------
 -- Tests
@@ -69,13 +82,14 @@ instance Arbitrary CharacterCategory where
 -- | Test that 'validatePassword' will always return empty list if the password
 -- is valid
 prop_ValidPassword :: ValidPassword -> Property
-prop_ValidPassword (ValidPassword passwordPolicy password) =
-  withMaxSuccess 1000 $ validatePassword passwordPolicy (mkPassword password) === []
+prop_ValidPassword (ValidPassword passwordPolicy predicate password) =
+  withMaxSuccess 1000 $ validatePassword passwordPolicy predicate (mkPassword password) === []
 
 -- | Data type used to generate valid password and 'PasswordPolicy' associated
 -- with it
 data ValidPassword = ValidPassword
   { validPasswordPolicy :: !PasswordPolicy
+  , validCharSetPredicate :: !CharSetPredicate
   , validPassText       :: !Text
   } deriving (Show)
 
@@ -83,31 +97,32 @@ instance Arbitrary ValidPassword where
   arbitrary = do
     policy@PasswordPolicy{..} <- arbitrary
     passLength <- choose (minimumLength, maximumLength)
-    passwordText <- genPassword passLength policy
-    return $ ValidPassword policy passwordText
+    passwordText <- genPassword passLength policy defaultCharSetPredicate
+    return $ ValidPassword policy defaultCharSetPredicate passwordText
     where
-      genPassword :: Int -> PasswordPolicy -> Gen Text
-      genPassword passLength PasswordPolicy{..} = do
-        upperCase <- genStr uppercaseChars upperCases
-        lowerCase <- genStr lowercaseChars lowerCases
-        specialChar <- genStr specialChars specialLetters
-        digit <- genStr digitChars digits
+      genPassword :: Int -> PasswordPolicy -> CharSetPredicate -> Gen Text
+      genPassword passLength PasswordPolicy{..} predicate = do
+        upperCase <- genStr uppercaseChars isAsciiUpper
+        lowerCase <- genStr lowercaseChars isAsciiLower
+        specialChar <- genStr specialChars (\c -> c `elem` specialCharacterSet)
+        digit <- genStr digitChars isDigit
         let requiredChars = upperCase <> lowerCase <> specialChar <> digit
         let toFill = passLength - (length requiredChars)
-        fillChars <- replicateM toFill (elements $ T.unpack charSet)
+        fillChars <- replicateM toFill (arbitrary `suchThat` (\c -> (getCharSetPredicate predicate) c))
         T.pack <$> shuffle (fillChars <> requiredChars)
-      genStr :: Maybe Int -> String -> Gen String
-      genStr mNum set = replicateM (fromMaybe 0 mNum) (elements set)
+      genStr :: Maybe Int -> (Char -> Bool) -> Gen String
+      genStr mNum predicate = replicateM (fromMaybe 0 mNum) (arbitrary `suchThat` predicate)
 
 prop_InvalidPassword :: InvalidPassword -> Property
-prop_InvalidPassword (InvalidPassword failedReason passwordPolicy password) =
-  withMaxSuccess 1000 $ validatePassword passwordPolicy (mkPassword password) === [failedReason]
+prop_InvalidPassword (InvalidPassword failedReason passwordPolicy charSetPredicate password) =
+  withMaxSuccess 1000 $ validatePassword passwordPolicy charSetPredicate (mkPassword password) === [failedReason]
 
 -- | Data type used to generate password which does not follow one of the policies
--- as well as 'InvalidReason' and 'PasswordPolicy' associated with it
+-- as well as 'InvalidReason', 'CharSetPredicate', and 'PasswordPolicy' associated with it
 data InvalidPassword = InvalidPassword
   { invalidPassFailedReason :: !InvalidReason
   , invalidPassPolicy       :: !PasswordPolicy
+  , invalidCharSetPredicate      :: !CharSetPredicate
   , invalidPassText         :: !Text
   } deriving (Show)
 
@@ -115,8 +130,9 @@ instance Arbitrary InvalidPassword where
   arbitrary = do
     reason <- genFailedReason emptyPolicy
     let updatedPolicy = updatePolicy emptyPolicy reason
-    passText <- genInvalidPassword updatedPolicy reason
-    return $ InvalidPassword reason updatedPolicy (T.pack passText)
+    let charSetPredicate = updateCharSetPredicate defaultCharSetPredicate reason
+    passText <- genInvalidPassword updatedPolicy charSetPredicate reason
+    return $ InvalidPassword reason updatedPolicy charSetPredicate (T.pack passText)
     where
       genFailedReason :: PasswordPolicy -> Gen InvalidReason
       genFailedReason PasswordPolicy{..} =
@@ -124,7 +140,7 @@ instance Arbitrary InvalidPassword where
           [ genTooShort maximumLength,
             genTooLong minimumLength,
             genNotEnoughRequiredChars,
-            genInvalidChar (T.unpack charSet),
+            genInvalidChar defaultCharSetPredicate,
             genInvalidPolicy
           ]
       genInvalidPolicy :: Gen InvalidReason
@@ -145,67 +161,70 @@ instance Arbitrary InvalidPassword where
         actual <- choose (0, required - 1)
         category <- arbitrary
         return $ NotEnoughReqChars category required actual
-      genInvalidChar :: String -> Gen InvalidReason
-      genInvalidChar charset = do
+      genInvalidChar :: CharSetPredicate -> Gen InvalidReason
+      genInvalidChar (CharSetPredicate predicate) = do
         num <- choose (1, 3)
-        let arbitraryInvalidChar = arbitrary `suchThat` (\c -> c `notElem` charset)
+        let arbitraryInvalidChar = arbitrary `suchThat` (not . predicate)
         chrs <- replicateM num arbitraryInvalidChar
         return $ InvalidChar (T.pack chrs)
+      -- Update 'PasswordPolicy' based upon 'InvalidReason'
       updatePolicy :: PasswordPolicy -> InvalidReason -> PasswordPolicy
       updatePolicy policy = \case
         PasswordTooShort req _actual -> policy {minimumLength = req}
         PasswordTooLong req _actual -> policy {maximumLength = req}
         InvalidPasswordPolicy invalidPolicy -> invalidPolicy
-        InvalidChar invalidChars ->
-          let charset = T.filter (\c -> c `notElem` (T.unpack invalidChars)) $ charSet policy
-          in policy { charSet = charset }
+        InvalidChar _invalidChars -> policy
         NotEnoughReqChars category req _actual ->
           case category of
             Uppercase -> policy {uppercaseChars = Just req}
             Lowercase -> policy {lowercaseChars = Just req}
             Special   -> policy {specialChars = Just req}
             Digit     -> policy {digitChars = Just req}
-      genInvalidPassword :: PasswordPolicy -> InvalidReason -> Gen String
-      genInvalidPassword policy@PasswordPolicy{..} = \case
-        PasswordTooShort _req actual -> genPassword actual charSet
-        PasswordTooLong _req actual -> genPassword actual charSet
+      updateCharSetPredicate :: CharSetPredicate -> InvalidReason -> CharSetPredicate
+      updateCharSetPredicate predicate = \case
+        InvalidChar invalidChars ->
+          mkCharSetPredicate $ \c -> (getCharSetPredicate predicate) c && c `notElem` (T.unpack invalidChars)
+        _others -> predicate
+      genInvalidPassword :: PasswordPolicy -> CharSetPredicate -> InvalidReason -> Gen String
+      genInvalidPassword policy@PasswordPolicy{..} predicate = \case
+        PasswordTooShort _req actual -> genPassword actual predicate
+        PasswordTooLong _req actual -> genPassword actual predicate
         NotEnoughReqChars category _req actual -> do
           passwordLength <- genPasswordLength policy
-          let predicate = case category of
+          let pre = case category of
                 Uppercase -> isAsciiUpper
                 Lowercase -> isAsciiLower
-                Special   -> (\char -> char `elem` specialLetters)
+                Special   -> (\char -> char `elem` specialCharacterSet)
                 Digit     -> isDigit
-          let usableCharsets = T.filter (not . predicate) charSet
-          let requiredCharsets = T.filter predicate charSet
-          requiredChars <- replicateM actual (elements $ T.unpack $ requiredCharsets)
+          let usableCharsets = mkCharSetPredicate $ \c -> not (pre c) && (getCharSetPredicate predicate) c
+          requiredChars <- replicateM actual (arbitrary `suchThat` pre)
           passwordText <- genPassword (passwordLength - actual) usableCharsets
           shuffle (passwordText <> requiredChars)
         InvalidChar chrs -> do
           passwordLength <- genPasswordLength policy
-          passwordText <- genPassword (passwordLength - T.length chrs) charSet
+          passwordText <- genPassword (passwordLength - T.length chrs) predicate
           -- Here, we make sure that the order of invalid characters are apporiate
           -- or else the test will fail. For instance this will make the test fail
           -- since the order of the characters are different
           -- e.g. [InvalidChar "一二三"] /= [InvalidChar "三二一"]
-          shuffle (passwordText <> (T.unpack chrs)) `suchThat` (checkOrder charSet (T.unpack chrs))
+          shuffle (passwordText <> (T.unpack chrs)) `suchThat` (checkOrder predicate (T.unpack chrs))
         InvalidPasswordPolicy _invalidPolicy -> do
           passwordLength <- genPasswordLength policy
-          genPassword passwordLength charSet
-      genPassword :: Int -> Text -> Gen String
-      genPassword num set = replicateM num (elements $ T.unpack set)
+          genPassword passwordLength predicate
+      genPassword :: Int -> CharSetPredicate -> Gen String
+      genPassword num (CharSetPredicate predicate) = replicateM num (arbitrary `suchThat` predicate)
       genPasswordLength :: PasswordPolicy -> Gen Int
       genPasswordLength PasswordPolicy{..} = choose (minimumLength, maximumLength)
-      checkOrder :: Text -> String -> String -> Bool
-      checkOrder charSet invalidChars password =
-        let filteredChars = filter (\c -> c `notElem` (T.unpack charSet)) password
+      checkOrder :: CharSetPredicate -> String -> String -> Bool
+      checkOrder (CharSetPredicate predicate) invalidChars password =
+        let filteredChars = filter (\c -> (not . predicate) c) password
          in invalidChars == filteredChars
 
 -- | Check if given 'InvalidReason' is valid
-isValidReason :: InvalidReason -> Bool
-isValidReason = \case
+isValidReason :: CharSetPredicate -> InvalidReason -> Bool
+isValidReason predicate = \case
   InvalidChar _ -> True
-  InvalidPasswordPolicy policy -> not $ isValidPasswordPolicy policy
+  InvalidPasswordPolicy policy -> not $ isValidPasswordPolicy policy predicate
   PasswordTooLong required actual -> required < actual
   PasswordTooShort required actual -> required > actual
   NotEnoughReqChars _ required actual -> required > actual
@@ -214,17 +233,4 @@ isValidReason = \case
 --
 -- Required characters are turned off so that it's much more easier to test.
 emptyPolicy :: PasswordPolicy
-emptyPolicy = PasswordPolicy 8 32 Nothing Nothing Nothing Nothing defaultCharSet
-
-upperCases :: String
-upperCases = ['A' .. 'Z']
-
-lowerCases :: String
-lowerCases = ['a' .. 'z']
-
--- | Special characters
-specialLetters :: String
-specialLetters = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
-
-digits :: String
-digits = ['0' .. '9']
+emptyPolicy = PasswordPolicy 8 32 Nothing Nothing Nothing Nothing
