@@ -25,6 +25,7 @@ module Data.Password.Validate
   ( -- * Data type
     PasswordPolicy (..),
     InvalidReason (..),
+    InvalidPolicyReason(..),
     CharacterCategory(..),
     -- * Predicate
     CharSetPredicate(..),
@@ -42,12 +43,11 @@ module Data.Password.Validate
   ) where
 
 import Data.Char (chr, isAsciiLower, isAsciiUpper, isDigit, ord)
-import Data.Maybe (catMaybes, fromMaybe)
+import Data.Maybe (catMaybes)
 import Data.Password.Internal (Password (..))
 #if! MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
-import Data.List (find)
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -105,6 +105,7 @@ newtype CharSetPredicate = CharSetPredicate
 -- and special characters
 defaultCharSetPredicate :: CharSetPredicate
 defaultCharSetPredicate =  CharSetPredicate $ \c -> ord c >= 32 && ord c <= 126
+{-# INLINE defaultCharSetPredicate #-}
 
 -- | Check if given 'Char' is special character
 isSpecial :: Char -> Bool
@@ -133,7 +134,7 @@ categoryToPredicate = \case
   Special -> isSpecial
   Digit -> isDigit
 
--- | Possible reason of password being invalid
+-- | Possible reason of 'Password' being invalid
 data InvalidReason
   = PasswordTooShort !Int !Int
   -- ^ Length of 'Password' is too short.
@@ -150,7 +151,13 @@ data InvalidReason
   -- contains 'Int'
   | InvalidCharacters !Text
   -- ^ 'Password' contains characters that cannot be used
-  | InvalidLength !Int !Int
+  | InvalidPasswordPolicy [InvalidPolicyReason]
+  -- ^ 'PasswordPolicy' is invalid
+  deriving (Eq, Ord, Show)
+
+-- | Possible reason of 'PasswordPolicy' being invalid
+data InvalidPolicyReason
+  = InvalidLength !Int !Int
   -- ^ Value of 'minimumLength' is bigger than 'maximumLength'
   | MaxLengthBelowZero !Int
   -- ^ Value of 'maximumLength' is less than zero
@@ -184,8 +191,8 @@ validatePassword passwordPolicy@PasswordPolicy{..} charSetPredicate (Password pa
   --
   -- So we validate 'PasswordPolicy' and 'CharSetPredicate' first,
   -- if they're valid, then validate 'Password'
-  firstNonEmpty
-   [ mconcat
+  f
+   (mconcat
       [ validatePasswordPolicy passwordPolicy
       , validateCharSetPredicate passwordPolicy charSetPredicate
       ]
@@ -198,11 +205,12 @@ validatePassword passwordPolicy@PasswordPolicy{..} charSetPredicate (Password pa
       , hasRequiredChar specialChars Special
       , hasRequiredChar digitChars Digit
       ]
-   ]
+   )
   where
-    -- Return first non-empty list
-    firstNonEmpty :: [[a]] -> [a]
-    firstNonEmpty = fromMaybe [] . find (not . null)
+    f :: ([InvalidPolicyReason], [InvalidReason]) -> [InvalidReason]
+    f (xs, ys)
+      | null xs = ys
+      | otherwise = [InvalidPasswordPolicy xs]
     isTooLong :: Maybe InvalidReason
     isTooLong =
       if T.length password <= maximumLength
@@ -234,7 +242,7 @@ validatePassword passwordPolicy@PasswordPolicy{..} charSetPredicate (Password pa
 -- For instance, if 'PasswordPolicy' states that the password requires at least
 -- one uppercase letter, then 'CharSetPredicate' should return True on at least
 -- one uppercase letter.
-validateCharSetPredicate :: PasswordPolicy -> CharSetPredicate -> [InvalidReason]
+validateCharSetPredicate :: PasswordPolicy -> CharSetPredicate -> [InvalidPolicyReason]
 validateCharSetPredicate PasswordPolicy{..} (CharSetPredicate predicate) =
   let charSets = accumulateCharSet
         [ (uppercaseChars, Uppercase)
@@ -244,7 +252,7 @@ validateCharSetPredicate PasswordPolicy{..} (CharSetPredicate predicate) =
         ]
   in catMaybes $ map checkPredicate charSets
   where
-    checkPredicate :: (Int, CharacterCategory, String) -> Maybe InvalidReason
+    checkPredicate :: (Int, CharacterCategory, String) -> Maybe InvalidPolicyReason
     checkPredicate (num, category, sets) =
       if any predicate sets
         then Nothing
@@ -269,15 +277,15 @@ isValidPasswordPolicy = null . validatePasswordPolicy
 --
 -- >>> validatePasswordPolicy defaultPasswordPolicy
 -- []
-validatePasswordPolicy :: PasswordPolicy -> [InvalidReason]
+validatePasswordPolicy :: PasswordPolicy -> [InvalidPolicyReason]
 validatePasswordPolicy PasswordPolicy{..} = catMaybes [validMaxLength, validLength]
   where
-    validLength :: Maybe InvalidReason
+    validLength :: Maybe InvalidPolicyReason
     validLength =
       if minimumLength <= maximumLength
         then Nothing
         else Just $ InvalidLength minimumLength maximumLength
-    validMaxLength :: Maybe InvalidReason
+    validMaxLength :: Maybe InvalidPolicyReason
     validMaxLength = if maximumLength > 0
       then Nothing
       else Just $ MaxLengthBelowZero maximumLength
