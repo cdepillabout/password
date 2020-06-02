@@ -7,7 +7,6 @@ module Validate where
 
 import Control.Monad (replicateM)
 import Data.Char (chr, isAsciiLower, isAsciiUpper, isControl, isDigit)
-import Data.Maybe (catMaybes, fromMaybe)
 import Data.Password (mkPassword)
 import Data.Password.Validate (CharSetPredicate (..), CharacterCategory (..),
                                InvalidReason (..), PasswordPolicy (..),
@@ -19,8 +18,8 @@ import qualified Data.Text as T
 import Test.QuickCheck.Instances.Text ()
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.QuickCheck (Arbitrary (..), Gen, Property, choose, conjoin,
-                              elements, liftArbitrary, oneof, shuffle, suchThat,
-                              testProperty, withMaxSuccess, (===))
+                              elements, oneof, shuffle, suchThat, testProperty,
+                              withMaxSuccess, (===))
 #if! MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
@@ -72,17 +71,17 @@ testValidate =
 instance Arbitrary PasswordPolicy where
   arbitrary = do
     minLength <- choose (1, 10)
-    upperCase <- genMaybeInt
-    lowerCase <- genMaybeInt
-    special <- genMaybeInt
-    digit <- genMaybeInt
-    let sumLength = sum $ catMaybes [upperCase, lowerCase, special, digit]
+    upperCase <- genCharLength
+    lowerCase <- genCharLength
+    special <- genCharLength
+    digit <- genCharLength
+    let sumLength = sum [upperCase, lowerCase, special, digit]
     let minMaxLength = max minLength sumLength
     maxLength <- choose (minMaxLength, minMaxLength + 10)
     return $ PasswordPolicy minLength maxLength upperCase lowerCase special digit
     where
-      genMaybeInt :: Gen (Maybe Int)
-      genMaybeInt = liftArbitrary (choose (1, 10))
+      genCharLength :: Gen Int
+      genCharLength = (choose (1, 10))
 
 instance Arbitrary CharacterCategory where
   arbitrary = elements [Uppercase, Lowercase, Special, Digit]
@@ -126,8 +125,8 @@ instance Arbitrary ValidPassword where
         let toFill = passLength - (length requiredChars)
         fillChars <- replicateM toFill (arbitrary `suchThat` (\c -> (getCharSetPredicate predicate) c))
         T.pack <$> shuffle (fillChars <> requiredChars)
-      genStr :: Maybe Int -> (Char -> Bool) -> Gen String
-      genStr mNum predicate = replicateM (fromMaybe 0 mNum) (arbitrary `suchThat` predicate)
+      genStr :: Int -> (Char -> Bool) -> Gen String
+      genStr num predicate = replicateM num (arbitrary `suchThat` predicate)
 
 prop_InvalidPassword :: InvalidPassword -> Property
 prop_InvalidPassword (InvalidPassword failedReason passwordPolicy charSetPredicate password) =
@@ -185,7 +184,7 @@ instance Arbitrary InvalidPassword where
         return $ InvalidCharacters (T.pack chrs)
       genInvalidLength :: PasswordPolicy -> Gen InvalidReason
       genInvalidLength PasswordPolicy{..} = do
-        let sumReq = sum $ catMaybes [uppercaseChars, lowercaseChars, specialChars, digitChars]
+        let sumReq = sum [uppercaseChars, lowercaseChars, specialChars, digitChars]
         minLength <- choose (sumReq, maximumLength - 1) `suchThat` (> 0)
         return $ InvalidLength maximumLength minLength
       -- Update 'PasswordPolicy' based upon 'InvalidReason'
@@ -196,10 +195,10 @@ instance Arbitrary InvalidPassword where
         InvalidCharacters _invalidChars -> policy
         NotEnoughReqChars category req _actual ->
           case category of
-            Uppercase -> policy {uppercaseChars = Just req}
-            Lowercase -> policy {lowercaseChars = Just req}
-            Special   -> policy {specialChars = Just req}
-            Digit     -> policy {digitChars = Just req}
+            Uppercase -> policy {uppercaseChars = req}
+            Lowercase -> policy {lowercaseChars = req}
+            Special   -> policy {specialChars = req}
+            Digit     -> policy {digitChars = req}
         MaxLengthBelowZero num ->
           policy
             { minimumLength = num - 1
@@ -212,10 +211,10 @@ instance Arbitrary InvalidPassword where
             }
         InvalidCharSetPredicate category num ->
           case category of
-            Uppercase -> policy {uppercaseChars = Just num}
-            Lowercase -> policy {lowercaseChars = Just num}
-            Special   -> policy {specialChars = Just num}
-            Digit     -> policy {digitChars = Just num}
+            Uppercase -> policy {uppercaseChars = num}
+            Lowercase -> policy {lowercaseChars = num}
+            Special   -> policy {specialChars = num}
+            Digit     -> policy {digitChars = num}
       updateCharSetPredicate :: CharSetPredicate -> InvalidReason -> CharSetPredicate
       updateCharSetPredicate predicate = \case
         InvalidCharacters invalidChars ->
@@ -271,4 +270,4 @@ isValidReason = \case
 --
 -- Required characters are turned off so that it's much more easier to test.
 emptyPolicy :: PasswordPolicy
-emptyPolicy = PasswordPolicy 8 32 Nothing Nothing Nothing Nothing
+emptyPolicy = PasswordPolicy 8 32 0 0 0 0

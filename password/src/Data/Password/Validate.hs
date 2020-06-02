@@ -47,6 +47,7 @@ import Data.Password.Internal (Password (..))
 #if! MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
+import Data.List (find)
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -58,18 +59,28 @@ import qualified Data.Text as T
 -- >>> import Data.Password
 
 -- | Set of policies used to validate 'Password'
+--
+-- When, defining your own 'PasswordPolicy' please keep in note that:
+--
+-- * The value of 'maximumLength' must be bigger than 0
+-- * The value of 'maximumLength' must be bigger than 'minimumLength'
+-- * If any other field has negative value (e.g 'lowercaseChars'), it will be defaulted to 0
+--
+-- or else the validation functions will throw an error 'InvalidReason'.
+--
+-- If you're unsure of what to do, please use the default value 'defaultPasswordPolicy'
 data PasswordPolicy = PasswordPolicy
     { minimumLength  :: !Int
     -- ^ Required password minimum length
     , maximumLength  :: !Int
     -- ^ Required password maximum length
-    , uppercaseChars :: !(Maybe Int)
+    , uppercaseChars :: !Int
     -- ^ Required number of upper-case characters
-    , lowercaseChars :: !(Maybe Int)
+    , lowercaseChars :: !Int
     -- ^ Required number of lower-case characters
-    , specialChars   :: !(Maybe Int)
+    , specialChars   :: !Int
     -- ^ Required number of special characters
-    , digitChars     :: !(Maybe Int)
+    , digitChars     :: !Int
     -- ^ Required number of ASCII-digit characters
     } deriving (Eq, Ord, Show)
 
@@ -78,10 +89,10 @@ defaultPasswordPolicy :: PasswordPolicy
 defaultPasswordPolicy = PasswordPolicy
   { minimumLength = 8,
     maximumLength = 32,
-    uppercaseChars = Just 1,
-    lowercaseChars = Just 1,
-    specialChars = Nothing,
-    digitChars = Just 1
+    uppercaseChars = 1,
+    lowercaseChars = 1,
+    specialChars = 0,
+    digitChars = 1
   }
 
 -- | Predicate which defines the characters that can be used for a password.
@@ -191,10 +202,7 @@ validatePassword passwordPolicy@PasswordPolicy{..} charSetPredicate (Password pa
   where
     -- Return first non-empty list
     firstNonEmpty :: [[a]] -> [a]
-    firstNonEmpty [] = []
-    firstNonEmpty (x:xs)
-      | null x = firstNonEmpty xs
-      | otherwise = x
+    firstNonEmpty = fromMaybe [] . find (not . null)
     isTooLong :: Maybe InvalidReason
     isTooLong =
       if T.length password <= maximumLength
@@ -211,12 +219,12 @@ validatePassword passwordPolicy@PasswordPolicy{..} charSetPredicate (Password pa
         in if T.null filteredText
           then Nothing
           else Just $ InvalidCharacters filteredText
-    hasRequiredChar :: Maybe Int -> CharacterCategory -> Maybe InvalidReason
-    hasRequiredChar Nothing _ = Nothing
-    hasRequiredChar (Just requiredCharNum) characterCategory =
+    hasRequiredChar :: Int -> CharacterCategory -> Maybe InvalidReason
+    hasRequiredChar 0 _ = Nothing
+    hasRequiredChar requiredCharNum characterCategory =
       let predicate = categoryToPredicate characterCategory
           actualRequiredCharNum = T.length $ T.filter predicate password
-       in if actualRequiredCharNum >= requiredCharNum
+      in if actualRequiredCharNum >= max 0 requiredCharNum
           then Nothing
           else Just $ NotEnoughReqChars characterCategory requiredCharNum actualRequiredCharNum
 
@@ -241,10 +249,12 @@ validateCharSetPredicate PasswordPolicy{..} (CharSetPredicate predicate) =
       if any predicate sets
         then Nothing
         else Just $ InvalidCharSetPredicate category num
-    accumulateCharSet :: [(Maybe Int, CharacterCategory)] -> [(Int, CharacterCategory, String)]
-    accumulateCharSet = map (\(num, c) -> (num, c, categoryToString c))
-      . filter ((> 0) . fst)
-      . map (\(mnum, c) -> (fromMaybe 0 mnum, c))
+    accumulateCharSet :: [(Int, CharacterCategory)] -> [(Int, CharacterCategory, String)]
+    accumulateCharSet xs =
+      [ (num, c, categoryToString c)
+      | (num, c) <- xs
+      , num > 0
+      ]
     categoryToString :: CharacterCategory -> String
     categoryToString category = filter (categoryToPredicate category) defaultCharSet
 
@@ -253,6 +263,7 @@ validateCharSetPredicate PasswordPolicy{..} (CharSetPredicate predicate) =
 -- This function is equivalent to @null . validatePasswordPolicy@
 isValidPasswordPolicy :: PasswordPolicy -> Bool
 isValidPasswordPolicy = null . validatePasswordPolicy
+{-# INLINE isValidPasswordPolicy #-}
 
 -- | Checks if given 'PasswordPolicy' is valid
 --
