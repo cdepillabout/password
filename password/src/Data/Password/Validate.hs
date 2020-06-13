@@ -5,7 +5,7 @@
 
 {-|
 Module      : Data.Password.Valid
-Copyright   : (c) Dennis Gosnell, 2019; Felix Paulusma, 2020; Hiroto Shioi, 2020
+Copyright   : (c) Hiroto Shioi, 2020
 License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
@@ -60,15 +60,17 @@ import qualified Data.Text as T
 
 -- | Set of policies used to validate 'Password'
 --
--- When, defining your own 'PasswordPolicy' please keep in note that:
+-- When defining your own 'PasswordPolicy', please keep in mind that:
 --
 -- * The value of 'maximumLength' must be bigger than 0
 -- * The value of 'maximumLength' must be bigger than 'minimumLength'
 -- * If any other field has negative value (e.g 'lowercaseChars'), it will be defaulted to 0
 --
--- or else the validation functions will throw an error 'InvalidReason'.
+-- or else the validation functions will return one or more 'InvalidPolicyReason's.
 --
 -- If you're unsure of what to do, please use the default value 'defaultPasswordPolicy'
+--
+-- @since 2.1.0.0
 data PasswordPolicy = PasswordPolicy
     { minimumLength  :: !Int
     -- ^ Required password minimum length
@@ -85,10 +87,15 @@ data PasswordPolicy = PasswordPolicy
     } deriving (Eq, Ord, Show)
 
 -- | Default value for the 'PasswordPolicy'
+--
+-- >>> defaultPasswordPolicy
+-- PasswordPolicy {minimumLength = 8, maximumLength = 64, uppercaseChars = 1, lowercaseChars = 1, specialChars = 0, digitChars = 1}
+--
+-- @since 2.1.0.0
 defaultPasswordPolicy :: PasswordPolicy
 defaultPasswordPolicy = PasswordPolicy
   { minimumLength = 8,
-    maximumLength = 32,
+    maximumLength = 64,
     uppercaseChars = 1,
     lowercaseChars = 1,
     specialChars = 0,
@@ -96,18 +103,24 @@ defaultPasswordPolicy = PasswordPolicy
   }
 
 -- | Predicate which defines the characters that can be used for a password.
+--
+-- @since 2.1.0.0
 newtype CharSetPredicate = CharSetPredicate
   { getCharSetPredicate :: Char -> Bool
   }
 
 
--- | Default character sets consist of uppercase, lowercase letters, numbers,
--- and special characters
+-- | Default character sets consist of uppercase and lowercase letters, numbers,
+-- and special characters from the ASCII character set.
+--
+-- @since 2.1.0.0
 defaultCharSetPredicate :: CharSetPredicate
 defaultCharSetPredicate =  CharSetPredicate $ \c -> ord c >= 32 && ord c <= 126
 {-# INLINE defaultCharSetPredicate #-}
 
--- | Check if given 'Char' is special character
+-- | Check if given 'Char' is a special character.
+--
+-- @since 2.1.0.0
 isSpecial :: Char -> Bool
 isSpecial = \c ->
     isDefault c && not (or [isAsciiUpper c, isAsciiLower c, isDigit c])
@@ -115,6 +128,8 @@ isSpecial = \c ->
     CharSetPredicate isDefault = defaultCharSetPredicate
 
 -- | Character Category
+--
+-- @since 2.1.0.0
 data CharacterCategory
   = Uppercase
   -- ^ Uppercase letters
@@ -126,7 +141,9 @@ data CharacterCategory
   -- ^ ASCII digits
   deriving (Eq, Ord, Show)
 
--- | Convert 'CharacterCategory' into associated predicate function
+-- | Convert a 'CharacterCategory' into its associated predicate function
+--
+-- @since 2.1.0.0
 categoryToPredicate :: CharacterCategory -> (Char -> Bool)
 categoryToPredicate = \case
   Uppercase -> isAsciiUpper
@@ -134,29 +151,34 @@ categoryToPredicate = \case
   Special -> isSpecial
   Digit -> isDigit
 
--- | Possible reason of 'Password' being invalid
+-- | Possible reason for a 'Password' to be invalid.
+--
+-- @since 2.1.0.0
 data InvalidReason
   = PasswordTooShort !Int !Int
   -- ^ Length of 'Password' is too short.
   --
-  -- Expected at least 'Int' characters but the actual length is 'Int'
+  -- @PasswordTooShort expected found@
   | PasswordTooLong !Int !Int
   -- ^ Length of 'Password' is too long.
   --
-  -- Expected at maximum of 'Int' characters, but the actual length is 'Int'
-  | NotEnoughReqChars CharacterCategory !Int !Int
+  -- @PasswordTooLong expected found@
+  | NotEnoughReqChars !CharacterCategory !Int !Int
   -- ^ 'Password' does not contain required number of characters.
   --
-  -- Expected at least 'Int' characters of 'CharacterCategory' but the password only
-  -- contains 'Int'
+  -- @NotEnoughReqChars category expected found@
   | InvalidCharacters !Text
   -- ^ 'Password' contains characters that cannot be used
   deriving (Eq, Ord, Show)
 
 -- | Possible reason of 'PasswordPolicy' being invalid
+--
+-- @since 2.1.0.0
 data InvalidPolicyReason
   = InvalidLength !Int !Int
   -- ^ Value of 'minimumLength' is bigger than 'maximumLength'
+  --
+  -- @InvalidLength min max@
   | MaxLengthBelowZero !Int
   -- ^ Value of 'maximumLength' is less than zero
   | InvalidCharSetPredicate !CharacterCategory !Int
@@ -178,14 +200,16 @@ data ValidationResult
   -- ^ 'PasswordPolicy' is invalid
   deriving (Eq, Show)
 
--- | Check if given 'Password' fullfills all the Policies,
--- return true if given password is valid
+-- | Checks if the given 'Password' adheres to the given 'PasswordPolicy'
+-- and 'CharSetPredicate', and returns @True@ if given a valid password.
 --
--- This function is equivalent to @null $ validatePassword policy password@
+-- This function is equivalent to @validatePassword policy charSetPredicate password == ValidPassword@
 --
 -- >>> let pass = mkPassword "This_Is_Valid_PassWord1234"
 -- >>> isValidPassword defaultPasswordPolicy defaultCharSetPredicate pass
 -- True
+--
+-- @since 2.1.0.0
 isValidPassword :: PasswordPolicy -> CharSetPredicate -> Password -> Bool
 isValidPassword policy pre pass = (==) ValidPassword $ validatePassword policy pre pass
 {-# INLINE isValidPassword #-}
@@ -243,12 +267,14 @@ validatePassword policy@PasswordPolicy{..} charSetPredicate (Password password) 
          | actualRequiredCharNum < max 0 requiredCharNum
          ]
 
--- | Validate 'CharSetPredicate' that it returns 'True' on at least one of the characters
--- that is required
+-- | Validate 'CharSetPredicate' to return 'True' on at least one of the characters
+-- that is required.
 --
 -- For instance, if 'PasswordPolicy' states that the password requires at least
 -- one uppercase letter, then 'CharSetPredicate' should return True on at least
 -- one uppercase letter.
+--
+-- @since 2.1.0.0
 validateCharSetPredicate :: PasswordPolicy -> CharSetPredicate -> [InvalidPolicyReason]
 validateCharSetPredicate PasswordPolicy{..} (CharSetPredicate predicate) =
   let charSets = accumulateCharSet
@@ -274,6 +300,8 @@ validateCharSetPredicate PasswordPolicy{..} (CharSetPredicate predicate) =
 -- | Check that given 'PasswordPolicy' is valid
 --
 -- This function is equivalent to @null . validatePasswordPolicy@
+--
+-- @since 2.1.0.0
 isValidPasswordPolicy :: PasswordPolicy -> Bool
 isValidPasswordPolicy = null . validatePasswordPolicy
 {-# INLINE isValidPasswordPolicy #-}
@@ -282,6 +310,8 @@ isValidPasswordPolicy = null . validatePasswordPolicy
 --
 -- >>> validatePasswordPolicy defaultPasswordPolicy
 -- []
+--
+-- @since 2.1.0.0
 validatePasswordPolicy :: PasswordPolicy -> [InvalidPolicyReason]
 validatePasswordPolicy PasswordPolicy{..} = mconcat [validMaxLength, validLength]
   where
@@ -292,6 +322,10 @@ validatePasswordPolicy PasswordPolicy{..} = mconcat [validMaxLength, validLength
     validMaxLength =
       [MaxLengthBelowZero maximumLength | maximumLength <= 0]
 
--- | Default character sets
+-- | Default character set
+--
+-- Should be all non-control characters in the ASCII character set.
+--
+-- @since 2.1.0.0
 defaultCharSet :: String
 defaultCharSet = chr <$> [32 .. 126]
