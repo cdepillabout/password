@@ -151,8 +151,6 @@ data InvalidReason
   -- contains 'Int'
   | InvalidCharacters !Text
   -- ^ 'Password' contains characters that cannot be used
-  | InvalidPasswordPolicy [InvalidPolicyReason]
-  -- ^ 'PasswordPolicy' is invalid
   deriving (Eq, Ord, Show)
 
 -- | Possible reason of 'PasswordPolicy' being invalid
@@ -166,6 +164,19 @@ data InvalidPolicyReason
   -- requires at least 'Int' characters in the password
   deriving (Eq, Ord, Show)
 
+-- | Result of validating a 'Password'.
+--
+-- Note that if the 'PasswordPolicy' is invalid, this will never return 'ValidPassword'.
+--
+-- @since 2.1.0.0
+data ValidationResult
+  = ValidPassword
+  -- ^ The 'Password' conforms to the validation parameters
+  | InvalidPassword [InvalidReason]
+  -- ^ 'Password' failed to be validated for the given reasons
+  | InvalidPolicy [InvalidPolicyReason]
+  -- ^ 'PasswordPolicy' is invalid
+  deriving (Eq, Show)
 
 -- | Check if given 'Password' fullfills all the Policies,
 -- return true if given password is valid
@@ -176,7 +187,7 @@ data InvalidPolicyReason
 -- >>> isValidPassword defaultPasswordPolicy defaultCharSetPredicate pass
 -- True
 isValidPassword :: PasswordPolicy -> CharSetPredicate -> Password -> Bool
-isValidPassword policy pre pass = null $ validatePassword policy pre pass
+isValidPassword policy pre pass = (==) ValidPassword $ validatePassword policy pre pass
 {-# INLINE isValidPassword #-}
 
 -- | Check if given 'Password' fulfills all of the Policies, returns list of
@@ -184,57 +195,53 @@ isValidPassword policy pre pass = null $ validatePassword policy pre pass
 --
 -- >>> let pass = mkPassword "This_Is_Valid_Password1234"
 -- >>> validatePassword defaultPasswordPolicy defaultCharSetPredicate　pass
--- []
-validatePassword :: PasswordPolicy -> CharSetPredicate -> Password -> [InvalidReason]
-validatePassword passwordPolicy@PasswordPolicy{..} charSetPredicate (Password password) =
+-- ValidPassword
+--
+-- @since 2.1.0.0
+validatePassword :: PasswordPolicy -> CharSetPredicate -> Password -> ValidationResult
+validatePassword policy@PasswordPolicy{..} charSetPredicate (Password password) =
   -- There is no point in validating the password if either policy or predicate is invalid.
   --
   -- So we validate 'PasswordPolicy' and 'CharSetPredicate' first,
   -- if they're valid, then validate 'Password'
-  f
-   (mconcat
-      [ validatePasswordPolicy passwordPolicy
-      , validateCharSetPredicate passwordPolicy charSetPredicate
-      ]
-   , catMaybes
-      [ isTooShort
-      , isTooLong
-      , isUsingValidCharacters
-      , hasRequiredChar uppercaseChars Uppercase
-      , hasRequiredChar lowercaseChars Lowercase
-      , hasRequiredChar specialChars Special
-      , hasRequiredChar digitChars Digit
-      ]
-   )
+  let policyFailures = mconcat
+        [ validatePasswordPolicy policy
+        , validateCharSetPredicate policy charSetPredicate
+        ]
+      validationFailures = mconcat
+        [ isTooShort
+        , isTooLong
+        , isUsingValidCharacters
+        , hasRequiredChar uppercaseChars Uppercase
+        , hasRequiredChar lowercaseChars Lowercase
+        , hasRequiredChar specialChars Special
+        , hasRequiredChar digitChars Digit
+        ]
+  case (policyFailures, validationFailures) of
+    (_:_, _) -> InvalidPolicy policyFailures
+    ([], []) -> ValidPassword
+    ([], _)  -> InvalidPassword validationFailures
   where
-    f :: ([InvalidPolicyReason], [InvalidReason]) -> [InvalidReason]
-    f (xs, ys)
-      | null xs = ys
-      | otherwise = [InvalidPasswordPolicy xs]
-    isTooLong :: Maybe InvalidReason
+    len = T.length password
+    isTooLong :: [InvalidReason]
     isTooLong =
-      if T.length password <= maximumLength
-        then Nothing
-        else Just $ PasswordTooLong maximumLength (T.length password)
-    isTooShort :: Maybe InvalidReason
+      [PasswordTooLong maximumLength len | len > maximumLength]
+    isTooShort :: [InvalidReason]
     isTooShort =
-      if T.length password >= minimumLength
-          then Nothing
-          else Just $ PasswordTooShort minimumLength (T.length password)
-    isUsingValidCharacters :: Maybe InvalidReason
+      [PasswordTooShort minimumLength len | len < minimumLength]
+
+    (CharSetPredicate predicate) = charSetPredicate
+    isUsingValidCharacters :: [InvalidReason]
     isUsingValidCharacters =
-        let filteredText = T.filter (\c -> not $ (getCharSetPredicate charSetPredicate) c) password
-        in if T.null filteredText
-          then Nothing
-          else Just $ InvalidCharacters filteredText
-    hasRequiredChar :: Int -> CharacterCategory -> Maybe InvalidReason
-    hasRequiredChar 0 _ = Nothing
+        let filteredText = T.filter (not . predicate) password
+        in [InvalidCharacters filteredText | not $ T.null filteredText]
+    hasRequiredChar :: Int -> CharacterCategory -> [InvalidReason]
+    hasRequiredChar 0 _ = []
     hasRequiredChar requiredCharNum characterCategory =
-      let predicate = categoryToPredicate characterCategory
-          actualRequiredCharNum = T.length $ T.filter predicate password
-      in if actualRequiredCharNum >= max 0 requiredCharNum
-          then Nothing
-          else Just $ NotEnoughReqChars characterCategory requiredCharNum actualRequiredCharNum
+      let actualRequiredCharNum = T.length $ T.filter predicate password
+      in [ NotEnoughReqChars characterCategory requiredCharNum actualRequiredCharNum
+         | actualRequiredCharNum < max 0 requiredCharNum
+         ]
 
 -- | Validate 'CharSetPredicate' that it returns 'True' on at least one of the characters
 -- that is required
@@ -250,13 +257,11 @@ validateCharSetPredicate PasswordPolicy{..} (CharSetPredicate predicate) =
         , (specialChars, Special)
         , (digitChars, Digit)
         ]
-  in catMaybes $ map checkPredicate charSets
+  in concatMap checkPredicate charSets
   where
     checkPredicate :: (Int, CharacterCategory, String) -> Maybe InvalidPolicyReason
     checkPredicate (num, category, sets) =
-      if any predicate sets
-        then Nothing
-        else Just $ InvalidCharSetPredicate category num
+      [InvalidCharSetPredicate category num | not $ any predicate sets]
     accumulateCharSet :: [(Int, CharacterCategory)] -> [(Int, CharacterCategory, String)]
     accumulateCharSet xs =
       [ (num, c, categoryToString c)
@@ -278,17 +283,14 @@ isValidPasswordPolicy = null . validatePasswordPolicy
 -- >>> validatePasswordPolicy defaultPasswordPolicy
 -- []
 validatePasswordPolicy :: PasswordPolicy -> [InvalidPolicyReason]
-validatePasswordPolicy PasswordPolicy{..} = catMaybes [validMaxLength, validLength]
+validatePasswordPolicy PasswordPolicy{..} = mconcat [validMaxLength, validLength]
   where
-    validLength :: Maybe InvalidPolicyReason
+    validLength :: [InvalidPolicyReason]
     validLength =
-      if minimumLength <= maximumLength
-        then Nothing
-        else Just $ InvalidLength minimumLength maximumLength
-    validMaxLength :: Maybe InvalidPolicyReason
-    validMaxLength = if maximumLength > 0
-      then Nothing
-      else Just $ MaxLengthBelowZero maximumLength
+      [InvalidLength minimumLength maximumLength | minimumLength > maximumLength]
+    validMaxLength :: [InvalidPolicyReason]
+    validMaxLength =
+      [MaxLengthBelowZero maximumLength | maximumLength <= 0]
 
 -- | Default character sets
 defaultCharSet :: String
