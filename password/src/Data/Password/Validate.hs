@@ -22,11 +22,12 @@ Validate module provides set of functions which enables you to validate them.
 -}
 
 module Data.Password.Validate
-  ( -- * Data type
+  ( -- * Data types
     PasswordPolicy (..),
     InvalidReason (..),
     InvalidPolicyReason(..),
     CharacterCategory(..),
+    ValidationResult(..),
     -- * Predicate
     CharSetPredicate(..),
     -- * Default values
@@ -37,13 +38,14 @@ module Data.Password.Validate
     validatePassword,
     -- * For internal use
     isValidPasswordPolicy,
+    validatePasswordPolicy,
     isSpecial,
     defaultCharSet,
-    categoryToPredicate
+    categoryToPredicate,
+    validateCharSetPredicate
   ) where
 
 import Data.Char (chr, isAsciiLower, isAsciiUpper, isDigit, ord)
-import Data.Maybe (catMaybes)
 import Data.Password.Internal (Password (..))
 #if! MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
@@ -180,7 +182,7 @@ data InvalidPolicyReason
   --
   -- @InvalidLength min max@
   | MaxLengthBelowZero !Int
-  -- ^ Value of 'maximumLength' is less than zero
+  -- ^ Value of 'maximumLength' is zero or less
   | InvalidCharSetPredicate !CharacterCategory !Int
   -- ^ 'CharSetPredicate' does not return 'True' for a 'CharacterCategory' that
   -- requires at least 'Int' characters in the password
@@ -223,7 +225,7 @@ isValidPassword policy pre pass = (==) ValidPassword $ validatePassword policy p
 --
 -- @since 2.1.0.0
 validatePassword :: PasswordPolicy -> CharSetPredicate -> Password -> ValidationResult
-validatePassword policy@PasswordPolicy{..} charSetPredicate (Password password) =
+validatePassword policy@PasswordPolicy{..} charSetPredicate (Password password) = do
   -- There is no point in validating the password if either policy or predicate is invalid.
   --
   -- So we validate 'PasswordPolicy' and 'CharSetPredicate' first,
@@ -245,27 +247,26 @@ validatePassword policy@PasswordPolicy{..} charSetPredicate (Password password) 
     (_:_, _) -> InvalidPolicy policyFailures
     ([], []) -> ValidPassword
     ([], _)  -> InvalidPassword validationFailures
+
   where
     len = T.length password
-    isTooLong :: [InvalidReason]
-    isTooLong =
-      [PasswordTooLong maximumLength len | len > maximumLength]
-    isTooShort :: [InvalidReason]
-    isTooShort =
-      [PasswordTooShort minimumLength len | len < minimumLength]
+    isTooLong = [PasswordTooLong maximumLength len | len > maximumLength]
+    isTooShort = [PasswordTooShort minimumLength len | len < minimumLength]
 
-    (CharSetPredicate predicate) = charSetPredicate
+    CharSetPredicate predicate = charSetPredicate
     isUsingValidCharacters :: [InvalidReason]
     isUsingValidCharacters =
         let filteredText = T.filter (not . predicate) password
         in [InvalidCharacters filteredText | not $ T.null filteredText]
     hasRequiredChar :: Int -> CharacterCategory -> [InvalidReason]
-    hasRequiredChar 0 _ = []
-    hasRequiredChar requiredCharNum characterCategory =
-      let actualRequiredCharNum = T.length $ T.filter predicate password
-      in [ NotEnoughReqChars characterCategory requiredCharNum actualRequiredCharNum
-         | actualRequiredCharNum < max 0 requiredCharNum
-         ]
+    hasRequiredChar requiredCharNum characterCategory
+      | requiredCharNum <= 0 = []
+      | otherwise =
+          let p = categoryToPredicate characterCategory
+              actualRequiredCharNum = T.length $ T.filter p password
+          in [ NotEnoughReqChars characterCategory requiredCharNum actualRequiredCharNum
+             | actualRequiredCharNum < requiredCharNum
+             ]
 
 -- | Validate 'CharSetPredicate' to return 'True' on at least one of the characters
 -- that is required.
@@ -285,7 +286,7 @@ validateCharSetPredicate PasswordPolicy{..} (CharSetPredicate predicate) =
         ]
   in concatMap checkPredicate charSets
   where
-    checkPredicate :: (Int, CharacterCategory, String) -> Maybe InvalidPolicyReason
+    checkPredicate :: (Int, CharacterCategory, String) -> [InvalidPolicyReason]
     checkPredicate (num, category, sets) =
       [InvalidCharSetPredicate category num | not $ any predicate sets]
     accumulateCharSet :: [(Int, CharacterCategory)] -> [(Int, CharacterCategory, String)]
