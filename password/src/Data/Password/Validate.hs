@@ -213,7 +213,7 @@ data ValidationResult
 --
 -- @since 2.1.0.0
 isValidPassword :: PasswordPolicy -> CharSetPredicate -> Password -> Bool
-isValidPassword policy pre pass = (==) ValidPassword $ validatePassword policy pre pass
+isValidPassword policy pre pass = validatePassword policy pre pass == ValidPassword
 {-# INLINE isValidPassword #-}
 
 -- | Check if given 'Password' fulfills all of the Policies, returns list of
