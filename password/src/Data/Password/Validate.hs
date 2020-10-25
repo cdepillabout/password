@@ -24,12 +24,11 @@ Validate module provides set of functions which enables you to validate them.
 module Data.Password.Validate
   ( -- * Data types
     PasswordPolicy (..),
-    InvalidReason (..),
-    InvalidPolicyReason(..),
-    CharacterCategory(..),
-    ValidationResult(..),
-    -- * Predicate
     CharSetPredicate(..),
+    ValidationResult(..),
+    InvalidReason (..),
+    CharacterCategory(..),
+    InvalidPolicyReason(..),
     -- * Default values
     defaultPasswordPolicy,
     defaultCharSetPredicate,
@@ -46,12 +45,14 @@ module Data.Password.Validate
   ) where
 
 import Data.Char (chr, isAsciiLower, isAsciiUpper, isDigit, ord)
-import Data.Password.Internal (Password (..))
+import Data.Function (on)
 #if! MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
 import qualified Data.Text as T
+
+import Data.Password.Internal (Password (..))
 
 -- $setup
 -- >>> :set -XOverloadedStrings
@@ -86,12 +87,54 @@ data PasswordPolicy = PasswordPolicy
     -- ^ Required number of special characters
     , digitChars     :: !Int
     -- ^ Required number of ASCII-digit characters
-    } deriving (Eq, Ord, Show)
+    , charSetPredicate :: CharSetPredicate
+    -- ^ Which characters are acceptable for use in passwords (cf. 'defaultCharSetPredicate')
+    }
+
+allButCSP :: PasswordPolicy -> [Int]
+allButCSP PasswordPolicy{..} =
+  [ minimumLength
+  , maximumLength
+  , uppercaseChars
+  , lowercaseChars
+  , specialChars
+  , digitChars
+  ]
+
+-- | N.B. This will not check equality on the 'charSetPredicate'
+instance Eq PasswordPolicy where
+  (==) = go `on` allButCSP
+    where
+      go a b = and $ zipWith (==) a b
+
+-- | N.B. This will not check order on the 'charSetPredicate'
+instance Ord PasswordPolicy where
+  compare = go `on` allButCSP
+    where
+      go a b = check $ zipWith compare a b
+      check [] = EQ
+      check (EQ : xs) = check xs
+      check (x : _) = x
+
+instance Show PasswordPolicy where
+  show PasswordPolicy{..} = mconcat
+    [ "PasswordPolicy {"
+    , "minimumLength = ", show minimumLength
+    , ", maximumLength = ", show maximumLength
+    , ", uppercaseChars = ", show uppercaseChars
+    , ", lowercaseChars = ", show lowercaseChars
+    , ", specialChars = ", show specialChars
+    , ", digitChars = ", show digitChars
+    , ", charSetPredicate = <FUNCTION>}"
+    ]
 
 -- | Default value for the 'PasswordPolicy'
 --
+-- Enforces that a password must be between 8-64 characters long and
+-- have at least one uppercase letter, one lowercase letter and one digit.
+--
 -- >>> defaultPasswordPolicy
--- PasswordPolicy {minimumLength = 8, maximumLength = 64, uppercaseChars = 1, lowercaseChars = 1, specialChars = 0, digitChars = 1}
+-- PasswordPolicy {minimumLength = 8, maximumLength = 64, uppercaseChars = 1, lowercaseChars = 1, specialChars = 0, digitChars = 1, charSetPredicate = <FUNCTION>}
 --
 -- @since 2.1.0.0
 defaultPasswordPolicy :: PasswordPolicy
@@ -101,7 +144,8 @@ defaultPasswordPolicy = PasswordPolicy
     uppercaseChars = 1,
     lowercaseChars = 1,
     specialChars = 0,
-    digitChars = 1
+    digitChars = 1,
+    charSetPredicate = defaultCharSetPredicate
   }
 
 -- | Predicate which defines the characters that can be used for a password.
@@ -214,28 +258,25 @@ data ValidationResult
 -- True
 --
 -- @since 2.1.0.0
-isValidPassword :: PasswordPolicy -> CharSetPredicate -> Password -> Bool
-isValidPassword policy pre pass = validatePassword policy pre pass == ValidPassword
+isValidPassword :: PasswordPolicy -> Password -> Bool
+isValidPassword policy pass = validatePassword policy pass == ValidPassword
 {-# INLINE isValidPassword #-}
 
 -- | Check if given 'Password' fulfills all of the Policies, returns list of
 -- reasons why it's invalid.
 --
 -- >>> let pass = mkPassword "This_Is_Valid_Password1234"
--- >>> validatePassword defaultPasswordPolicy defaultCharSetPredicate　pass
+-- >>> validatePassword defaultPasswordPolicy pass
 -- ValidPassword
 --
 -- @since 2.1.0.0
-validatePassword :: PasswordPolicy -> CharSetPredicate -> Password -> ValidationResult
-validatePassword policy@PasswordPolicy{..} charSetPredicate (Password password) = do
+validatePassword :: PasswordPolicy -> Password -> ValidationResult
+validatePassword policy@PasswordPolicy{..} (Password password) = do
   -- There is no point in validating the password if either policy or predicate is invalid.
   --
   -- So we validate 'PasswordPolicy' and 'CharSetPredicate' first,
   -- if they're valid, then validate 'Password'
-  let policyFailures = mconcat
-        [ validatePasswordPolicy policy
-        , validateCharSetPredicate policy charSetPredicate
-        ]
+  let policyFailures = validatePasswordPolicy policy
       validationFailures = mconcat
         [ isTooShort
         , isTooLong
@@ -278,8 +319,8 @@ validatePassword policy@PasswordPolicy{..} charSetPredicate (Password password) 
 -- one uppercase letter.
 --
 -- @since 2.1.0.0
-validateCharSetPredicate :: PasswordPolicy -> CharSetPredicate -> [InvalidPolicyReason]
-validateCharSetPredicate PasswordPolicy{..} (CharSetPredicate predicate) =
+validateCharSetPredicate :: PasswordPolicy -> [InvalidPolicyReason]
+validateCharSetPredicate PasswordPolicy{..} =
   let charSets = accumulateCharSet
         [ (uppercaseChars, Uppercase)
         , (lowercaseChars, Lowercase)
@@ -288,6 +329,7 @@ validateCharSetPredicate PasswordPolicy{..} (CharSetPredicate predicate) =
         ]
   in concatMap checkPredicate charSets
   where
+    CharSetPredicate predicate = charSetPredicate
     checkPredicate :: (Int, CharacterCategory, String) -> [InvalidPolicyReason]
     checkPredicate (num, category, sets) =
       [InvalidCharSetPredicate category num | not $ any predicate sets]
@@ -316,14 +358,15 @@ isValidPasswordPolicy = null . validatePasswordPolicy
 --
 -- @since 2.1.0.0
 validatePasswordPolicy :: PasswordPolicy -> [InvalidPolicyReason]
-validatePasswordPolicy PasswordPolicy{..} = mconcat [validMaxLength, validLength]
+validatePasswordPolicy policy@PasswordPolicy{..} =
+    mconcat [validMaxLength, validLength, validPredicate]
   where
-    validLength :: [InvalidPolicyReason]
+    validLength, validMaxLength, validPredicate :: [InvalidPolicyReason]
     validLength =
       [InvalidLength minimumLength maximumLength | minimumLength > maximumLength]
-    validMaxLength :: [InvalidPolicyReason]
     validMaxLength =
       [MaxLengthBelowZero maximumLength | maximumLength <= 0]
+    validPredicate = validateCharSetPredicate policy
 
 -- | Default character set
 --
