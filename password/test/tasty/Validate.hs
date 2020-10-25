@@ -22,7 +22,7 @@ import Data.Semigroup ((<>))
 
 import Data.Password (Password, mkPassword)
 import Data.Password.Validate hiding (ValidationResult(..))
-import qualified Data.Password.Validate as Validate
+import qualified Data.Password.Validate as V
 
 -- | Set of tests used for testing validate module
 testValidate :: TestTree
@@ -134,7 +134,7 @@ validDefaultCharSetPredicate =
 
 validDefaultPassword :: Assertion
 validDefaultPassword =
-  assertEqual "defaultPassword isn't valid" Validate.ValidPassword
+  assertEqual "defaultPassword isn't valid" V.ValidPassword
     $ validatePassword
         defaultPasswordPolicy
         defaultCharSetPredicate
@@ -177,7 +177,7 @@ prop_ValidPassword :: ValidPassword -> Property
 prop_ValidPassword (ValidPassword passwordPolicy predicate password) =
   withMaxSuccess 1000 $ do
     validatePassword passwordPolicy predicate (mkPassword password)
-      === Validate.ValidPassword
+      === V.ValidPassword
 
 -- | Data type used to generate valid password and 'PasswordPolicy' associated
 -- with it
@@ -213,9 +213,7 @@ prop_InvalidPassword (InvalidPassword failedReason passwordPolicy charSetPredica
     validatePassword passwordPolicy charSetPredicate (mkPassword password)
       === expected failedReason
   where
-    expected = either
-      (Validate.InvalidPolicy . pure)
-      (Validate.InvalidPassword . pure)
+    expected = either (V.InvalidPolicy . pure) (V.InvalidPassword . pure)
 
 -- | Data type used to generate password which does not follow one of the policies
 -- as well as 'InvalidReason', 'CharSetPredicate', and 'PasswordPolicy' associated with it
