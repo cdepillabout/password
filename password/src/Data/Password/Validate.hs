@@ -5,7 +5,7 @@
 
 {-|
 Module      : Data.Password.Valid
-Copyright   : (c) Hiroto Shioi, 2020
+Copyright   : (c) Hiroto Shioi, 2020; Felix Paulusma, 2020
 License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
@@ -128,10 +128,14 @@ instance Show PasswordPolicy where
     , ", charSetPredicate = <FUNCTION>}"
     ]
 
--- | Default value for the 'PasswordPolicy'
+-- | Default value for the 'PasswordPolicy'.
 --
 -- Enforces that a password must be between 8-64 characters long and
 -- have at least one uppercase letter, one lowercase letter and one digit.
+--
+-- This policy is guaranteed to be valid. Any changes made to it might result
+-- in 'validatePassword' returning 'InvalidPolicy'. If you need to be sure it's
+-- valid, use 'validatePasswordPolicy'.
 --
 -- >>> defaultPasswordPolicy
 -- PasswordPolicy {minimumLength = 8, maximumLength = 64, uppercaseChars = 1, lowercaseChars = 1, specialChars = 0, digitChars = 1, charSetPredicate = <FUNCTION>}
@@ -154,7 +158,6 @@ defaultPasswordPolicy = PasswordPolicy
 newtype CharSetPredicate = CharSetPredicate
   { getCharSetPredicate :: Char -> Bool
   }
-
 
 -- | The default character set consists of uppercase and lowercase letters, numbers,
 -- and special characters from the ASCII character set.
@@ -199,22 +202,21 @@ categoryToPredicate = \case
   Special -> isSpecial
   Digit -> isDigit
 
+type ExpectedLength = Int
+type ProvidedLength = Int
+type ExpectedAmount = Int
+type ProvidedAmount = Int
+
 -- | Possible reason for a 'Password' to be invalid.
 --
 -- @since 2.1.0.0
 data InvalidReason
-  = PasswordTooShort !Int !Int
+  = PasswordTooShort !ExpectedLength !ProvidedLength
   -- ^ Length of 'Password' is too short.
-  --
-  -- @PasswordTooShort expected found@
-  | PasswordTooLong !Int !Int
+  | PasswordTooLong !ExpectedLength !ProvidedLength
   -- ^ Length of 'Password' is too long.
-  --
-  -- @PasswordTooLong expected found@
-  | NotEnoughReqChars !CharacterCategory !Int !Int
+  | NotEnoughReqChars !CharacterCategory !ExpectedAmount !ProvidedAmount
   -- ^ 'Password' does not contain required number of characters.
-  --
-  -- @NotEnoughReqChars category expected found@
   | InvalidCharacters !Text
   -- ^ 'Password' contains characters that cannot be used
   deriving (Eq, Ord, Show)
@@ -223,29 +225,26 @@ data InvalidReason
 --
 -- @since 2.1.0.0
 data InvalidPolicyReason
-  = InvalidLength !Int !Int
+  = InvalidLength !ProvidedLength !ProvidedLength
   -- ^ Value of 'minimumLength' is bigger than 'maximumLength'
   --
-  -- @InvalidLength min max@
-  | MaxLengthBelowZero !Int
+  -- @InvalidLength minLength maxLength@
+  | MaxLengthBelowZero !ProvidedLength
   -- ^ Value of 'maximumLength' is zero or less
-  | InvalidCharSetPredicate !CharacterCategory !Int
-  -- ^ 'CharSetPredicate' does not return 'True' for a 'CharacterCategory' that
-  -- requires at least 'Int' characters in the password
+  --
+  -- @MaxLengthBelowZero maxLength@
+  | InvalidCharSetPredicate !CharacterCategory !ExpectedAmount
+  -- ^ 'charSetPredicate' does not return 'True' for a 'CharacterCategory' that
+  -- requires at least 'ExpectedAmount' characters in the password
   deriving (Eq, Ord, Show)
 
 -- | Result of validating a 'Password'.
 --
--- Note that if the 'PasswordPolicy' is invalid, this will never return 'ValidPassword'.
---
 -- @since 2.1.0.0
 data ValidationResult
   = ValidPassword
-  -- ^ The 'Password' conforms to the validation parameters
   | InvalidPassword [InvalidReason]
-  -- ^ 'Password' failed to be validated for the given reasons
   | InvalidPolicy [InvalidPolicyReason]
-  -- ^ 'PasswordPolicy' is invalid
   deriving (Eq, Show)
 
 -- | Checks if the given 'Password' adheres to the given 'PasswordPolicy'
@@ -262,8 +261,9 @@ isValidPassword :: PasswordPolicy -> Password -> Bool
 isValidPassword policy pass = validatePassword policy pass == ValidPassword
 {-# INLINE isValidPassword #-}
 
--- | Check if given 'Password' fulfills all of the Policies, returns list of
--- reasons why it's invalid.
+-- | Checks if a given 'Password' adheres to the provided 'PasswordPolicy'.
+--
+-- Note that if the 'PasswordPolicy' is invalid, this will never return 'ValidPassword'.
 --
 -- >>> let pass = mkPassword "This_Is_Valid_Password1234"
 -- >>> validatePassword defaultPasswordPolicy pass
