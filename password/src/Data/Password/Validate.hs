@@ -112,8 +112,9 @@ newtype CharSetPredicate = CharSetPredicate
   }
 
 
--- | Default character sets consist of uppercase and lowercase letters, numbers,
+-- | The default character set consists of uppercase and lowercase letters, numbers,
 -- and special characters from the ASCII character set.
+-- (i.e. everything from the ASCII set except the control characters)
 --
 -- @since 2.1.0.0
 defaultCharSetPredicate :: CharSetPredicate
@@ -121,6 +122,7 @@ defaultCharSetPredicate =  CharSetPredicate $ \c -> ord c >= 32 && ord c <= 126
 {-# INLINE defaultCharSetPredicate #-}
 
 -- | Check if given 'Char' is a special character.
+-- (i.e. any non-alphanumeric non-control ASCII character)
 --
 -- @since 2.1.0.0
 isSpecial :: Char -> Bool
@@ -205,7 +207,7 @@ data ValidationResult
 -- | Checks if the given 'Password' adheres to the given 'PasswordPolicy'
 -- and 'CharSetPredicate', and returns @True@ if given a valid password.
 --
--- This function is equivalent to @validatePassword policy charSetPredicate password == ValidPassword@
+-- This function is equivalent to @'validatePassword' policy charSetPredicate password == 'ValidPassword'@
 --
 -- >>> let pass = mkPassword "This_Is_Valid_PassWord1234"
 -- >>> isValidPassword defaultPasswordPolicy defaultCharSetPredicate pass
