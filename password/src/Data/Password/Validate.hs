@@ -128,6 +128,13 @@ instance Show PasswordPolicy where
     , ", charSetPredicate = <FUNCTION>}"
     ]
 
+-- | A 'PasswordPolicy' that has been checked to be valid
+--
+-- @since 2.1.0.0
+newtype ValidPasswordPolicy = VPP
+  { unValidatePasswordPolicy :: PasswordPolicy
+  } deriving (Eq, Show)
+
 -- | Default value for the 'PasswordPolicy'.
 --
 -- Enforces that a password must be between 8-64 characters long and
@@ -151,6 +158,12 @@ defaultPasswordPolicy = PasswordPolicy
     digitChars = 1,
     charSetPredicate = defaultCharSetPredicate
   }
+
+-- | Unchangeable 'defaultPasswordPolicy', but guaranteed to be valid.
+--
+-- @since 2.1.0.0
+defaultPasswordPolicy_ :: ValidPasswordPolicy
+defaultPasswordPolicy_ = VPP defaultPasswordPolicy
 
 -- | Predicate which defines the characters that can be used for a password.
 --
@@ -241,10 +254,7 @@ data InvalidPolicyReason
 -- | Result of validating a 'Password'.
 --
 -- @since 2.1.0.0
-data ValidationResult
-  = ValidPassword
-  | InvalidPassword [InvalidReason]
-  | InvalidPolicy [InvalidPolicyReason]
+data ValidationResult = ValidPassword | InvalidPassword [InvalidReason]
   deriving (Eq, Show)
 
 -- | Checks if the given 'Password' adheres to the given 'PasswordPolicy'
@@ -257,7 +267,7 @@ data ValidationResult
 -- True
 --
 -- @since 2.1.0.0
-isValidPassword :: PasswordPolicy -> Password -> Bool
+isValidPassword :: ValidPasswordPolicy -> Password -> Bool
 isValidPassword policy pass = validatePassword policy pass == ValidPassword
 {-# INLINE isValidPassword #-}
 
@@ -270,14 +280,14 @@ isValidPassword policy pass = validatePassword policy pass == ValidPassword
 -- ValidPassword
 --
 -- @since 2.1.0.0
-validatePassword :: PasswordPolicy -> Password -> ValidationResult
-validatePassword policy@PasswordPolicy{..} (Password password) = do
-  -- There is no point in validating the password if either policy or predicate is invalid.
-  --
-  -- So we validate 'PasswordPolicy' and 'CharSetPredicate' first,
-  -- if they're valid, then validate 'Password'
-  let policyFailures = validatePasswordPolicy policy
-      validationFailures = mconcat
+validatePassword :: ValidPasswordPolicy -> Password -> ValidationResult
+validatePassword (VPP PasswordPolicy{..}) (Password password) =
+  case validationFailures of
+    [] -> ValidPassword
+    _:_ -> InvalidPassword validationFailures
+
+  where
+    validationFailures = mconcat
         [ isTooShort
         , isTooLong
         , isUsingValidCharacters
@@ -286,12 +296,6 @@ validatePassword policy@PasswordPolicy{..} (Password password) = do
         , hasRequiredChar specialChars Special
         , hasRequiredChar digitChars Digit
         ]
-  case (policyFailures, validationFailures) of
-    (_:_, _) -> InvalidPolicy policyFailures
-    ([], []) -> ValidPassword
-    ([], _)  -> InvalidPassword validationFailures
-
-  where
     len = T.length password
     isTooLong = [PasswordTooLong maximumLength len | len > maximumLength]
     isTooShort = [PasswordTooShort minimumLength len | len < minimumLength]
@@ -342,25 +346,19 @@ validateCharSetPredicate PasswordPolicy{..} =
     categoryToString :: CharacterCategory -> String
     categoryToString category = filter (categoryToPredicate category) defaultCharSet
 
--- | Check that given 'PasswordPolicy' is valid
---
--- This function is equivalent to @null . validatePasswordPolicy@
---
--- @since 2.1.0.0
-isValidPasswordPolicy :: PasswordPolicy -> Bool
-isValidPasswordPolicy = null . validatePasswordPolicy
-{-# INLINE isValidPasswordPolicy #-}
-
--- | Checks if given 'PasswordPolicy' is valid
+-- | Verifies that a 'PasswordPolicy' is valid and converts it into a 'ValidPasswordPolicy'.
 --
 -- >>> validatePasswordPolicy defaultPasswordPolicy
--- []
+-- Right (...)
 --
 -- @since 2.1.0.0
-validatePasswordPolicy :: PasswordPolicy -> [InvalidPolicyReason]
+validatePasswordPolicy :: PasswordPolicy -> Either [InvalidPolicyReason] ValidPasswordPolicy
 validatePasswordPolicy policy@PasswordPolicy{..} =
-    mconcat [validMaxLength, validLength, validPredicate]
+    case allReasons of
+      [] -> Right $ VPP policy
+      _ -> Left allReasons
   where
+    allReasons = mconcat [validMaxLength, validLength, validPredicate]
     validLength, validMaxLength, validPredicate :: [InvalidPolicyReason]
     validLength =
       [InvalidLength minimumLength maximumLength | minimumLength > maximumLength]
