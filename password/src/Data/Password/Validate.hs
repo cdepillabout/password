@@ -38,9 +38,10 @@ module Data.Password.Validate
     InvalidReason (..),
     InvalidPolicyReason(..),
     CharacterCategory(..),
-    ExpectedLength,
+    MinimumLength,
+    MaximumLength,
     ProvidedLength,
-    ExpectedAmount,
+    MinimumAmount,
     ProvidedAmount,
     -- * For internal use
     defaultCharSet,
@@ -79,11 +80,11 @@ TODO: Add a QuasiQuoter to check password policies at compile time.
 -- * If any other field has a negative value (e.g 'lowercaseChars'), it will be defaulted to 0
 -- * The provided 'CharSetPredicate' needs to allow at least one of the characters in the
 --   categories which require more than 0 characters. (e.g. if 'lowercaseChars' is > 0,
---   the 'charSetPredicate' must allow at least one of the characters in @['a'..'z']@)
+--   the 'charSetPredicate' must allow at least one of the characters in @[\'a\'..\'z\']@)
 --
 -- or else the validation functions will return one or more 'InvalidPolicyReason's.
 --
--- If you're unsure of what to do, please use the default value 'defaultPasswordPolicy'
+-- If you're unsure of what to do, please use the default value 'defaultPasswordPolicy_'
 --
 -- @since 2.1.0.0
 data PasswordPolicy = PasswordPolicy
@@ -150,11 +151,16 @@ newtype ValidPasswordPolicy = VPP
 -- | Default value for the 'PasswordPolicy'.
 --
 -- Enforces that a password must be between 8-64 characters long and
--- have at least one uppercase letter, one lowercase letter and one digit.
+-- have at least one uppercase letter, one lowercase letter and one digit,
+-- though can easily be adjusted by using record update syntax:
 --
--- This policy is guaranteed to be valid. Any changes made to it might result
--- in 'validatePassword' returning 'InvalidPolicy'. If you need to be sure it's
--- valid, use 'validatePasswordPolicy'.
+-- @
+-- myPolicy = defaultPasswordPolicy{ specialChars = 1 }
+-- @
+--
+-- This policy on it's own is guaranteed to be valid. Any changes made to
+-- it might result in 'validatePasswordPolicy' returning one or more
+-- 'InvalidPolicyReason's.
 --
 -- >>> defaultPasswordPolicy
 -- PasswordPolicy {minimumLength = 8, maximumLength = 64, uppercaseChars = 1, lowercaseChars = 1, specialChars = 0, digitChars = 1, charSetPredicate = <FUNCTION>}
@@ -185,8 +191,8 @@ newtype CharSetPredicate = CharSetPredicate
   }
 
 -- | The default character set consists of uppercase and lowercase letters, numbers,
--- and special characters from the ASCII character set.
--- (i.e. everything from the ASCII set except the control characters)
+-- and special characters from the @ASCII@ character set.
+-- (i.e. everything from the @ASCII@ set except the control characters)
 --
 -- @since 2.1.0.0
 defaultCharSetPredicate :: CharSetPredicate
@@ -227,20 +233,21 @@ categoryToPredicate = \case
   Special -> isSpecial
   Digit -> isDigit
 
-type ExpectedLength = Int
+type MinimumLength = Int
+type MaximumLength = Int
 type ProvidedLength = Int
-type ExpectedAmount = Int
+type MinimumAmount = Int
 type ProvidedAmount = Int
 
 -- | Possible reasons for a 'Password' to be invalid.
 --
 -- @since 2.1.0.0
 data InvalidReason
-  = PasswordTooShort !ExpectedLength !ProvidedLength
+  = PasswordTooShort !MinimumLength !ProvidedLength
   -- ^ Length of 'Password' is too short.
-  | PasswordTooLong !ExpectedLength !ProvidedLength
+  | PasswordTooLong !MaximumLength !ProvidedLength
   -- ^ Length of 'Password' is too long.
-  | NotEnoughReqChars !CharacterCategory !ExpectedAmount !ProvidedAmount
+  | NotEnoughReqChars !CharacterCategory !MinimumAmount !ProvidedAmount
   -- ^ 'Password' does not contain required number of characters.
   | InvalidCharacters !Text
   -- ^ 'Password' contains characters that cannot be used
@@ -258,9 +265,9 @@ data InvalidPolicyReason
   -- ^ Value of 'maximumLength' is zero or less
   --
   -- @MaxLengthBelowZero maxLength@
-  | InvalidCharSetPredicate !CharacterCategory !ExpectedAmount
+  | InvalidCharSetPredicate !CharacterCategory !MinimumAmount
   -- ^ 'charSetPredicate' does not return 'True' for a 'CharacterCategory' that
-  -- requires at least 'ExpectedAmount' characters in the password
+  -- requires at least 'MinimumAmount' characters in the password
   deriving (Eq, Ord, Show)
 
 -- | Result of validating a 'Password'.
@@ -269,10 +276,7 @@ data InvalidPolicyReason
 data ValidationResult = ValidPassword | InvalidPassword [InvalidReason]
   deriving (Eq, Show)
 
--- | Checks if the given 'Password' adheres to the given 'PasswordPolicy'
--- and 'CharSetPredicate', and returns @True@ if given a valid password.
---
--- This function is equivalent to @'validatePassword' policy charSetPredicate password == 'ValidPassword'@
+-- | This function is equivalent to @'validatePassword' policy password == 'ValidPassword'@
 --
 -- >>> let pass = mkPassword "This_Is_Valid_PassWord1234"
 -- >>> isValidPassword defaultPasswordPolicy_ pass
