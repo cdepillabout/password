@@ -1,9 +1,17 @@
 # Changelog for password
 
+## 2.1.0.0
+
+-   A new `Validate` module has been added to dictate policies that passwords
+    should adhere to and the necessary API to verify that they do.
+    [#26](https://github.com/cdepillabout/password/pull/26)
+    Huge thanks to [@HirotoShioi](https://github.com/HirotoShioi) for picking
+    up the task of adding this functionality and doing most of the work.
+
 ## 2.0.1.1
 
 -   Fixed cross-module links in the haddocks
-    [#19](https://github.com/cdepillabout/password/pull/19).  Thanks to
+    [#19](https://github.com/cdepillabout/password/pull/19). Thanks to
     [@TristanCacqueray](https://github.com/TristanCacqueray) for fixing this.
 
 ## 2.0.1.0
