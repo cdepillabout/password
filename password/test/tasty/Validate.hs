@@ -38,7 +38,7 @@ testValidate =
 
     , testProperty
         "Generator will always generate valid passwordPolicy"
-        isValidPasswordPolicy
+        $ isRight . validatePasswordPolicy
     , testProperty "Valid password always true" prop_ValidPassword
     , testProperty "Generator will always generate valid FailedReason"
         (\(InvalidPassword reason _ _) -> either isValidPolicyReason isValidReason reason)
@@ -46,6 +46,9 @@ testValidate =
     ]
   where
     p = getCharSetPredicate defaultCharSetPredicate
+
+isRight :: Either a b -> Bool
+isRight = either (const False) (const True)
 
 -- | Test that the defaultCharSetPredicate only allows non-control
 -- characters from the ASCII character set.
@@ -111,21 +114,35 @@ props_validatePasswordPolicy =
       \i -> let maxLen = maximumLength defaultPasswordPolicy
                 mLength = [InvalidLength i maxLen | i > maxLen]
                 policy = defaultPasswordPolicy { minimumLength = i }
-            in validatePasswordPolicy policy === mLength
+                result = unValidatePasswordPolicy <$> validatePasswordPolicy policy
+                expected = case mLength of
+                  [] -> Right policy
+                  _ -> Left mLength
+            in result === expected
   , testProperty "maximumLength => always valid" $
-      \i -> let mZero = [MaxLengthBelowZero i | i <= 0]
-                minLen = minimumLength defaultPasswordPolicy
+      \i -> let minLen = minimumLength defaultPasswordPolicy
                 mLength = [InvalidLength minLen i | i < minLen]
+                mZero = [MaxLengthBelowZero i | i <= 0]
+                reasons = mZero ++ mLength
                 policy = defaultPasswordPolicy { maximumLength = i }
-            in validatePasswordPolicy policy === (mZero ++ mLength)
+                result = unValidatePasswordPolicy <$> validatePasswordPolicy policy
+                expected = case reasons of
+                  [] -> Right policy
+                  _ -> Left reasons
+            in result === expected
   ]
   where
-    validProp f i = validatePasswordPolicy (f i) === []
+    validProp f i =
+      let p = f i
+          result = unValidatePasswordPolicy <$> validatePasswordPolicy p
+      in result === Right p
 
 validDefaultPasswordPolicy :: Assertion
-validDefaultPasswordPolicy =
-  assertEqual "defaultPasswordPolicy isn't a valid policy" []
-    $ validatePasswordPolicy defaultPasswordPolicy
+validDefaultPasswordPolicy = do
+  assertBool "defaultPasswordPolicy isn't a valid policy"
+    $ isRight $ validatePasswordPolicy defaultPasswordPolicy
+  assertBool "defaultPasswordPolicy_ isn't a valid policy"
+    $ isRight $ validatePasswordPolicy $ unValidatePasswordPolicy defaultPasswordPolicy_
 
 validDefaultCharSetPredicate :: Assertion
 validDefaultCharSetPredicate =
@@ -135,7 +152,7 @@ validDefaultCharSetPredicate =
 validDefaultPassword :: Assertion
 validDefaultPassword =
   assertEqual "defaultPassword isn't valid" V.ValidPassword
-    $ validatePassword defaultPasswordPolicy defaultPassword
+    $ validatePassword defaultPasswordPolicy_ defaultPassword
 
 --------------------------------------------------------------------------------
 -- Typeclass instances
@@ -173,8 +190,10 @@ instance Show CharSetPredicate where
 -- is valid
 prop_ValidPassword :: ValidPassword -> Property
 prop_ValidPassword (ValidPassword passwordPolicy password) =
-  withMaxSuccess 1000 $ do
-    validatePassword passwordPolicy (mkPassword password) === V.ValidPassword
+  withMaxSuccess 1000 $
+    case validatePasswordPolicy passwordPolicy of
+      Left _ -> error "PasswordPolicy is invalid"
+      Right validPolicy -> validatePassword validPolicy (mkPassword password) === V.ValidPassword
 
 -- | Data type used to generate valid password and 'PasswordPolicy' associated
 -- with it
@@ -206,10 +225,12 @@ instance Arbitrary ValidPassword where
 
 prop_InvalidPassword :: InvalidPassword -> Property
 prop_InvalidPassword (InvalidPassword failedReason passwordPolicy password) =
-  withMaxSuccess 1000 $
-    validatePassword passwordPolicy (mkPassword password) === expected failedReason
+  withMaxSuccess 1000 $ (===) expected $
+    case validatePasswordPolicy passwordPolicy of
+      Left policyReasons -> Left policyReasons
+      Right validPolicy -> Right $ validatePassword validPolicy (mkPassword password)
   where
-    expected = either (V.InvalidPolicy . pure) (V.InvalidPassword . pure)
+    expected = either (Left . pure) (Right . V.InvalidPassword . pure) failedReason
 
 -- | Data type used to generate password which does not follow one of the policies
 -- as well as 'InvalidReason', 'CharSetPredicate', and 'PasswordPolicy' associated with it

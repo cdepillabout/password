@@ -275,7 +275,7 @@ data ValidationResult = ValidPassword | InvalidPassword [InvalidReason]
 -- This function is equivalent to @'validatePassword' policy charSetPredicate password == 'ValidPassword'@
 --
 -- >>> let pass = mkPassword "This_Is_Valid_PassWord1234"
--- >>> isValidPassword defaultPasswordPolicy defaultCharSetPredicate pass
+-- >>> isValidPassword defaultPasswordPolicy_ pass
 -- True
 --
 -- @since 2.1.0.0
@@ -288,7 +288,7 @@ isValidPassword policy pass = validatePassword policy pass == ValidPassword
 -- Note that if the 'PasswordPolicy' is invalid, this will never return 'ValidPassword'.
 --
 -- >>> let pass = mkPassword "This_Is_Valid_Password1234"
--- >>> validatePassword defaultPasswordPolicy pass
+-- >>> validatePassword defaultPasswordPolicy_ pass
 -- ValidPassword
 --
 -- @since 2.1.0.0
