@@ -22,26 +22,31 @@ Validate module provides set of functions which enables you to validate them.
 -}
 
 module Data.Password.Validate
-  ( -- * Data types
-    PasswordPolicy (..),
-    CharSetPredicate(..),
-    ValidationResult(..),
-    InvalidReason (..),
-    CharacterCategory(..),
-    InvalidPolicyReason(..),
-    -- * Default values
-    defaultPasswordPolicy,
-    defaultCharSetPredicate,
-    -- * Functions
-    isValidPassword,
+  ( -- * Validating passwords
     validatePassword,
-    -- * For internal use
-    isValidPasswordPolicy,
+    isValidPassword,
+    ValidationResult(..),
+    -- ** Password Policy
     validatePasswordPolicy,
-    isSpecial,
+    PasswordPolicy (..),
+    ValidPasswordPolicy,
+    unValidatePasswordPolicy,
+    defaultPasswordPolicy,
+    defaultPasswordPolicy_,
+    CharSetPredicate(..),
+    defaultCharSetPredicate,
+    InvalidReason (..),
+    InvalidPolicyReason(..),
+    CharacterCategory(..),
+    ExpectedLength,
+    ProvidedLength,
+    ExpectedAmount,
+    ProvidedAmount,
+    -- * For internal use
     defaultCharSet,
+    validateCharSetPredicate,
     categoryToPredicate,
-    validateCharSetPredicate
+    isSpecial
   ) where
 
 import Data.Char (chr, isAsciiLower, isAsciiUpper, isDigit, ord)
@@ -61,13 +66,20 @@ import Data.Password.Internal (Password (..))
 --
 -- >>> import Data.Password
 
--- | Set of policies used to validate 'Password'
+{-
+TODO: Add a QuasiQuoter to check password policies at compile time.
+-}
+
+-- | Set of policies used to validate a 'Password'.
 --
 -- When defining your own 'PasswordPolicy', please keep in mind that:
 --
 -- * The value of 'maximumLength' must be bigger than 0
 -- * The value of 'maximumLength' must be bigger than 'minimumLength'
--- * If any other field has negative value (e.g 'lowercaseChars'), it will be defaulted to 0
+-- * If any other field has a negative value (e.g 'lowercaseChars'), it will be defaulted to 0
+-- * The provided 'CharSetPredicate' needs to allow at least one of the characters in the
+--   categories which require more than 0 characters. (e.g. if 'lowercaseChars' is > 0,
+--   the 'charSetPredicate' must allow at least one of the characters in @['a'..'z']@)
 --
 -- or else the validation functions will return one or more 'InvalidPolicyReason's.
 --
@@ -220,7 +232,7 @@ type ProvidedLength = Int
 type ExpectedAmount = Int
 type ProvidedAmount = Int
 
--- | Possible reason for a 'Password' to be invalid.
+-- | Possible reasons for a 'Password' to be invalid.
 --
 -- @since 2.1.0.0
 data InvalidReason
@@ -234,7 +246,7 @@ data InvalidReason
   -- ^ 'Password' contains characters that cannot be used
   deriving (Eq, Ord, Show)
 
--- | Possible reason of 'PasswordPolicy' being invalid
+-- | Possible reasons for a 'PasswordPolicy' to be invalid
 --
 -- @since 2.1.0.0
 data InvalidPolicyReason
