@@ -30,7 +30,7 @@ module Data.Password.Validate
     validatePasswordPolicy,
     PasswordPolicy (..),
     ValidPasswordPolicy,
-    unValidatePasswordPolicy,
+    fromValidPasswordPolicy,
     defaultPasswordPolicy,
     defaultPasswordPolicy_,
     CharSetPredicate(..),
@@ -145,8 +145,13 @@ instance Show PasswordPolicy where
 --
 -- @since 2.1.0.0
 newtype ValidPasswordPolicy = VPP
-  { unValidatePasswordPolicy :: PasswordPolicy
-  } deriving (Eq, Show)
+  { fromValidPasswordPolicy :: PasswordPolicy
+    -- ^
+    -- In case you'd want to retrieve the 'PasswordPolicy'
+    -- from the 'ValidPasswordPolicy'
+    --
+    -- @since 2.1.0.0
+  } deriving (Eq, Ord, Show)
 
 -- | Default value for the 'PasswordPolicy'.
 --

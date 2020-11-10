@@ -114,7 +114,7 @@ props_validatePasswordPolicy =
       \i -> let maxLen = maximumLength defaultPasswordPolicy
                 mLength = [InvalidLength i maxLen | i > maxLen]
                 policy = defaultPasswordPolicy { minimumLength = i }
-                result = unValidatePasswordPolicy <$> validatePasswordPolicy policy
+                result = fromValidPasswordPolicy <$> validatePasswordPolicy policy
                 expected = case mLength of
                   [] -> Right policy
                   _ -> Left mLength
@@ -125,7 +125,7 @@ props_validatePasswordPolicy =
                 mZero = [MaxLengthBelowZero i | i <= 0]
                 reasons = mZero ++ mLength
                 policy = defaultPasswordPolicy { maximumLength = i }
-                result = unValidatePasswordPolicy <$> validatePasswordPolicy policy
+                result = fromValidPasswordPolicy <$> validatePasswordPolicy policy
                 expected = case reasons of
                   [] -> Right policy
                   _ -> Left reasons
@@ -134,7 +134,7 @@ props_validatePasswordPolicy =
   where
     validProp f i =
       let p = f i
-          result = unValidatePasswordPolicy <$> validatePasswordPolicy p
+          result = fromValidPasswordPolicy <$> validatePasswordPolicy p
       in result === Right p
 
 validDefaultPasswordPolicy :: Assertion
@@ -142,7 +142,7 @@ validDefaultPasswordPolicy = do
   assertBool "defaultPasswordPolicy isn't a valid policy"
     $ isRight $ validatePasswordPolicy defaultPasswordPolicy
   assertBool "defaultPasswordPolicy_ isn't a valid policy"
-    $ isRight $ validatePasswordPolicy $ unValidatePasswordPolicy defaultPasswordPolicy_
+    $ isRight $ validatePasswordPolicy $ fromValidPasswordPolicy defaultPasswordPolicy_
 
 validDefaultCharSetPredicate :: Assertion
 validDefaultCharSetPredicate =
