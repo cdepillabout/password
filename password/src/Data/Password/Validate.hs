@@ -4,29 +4,121 @@
 {-# LANGUAGE RecordWildCards   #-}
 
 {-|
-Module      : Data.Password.Valid
+Module      : Data.Password.Validate
 Copyright   : (c) Hiroto Shioi, 2020; Felix Paulusma, 2020
 License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
 Portability : POSIX
 
-= validate
+= Password Validation
 
-It is common for passwords to have a set of requirements.
-(e.g. Password must contain at least eight characters that consist of alphabetic
-characters combined with numbers or special characters.)
+It is common for passwords to have a set of requirements. For example,
+a password might have to contain at least a certain amount of characters
+that consist of uppercase and lowercase alphabetic characters combined with
+numbers and/or other special characters.
 
-Validate module provides set of functions which enables you to validate them.
+This module provides an API which enables you to set up your own
+'PasswordPolicy' to validate the format of 'Password's.
+
+== Password Policies
+
+The most important part is to have a valid and robust 'PasswordPolicy'.
+
+A 'defaultPasswordPolicy_' is provided to quickly set up a "good-enough"
+validation of passwords, but you can also adjust it, or just create your
+own.
+
+Just remember that a 'PasswordPolicy' must be validated with
+'validatePasswordPolicy' to make sure it is actually a 'ValidPasswordPolicy'.
+Otherwise, you'd never be able to validate any given 'Password's.
+
+
+= Example usage
+
+So let's say we're fine with the default policy, which requires the
+password to be between 8-64 characters, and have at least one lowercase,
+one uppercase and one digit character, then our function would look like
+the following:
+
+@
+myValidateFunc :: 'Password' -> 'Bool'
+myValidateFunc = 'isValidPassword' 'defaultPasswordPolicy_'
+@
+
+But if you'd like to also include at least one special character, and
+would maybe like a 'Password' to be at least 12 characters long, you'll
+have to make your own 'PasswordPolicy'.
+
+@
+customPolicy :: 'PasswordPolicy'
+customPolicy =
+  'defaultPasswordPolicy'
+    { minimumLength = 12
+    , specialChars = 1
+    }
+@
+
+This custom policy will have to be validated first, using 'validatePasswordPolicy',
+so it can be used to validate 'Password's further on. In an application,
+this might be implemented in the following way.
+
+@
+main :: IO ()
+main =
+    case ('validatePasswordPolicy' customPolicy) of
+      Left reasons -> error $ show reasons
+      Right validPolicy -> app \`runReaderT\` validPolicy
+
+customValidateFunc :: 'Password' -> ReaderT 'ValidPasswordPolicy' IO 'Bool'
+customValidateFunc pwd = do
+    policy <- ask
+    return $ 'isValidPassword' policy pwd
+@
+
+Or, if you're certain your policy is valid (e.g. test it in your test suite),
+you could also just match on 'Right'.
+
+@
+Right validPolicy = 'validatePasswordPolicy' customPolicy
+
+customValidateFunc :: 'Password' -> 'Bool'
+customValidateFunc = 'isValidPassword' validPolicy
+@
 
 -}
 
 module Data.Password.Validate
   ( -- * Validating passwords
+    --
+    -- |
+    -- The main function of this module is probably 'isValidPassword',
+    -- as it is simple and straightforward.
+    --
+    -- Though if you'd want to know why a 'Password' failed to validate,
+    -- because you'd maybe like to communicate those 'InvalidReason's
+    -- back to the user, 'validatePassword' is here to help you out.
     validatePassword,
     isValidPassword,
     ValidationResult(..),
     -- ** Password Policy
+    --
+    -- |
+    -- A 'PasswordPolicy' also has to be validated before it can be
+    -- used to validate a 'Password'. This is done using 'validatePasswordPolicy'.
+    --
+    -- Next to the obvious lower and upper bounds for the length of a 'Password',
+    -- a 'PasswordPolicy' can dictate how many lowercase letters, uppercase letters,
+    -- digits and/or special characters are minimally required to be used in the
+    -- 'Password' to be considered a valid 'Password'.
+    --
+    -- An observant user might have also seen that a 'PasswordPolicy' includes a
+    -- 'CharSetPredicate'. Very few users will want to change this from the
+    -- 'defaultCharSetPredicate', since this includes all non-control ASCII characters.
+    --
+    -- If, for some reason, you'd like to accept more characters (e.g. é, ø, か, 事)
+    -- or maybe you want to only allow alpha-numeric characters, 'charSetPredicate' is
+    -- the place to do so.
     validatePasswordPolicy,
     PasswordPolicy (..),
     ValidPasswordPolicy,
@@ -281,7 +373,7 @@ data InvalidPolicyReason
 data ValidationResult = ValidPassword | InvalidPassword [InvalidReason]
   deriving (Eq, Show)
 
--- | This function is equivalent to @'validatePassword' policy password == 'ValidPassword'@
+-- | This function is equivalent to: @'validatePassword' policy password == 'ValidPassword'@
 --
 -- >>> let pass = mkPassword "This_Is_Valid_PassWord1234"
 -- >>> isValidPassword defaultPasswordPolicy_ pass
