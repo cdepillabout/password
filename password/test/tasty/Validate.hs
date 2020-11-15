@@ -16,7 +16,7 @@ import Test.Tasty.HUnit (Assertion, assertBool, assertEqual, testCase)
 import Test.Tasty.QuickCheck (Arbitrary (..), Gen, Property, choose,
                               elements, oneof, shuffle, suchThat, testProperty,
                               withMaxSuccess, (===))
-#if! MIN_VERSION_base(4,13,0)
+#if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
 
@@ -34,7 +34,7 @@ testValidate =
     , testCase "defaultCharSetPredicate accepts all of defaultCharSet" $
         assertBool "defaultCharSet includes characters defaultCharSetPredicate disallows"
           $ all p defaultCharSet
-    , testGroup "validatePasswordPolicy" props_validatePasswordPolicy
+    , testGroup "validatePasswordPolicy" validatePasswordPolicyTests
 
     , testProperty
         "Generator will always generate valid passwordPolicy"
@@ -91,8 +91,8 @@ testDefaultCharSet =
 defaultPassword :: Password
 defaultPassword = "Abcd3fgh"
 
-props_validatePasswordPolicy :: [TestTree]
-props_validatePasswordPolicy =
+validatePasswordPolicyTests :: [TestTree]
+validatePasswordPolicyTests =
   [ testCase "defaultPasswordPolicy is valid" validDefaultPasswordPolicy
   , testCase "defaultCharSetPredicate is valid" validDefaultCharSetPredicate
   , testCase "defaultPassword is valid" validDefaultPassword
@@ -173,7 +173,7 @@ instance Arbitrary PasswordPolicy where
     return PasswordPolicy{..}
     where
       genCharLength :: Gen Int
-      genCharLength = (choose (1, 10))
+      genCharLength = choose (1, 10)
 
 instance Arbitrary CharacterCategory where
   arbitrary = elements [Uppercase, Lowercase, Special, Digit]
@@ -216,7 +216,7 @@ instance Arbitrary ValidPassword where
         specialChar <- genStr specialChars isSpecial
         digit <- genStr digitChars isDigit
         let requiredChars = upperCase <> lowerCase <> specialChar <> digit
-        let toFill = passLength - (length requiredChars)
+        let toFill = passLength - length requiredChars
         fillChars <- replicateM toFill $
             arbitrary `suchThat` getCharSetPredicate charSetPredicate
         T.pack <$> shuffle (fillChars <> requiredChars)
@@ -319,10 +319,10 @@ instance Arbitrary InvalidPassword where
       updateCharSetPredicate :: CharSetPredicate -> Either InvalidPolicyReason InvalidReason -> CharSetPredicate
       updateCharSetPredicate predicate = \case
         Right (InvalidCharacters invalidChars) ->
-          CharSetPredicate $ \c -> (getCharSetPredicate predicate) c && c `notElem` (T.unpack invalidChars)
+          CharSetPredicate $ \c -> getCharSetPredicate predicate c && c `notElem` T.unpack invalidChars
         Left (InvalidCharSetPredicate category _num) ->
           let filterPre = categoryToPredicate category
-          in CharSetPredicate $ \c -> and [(getCharSetPredicate predicate) c, (not . filterPre) c]
+          in CharSetPredicate $ \c -> getCharSetPredicate predicate c && (not . filterPre) c
         _others -> predicate
       genInvalidPassword :: PasswordPolicy -> Either InvalidPolicyReason InvalidReason -> Gen String
       genInvalidPassword policy@PasswordPolicy{..} = \case
@@ -331,7 +331,7 @@ instance Arbitrary InvalidPassword where
         Right (NotEnoughReqChars category _req actual) -> do
           passwordLength <- genPasswordLength policy
           let pre = categoryToPredicate category
-          let usableCharsets = CharSetPredicate $ \c -> not (pre c) && (getCharSetPredicate charSetPredicate) c
+          let usableCharsets = CharSetPredicate $ \c -> not (pre c) && getCharSetPredicate charSetPredicate c
           requiredChars <- replicateM actual (arbitrary `suchThat` pre)
           passwordText <- genPassword (passwordLength - actual) usableCharsets
           shuffle (passwordText <> requiredChars)
@@ -344,7 +344,7 @@ instance Arbitrary InvalidPassword where
           -- e.g. [InvalidChar "一二三"] /= [InvalidChar "三二一"]
           let s = T.unpack chrs
           shuffle (passwordText <> s) `suchThat` checkOrder charSetPredicate s
-        Left (MaxLengthBelowZero _invalid) -> genPassword (minimumLength) charSetPredicate
+        Left (MaxLengthBelowZero _invalid) -> genPassword minimumLength charSetPredicate
         _others -> do
           passwordLength <- genPasswordLength policy
           genPassword passwordLength charSetPredicate
@@ -354,7 +354,7 @@ instance Arbitrary InvalidPassword where
       genPasswordLength PasswordPolicy{..} = choose (minimumLength, maximumLength)
       checkOrder :: CharSetPredicate -> String -> String -> Bool
       checkOrder (CharSetPredicate predicate) invalidChars password =
-        let filteredChars = filter (\c -> (not . predicate) c) password
+        let filteredChars = filter (not . predicate) password
          in invalidChars == filteredChars
 
 -- | Check if given 'InvalidReason' is valid

@@ -302,7 +302,7 @@ defaultCharSetPredicate =  CharSetPredicate $ \c -> ord c >= 32 && ord c <= 126
 -- @since 2.1.0.0
 isSpecial :: Char -> Bool
 isSpecial = \c ->
-    isDefault c && not (or [isAsciiUpper c, isAsciiLower c, isDigit c])
+    isDefault c && not (isAsciiUpper c || isAsciiLower c || isDigit c)
   where
     CharSetPredicate isDefault = defaultCharSetPredicate
 
