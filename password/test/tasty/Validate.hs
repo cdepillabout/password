@@ -123,7 +123,8 @@ validatePasswordPolicyTests =
       \i -> let minLen = minimumLength defaultPasswordPolicy
                 mLength = [InvalidLength minLen i | i < minLen]
                 mZero = [MaxLengthBelowZero i | i <= 0]
-                reasons = mZero ++ mLength
+                mCategoryAmount = mkCategoryAmount policy
+                reasons = mZero ++ mLength ++ mCategoryAmount
                 policy = defaultPasswordPolicy { maximumLength = i }
                 result = fromValidPasswordPolicy <$> validatePasswordPolicy policy
                 expected = case reasons of
@@ -132,10 +133,22 @@ validatePasswordPolicyTests =
             in result === expected
   ]
   where
+    mkCategoryAmount p =
+        [ CategoryAmountsAboveMaxLength (maximumLength p) allCategoryAmounts
+        | allCategoryAmounts > maxLength
+        , maxLength > 0
+        ]
+      where
+        maxLength = maximumLength p
+        allCategoryAmounts = sum $ max 0 <$> [lowercaseChars p, uppercaseChars p, digitChars p, specialChars p]
     validProp f i =
       let p = f i
           result = fromValidPasswordPolicy <$> validatePasswordPolicy p
-      in result === Right p
+          reason = mkCategoryAmount p
+          expected = case reason of
+            [] -> Right p
+            _ -> Left reason
+      in result === expected
 
 validDefaultPasswordPolicy :: Assertion
 validDefaultPasswordPolicy = do

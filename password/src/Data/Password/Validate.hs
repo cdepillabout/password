@@ -354,14 +354,20 @@ data InvalidReason
 --
 -- @since 2.1.0.0
 data InvalidPolicyReason
-  = InvalidLength !ProvidedLength !ProvidedLength
+  = InvalidLength !MinimumLength !MaximumLength
   -- ^ Value of 'minimumLength' is bigger than 'maximumLength'
   --
-  -- @InvalidLength minLength maxLength@
-  | MaxLengthBelowZero !ProvidedLength
+  -- @InvalidLength minimumLength maximumLength@
+  | MaxLengthBelowZero !MaximumLength
   -- ^ Value of 'maximumLength' is zero or less
   --
-  -- @MaxLengthBelowZero maxLength@
+  -- @MaxLengthBelowZero maximumLength@
+  | CategoryAmountsAboveMaxLength !MaximumLength !Int
+  -- ^ The total of the character category amount requirements are
+  -- higher than the maximum length of the password. (i.e. the 'Int' signifies
+  -- the total of 'lowercaseChars' + 'uppercaseChars' + 'digitChars' + 'specialChars')
+  --
+  -- @CategoryAmountsAboveMaxLength maximumLength totalRequiredChars@
   | InvalidCharSetPredicate !CharacterCategory !MinimumAmount
   -- ^ 'charSetPredicate' does not return 'True' for a 'CharacterCategory' that
   -- requires at least 'MinimumAmount' characters in the password
@@ -471,12 +477,18 @@ validatePasswordPolicy policy@PasswordPolicy{..} =
       [] -> Right $ VPP policy
       _ -> Left allReasons
   where
-    allReasons = mconcat [validMaxLength, validLength, validPredicate]
-    validLength, validMaxLength, validPredicate :: [InvalidPolicyReason]
+    allReasons = mconcat [validMaxLength, validLength, validCategoryAmount, validPredicate]
+    validLength, validMaxLength, validCategoryAmount, validPredicate :: [InvalidPolicyReason]
     validLength =
-      [InvalidLength minimumLength maximumLength | minimumLength > maximumLength]
+        [InvalidLength minimumLength maximumLength | minimumLength > maximumLength]
     validMaxLength =
-      [MaxLengthBelowZero maximumLength | maximumLength <= 0]
+        [MaxLengthBelowZero maximumLength | maximumLength <= 0]
+    validCategoryAmount =
+        -- We don't report this reason if the maximumLength is already invalid
+        [CategoryAmountsAboveMaxLength maximumLength total | total > maximumLength, maximumLength > 0]
+      where
+        capToZero = max 0
+        total = sum $ capToZero <$> [lowercaseChars, uppercaseChars, digitChars, specialChars]
     validPredicate = validateCharSetPredicate policy
 
 -- | Default character set
