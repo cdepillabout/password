@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {-|
 Module      : Data.Password.Validate
@@ -120,6 +121,7 @@ module Data.Password.Validate
     -- or maybe you want to only allow alpha-numeric characters, 'charSetPredicate' is
     -- the place to do so.
     validatePasswordPolicy,
+    validatePasswordPolicyTH,
     PasswordPolicy (..),
     ValidPasswordPolicy,
     fromValidPasswordPolicy,
@@ -144,11 +146,15 @@ module Data.Password.Validate
 
 import Data.Char (chr, isAsciiLower, isAsciiUpper, isDigit, ord)
 import Data.Function (on)
-#if! MIN_VERSION_base(4,13,0)
+import Data.List (foldl')
+
+#if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
 import qualified Data.Text as T
+import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
 
 import Data.Password.Internal (Password (..))
 
@@ -196,6 +202,8 @@ data PasswordPolicy = PasswordPolicy
     -- ^ Which characters are acceptable for use in passwords (cf. 'defaultCharSetPredicate')
     }
 
+-- NB: KEEP THIS THE SAME ORDER AS THE PasswordPolicy FIELDS!
+-- OTHERWISE THE validatePasswordPolicyTH FUNCTION WILL BREAK.
 allButCSP :: PasswordPolicy -> [Int]
 allButCSP PasswordPolicy{..} =
   [ minimumLength
@@ -464,6 +472,30 @@ validateCharSetPredicate PasswordPolicy{..} =
       ]
     categoryToString :: CharacterCategory -> String
     categoryToString category = filter (categoryToPredicate category) defaultCharSet
+
+-- | Template Haskell validation function for 'PasswordPolicy's.
+--
+-- @
+-- -- Example usage
+-- myValidPolicy :: ValidPasswordPolicy
+-- myValidPolicy = $(validatePasswordPolicyTH myPolicy)
+-- @
+--
+-- For technical reasons, the 'charSetPredicate' field is ignored and the
+-- 'defaultCharSetPredicate' is used. If, for any reason, you do need to use a
+-- custom 'CharSetPredicate', please use 'validatePasswordPolicy' and either handle
+-- the failure case at runtime and/or use a unit test to make sure your policy is valid.
+--
+-- @since 2.1.0.0
+validatePasswordPolicyTH :: PasswordPolicy -> Q Exp
+validatePasswordPolicyTH pp =
+    either (fail . showReasons) go $ validatePasswordPolicy withDefault
+  where
+    withDefault = pp{charSetPredicate = defaultCharSetPredicate}
+    showReasons rs = "Bad password policy: " ++ show rs
+    go _ = [|VPP|] `appE` newPP
+    allButCSPQ = lift <$> allButCSP withDefault
+    newPP = foldl' appE [|PasswordPolicy|] allButCSPQ `appE` [|defaultCharSetPredicate|]
 
 -- | Verifies that a 'PasswordPolicy' is valid and converts it into a 'ValidPasswordPolicy'.
 --
