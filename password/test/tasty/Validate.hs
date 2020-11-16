@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Validate where
@@ -24,6 +25,7 @@ import Data.Password (Password, mkPassword)
 import Data.Password.Validate hiding (ValidationResult(..))
 import qualified Data.Password.Validate as V
 
+import TestPolicy (testPolicy)
 -- | Set of tests used for testing validate module
 testValidate :: TestTree
 testValidate =
@@ -131,6 +133,7 @@ validatePasswordPolicyTests =
                   [] -> Right policy
                   _ -> Left reasons
             in result === expected
+  , testGroup "TemplateHaskell" templateHaskellTest
   ]
   where
     mkCategoryAmount p =
@@ -155,7 +158,33 @@ validDefaultPasswordPolicy = do
   assertBool "defaultPasswordPolicy isn't a valid policy"
     $ isRight $ validatePasswordPolicy defaultPasswordPolicy
   assertBool "defaultPasswordPolicy_ isn't a valid policy"
-    $ isRight $ validatePasswordPolicy $ fromValidPasswordPolicy defaultPasswordPolicy_
+    $ Right defaultPasswordPolicy_ == validatePasswordPolicy (fromValidPasswordPolicy defaultPasswordPolicy_)
+
+templateHaskellTest :: [TestTree]
+templateHaskellTest =
+    [ testCase "Internal consistency" $ assertEqual
+        "validatePasswordPolicyTH changed the values of defaultPasswordPolicy"
+        testPolicy
+        $ fromValidPasswordPolicy $(validatePasswordPolicyTH testPolicy)
+    , testCase "defaultPassword" $ assertBool
+        "valid policy from TH can't parse defaultPassword"
+        $ isValidPassword $(validatePasswordPolicyTH defaultPasswordPolicy) defaultPassword
+    , testCase "TH ignores charSetPredicate (always uses default)" $ assertBool
+        "TH still parses defaultPassword when pred is initially bad"
+        $ isValidPassword
+            $(validatePasswordPolicyTH defaultPasswordPolicy{ charSetPredicate = CharSetPredicate $ const False })
+            defaultPassword
+    , testProperty "prop test for charSetPredicate after TH" $ \(PredInts i) ->
+        let policy = $(validatePasswordPolicyTH defaultPasswordPolicy{ charSetPredicate = CharSetPredicate $ const False})
+            pred = getCharSetPredicate . charSetPredicate $ fromValidPasswordPolicy policy
+            c = chr i
+        in pred c == (c `elem` defaultCharSet)
+    ]
+
+newtype PredInts = PredInts { unPredInts :: Int } deriving (Eq, Show)
+
+instance Arbitrary PredInts where
+    arbitrary = PredInts <$> choose (0, 260)
 
 validDefaultCharSetPredicate :: Assertion
 validDefaultCharSetPredicate =
@@ -271,6 +300,7 @@ instance Arbitrary InvalidPassword where
             Left <$> oneof
               [ MaxLengthBelowZero <$> (arbitrary `suchThat` (<= 0))
               , genInvalidLength policy
+              , genInvalidCategoryAmountTotal policy
               , InvalidCharSetPredicate <$> arbitrary <*> choose (minimumLength, maximumLength)
               ]
           ]
@@ -301,6 +331,11 @@ instance Arbitrary InvalidPassword where
         let sumReq = sum [uppercaseChars, lowercaseChars, specialChars, digitChars]
         minLength <- choose (sumReq, maximumLength - 1) `suchThat` (> 0)
         return $ InvalidLength maximumLength minLength
+      genInvalidCategoryAmountTotal :: PasswordPolicy -> Gen InvalidPolicyReason
+      genInvalidCategoryAmountTotal p = do
+          maxLength <- arbitrary `suchThat` (> minimumLength p)
+          let totalAmount = maxLength + 1
+          return $ CategoryAmountsAboveMaxLength maxLength totalAmount
       -- Update 'PasswordPolicy' based upon 'InvalidReason'
       updatePolicy :: PasswordPolicy -> Either InvalidPolicyReason InvalidReason -> PasswordPolicy
       updatePolicy policy = \case
@@ -322,6 +357,11 @@ instance Arbitrary InvalidPassword where
           policy {
             minimumLength = minLength,
             maximumLength = maxLength
+          }
+        Left (CategoryAmountsAboveMaxLength maxLength totalAmount) ->
+          policy {
+              maximumLength = maxLength,
+              lowercaseChars = totalAmount
           }
         Left (InvalidCharSetPredicate category num) ->
           case category of
@@ -382,6 +422,7 @@ isValidPolicyReason :: InvalidPolicyReason -> Bool
 isValidPolicyReason = \case
   InvalidLength minLength maxLength -> minLength > maxLength
   MaxLengthBelowZero num -> num <= 0
+  CategoryAmountsAboveMaxLength maxLength num -> num > maxLength
   InvalidCharSetPredicate _category num -> num > 0
 
 -- | 'PasswordPolicy' used for testing
