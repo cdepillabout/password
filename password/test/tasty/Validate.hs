@@ -9,6 +9,7 @@ module Validate where
 
 import Control.Monad (replicateM)
 import Data.Char (chr, isAsciiLower, isAsciiUpper, isControl, isDigit)
+import Data.List (nub)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Test.QuickCheck.Instances.Text ()
@@ -162,8 +163,12 @@ validDefaultPasswordPolicy = do
 
 templateHaskellTest :: [TestTree]
 templateHaskellTest =
-    [ testCase "Internal consistency" $ assertEqual
-        "validatePasswordPolicyTH changed the values of defaultPasswordPolicy"
+    [ testCase "allButCSP check" $ assertBool
+        "testPolicy doesn't have unique values"
+        $ let ns = V.allButCSP testPolicy
+          in nub ns == ns
+    , testCase "Internal consistency" $ assertEqual
+        "validatePasswordPolicyTH switched values between fields"
         testPolicy
         $ fromValidPasswordPolicy $(validatePasswordPolicyTH testPolicy)
     , testCase "defaultPassword" $ assertBool
