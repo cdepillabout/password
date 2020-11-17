@@ -6,12 +6,15 @@
     should adhere to and the necessary API to verify that they do.
     [#26](https://github.com/cdepillabout/password/pull/26)
     Huge thanks to [@HirotoShioi](https://github.com/HirotoShioi) for picking
-    up the task of adding this functionality and doing most of the work.
+    up the task of adding this functionality and doing most of the groundwork.
+    [#27](https://github.com/cdepillabout/password/pull/27)
+    Thanks to Felix Paulusma ([@Vlix](https://github.com/Vlix)) for finishing
+    up the API and documentation.
 
 ## 2.0.1.1
 
--   Fixed cross-module links in the haddocks
-    [#19](https://github.com/cdepillabout/password/pull/19). Thanks to
+-   Fixed cross-module links in the haddocks.
+    [#19](https://github.com/cdepillabout/password/pull/19) Thanks to
     [@TristanCacqueray](https://github.com/TristanCacqueray) for fixing this.
 
 ## 2.0.1.0
@@ -19,8 +22,7 @@
 -   Switched checking hashes to using `Data.ByteArray.constEq`, instead of
     the default `(==)` method of `ByteString`. This is to make it more secure
     against timing attacks. [#16](https://github.com/cdepillabout/password/pull/16)
-    Thanks to maralorn ([@maralorn](https://github.com/maralorn)) for bringing
-    this up.
+    Thanks to [@maralorn](https://github.com/maralorn) for bringing this up.
 
 ## 2.0.0.1
 
