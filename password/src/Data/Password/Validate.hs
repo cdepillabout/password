@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 {-|
 Module      : Data.Password.Validate
@@ -30,10 +30,9 @@ A 'defaultPasswordPolicy_' is provided to quickly set up a "good-enough"
 validation of passwords, but you can also adjust it, or just create your
 own.
 
-Just remember that a 'PasswordPolicy' must be validated with
-'validatePasswordPolicy' to make sure it is actually a 'ValidPasswordPolicy'.
-Otherwise, you'd never be able to validate any given 'Password's.
-
+Just remember that a 'PasswordPolicy' must be validated first to make
+sure it is actually a 'ValidPasswordPolicy'. Otherwise, you'd never be
+able to validate any given 'Password's.
 
 = Example usage
 
@@ -43,13 +42,15 @@ one uppercase and one digit character, then our function would look like
 the following:
 
 @
-myValidateFunc :: 'Password' -> 'Bool'
+myValidateFunc :: 'Password' -> Bool
 myValidateFunc = 'isValidPassword' 'defaultPasswordPolicy_'
 @
 
-But if you'd like to also include at least one special character, and
-would maybe like a 'Password' to be at least 12 characters long, you'll
-have to make your own 'PasswordPolicy'.
+== Custom policies
+
+But, for example, if you'd like to enforce that a 'Password' includes
+at least one special character, and be at least 12 characters long,
+you'll have to make your own 'PasswordPolicy'.
 
 @
 customPolicy :: 'PasswordPolicy'
@@ -60,9 +61,33 @@ customPolicy =
     }
 @
 
-This custom policy will have to be validated first, using 'validatePasswordPolicy',
-so it can be used to validate 'Password's further on. In an application,
-this might be implemented in the following way.
+This custom policy will then have to be validated first, so it can be
+used to validate 'Password's further on.
+
+== Template Haskell
+
+The easiest way to validate a custom 'PasswordPolicy' is by using a
+Template Haskell splice.
+Just turn on the @\{\-\# LANGUAGE TemplateHaskell \#\-\}@ pragma, pass your
+policy to 'validatePasswordPolicyTH', surround it by @\$(...)@ and if
+it compiles it will be a 'ValidPasswordPolicy'.
+
+@
+{-\# LANGUAGE TemplateHaskell \#-}
+customValidPolicy :: 'ValidPasswordPolicy'
+customValidPolicy = $('validatePasswordPolicyTH' customPolicy)
+@
+
+__NB: any custom 'CharSetPredicate' will be ignored by 'validatePasswordPolicyTH'__
+__and replaced with the 'defaultCharSetPredicate'.__
+So if you want to use your own 'CharSetPredicate', you won't be able
+to validate your policy using 'validatePasswordPolicyTH'. Most users,
+however, will find 'defaultCharSetPredicate' to be sufficient.
+
+== At runtime
+
+Another way of validating your custom policy is 'validatePasswordPolicy'.
+In an application, this might be implemented in the following way.
 
 @
 main :: IO ()
@@ -71,19 +96,23 @@ main =
       Left reasons -> error $ show reasons
       Right validPolicy -> app \`runReaderT\` validPolicy
 
-customValidateFunc :: 'Password' -> ReaderT 'ValidPasswordPolicy' IO 'Bool'
+customValidateFunc :: 'Password' -> ReaderT 'ValidPasswordPolicy' IO Bool
 customValidateFunc pwd = do
     policy <- ask
     return $ 'isValidPassword' policy pwd
 @
 
-Or, if you're certain your policy is valid (e.g. test it in your test suite),
-you could also just match on 'Right'.
+== Let's get dangerous
+
+Or, if you like living on the edge, you could also just match on 'Right'.
+I hope you're certain your policy is valid, though. So please have at least
+a unit test to verify that passing your 'PasswordPolicy' to
+'validatePasswordPolicy' actually returns a 'Right'.
 
 @
 Right validPolicy = 'validatePasswordPolicy' customPolicy
 
-customValidateFunc :: 'Password' -> 'Bool'
+customValidateFunc :: 'Password' -> Bool
 customValidateFunc = 'isValidPassword' validPolicy
 @
 
@@ -105,8 +134,9 @@ module Data.Password.Validate
     -- ** Password Policy
     --
     -- |
-    -- A 'PasswordPolicy' also has to be validated before it can be
-    -- used to validate a 'Password'. This is done using 'validatePasswordPolicy'.
+    -- A 'PasswordPolicy' has to be validated before it can be used to validate a
+    -- 'Password'.
+    -- This is done using 'validatePasswordPolicy' or 'validatePasswordPolicyTH'.
     --
     -- Next to the obvious lower and upper bounds for the length of a 'Password',
     -- a 'PasswordPolicy' can dictate how many lowercase letters, uppercase letters,
@@ -138,10 +168,16 @@ module Data.Password.Validate
     MinimumAmount,
     ProvidedAmount,
     -- * For internal use
+    --
+    -- | These are used in the test suite. You should not need these.
+    --
+    -- These are basically internal functions and as such have NO guarantee (__NONE__)
+    -- to be consistent between releases.
     defaultCharSet,
     validateCharSetPredicate,
     categoryToPredicate,
-    isSpecial
+    isSpecial,
+    allButCSP
   ) where
 
 import Data.Char (chr, isAsciiLower, isAsciiUpper, isDigit, ord)
@@ -153,8 +189,8 @@ import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
 import qualified Data.Text as T
-import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
+import Language.Haskell.TH (Exp, Q, appE)
+import Language.Haskell.TH.Syntax (Lift (..))
 
 import Data.Password.Internal (Password (..))
 
@@ -165,24 +201,22 @@ import Data.Password.Internal (Password (..))
 --
 -- >>> import Data.Password
 
-{-
-TODO: Add a QuasiQuoter to check password policies at compile time.
--}
-
 -- | Set of policies used to validate a 'Password'.
 --
 -- When defining your own 'PasswordPolicy', please keep in mind that:
 --
 -- * The value of 'maximumLength' must be bigger than 0
 -- * The value of 'maximumLength' must be bigger than 'minimumLength'
--- * If any other field has a negative value (e.g 'lowercaseChars'), it will be defaulted to 0
+-- * If any other field has a negative value (e.g. 'lowercaseChars'), it will be defaulted to 0
+-- * The total sum of all character category values (i.e. all fields ending in @-Chars@)
+--   must not be larger than the value of 'maximumLength'.
 -- * The provided 'CharSetPredicate' needs to allow at least one of the characters in the
 --   categories which require more than 0 characters. (e.g. if 'lowercaseChars' is > 0,
 --   the 'charSetPredicate' must allow at least one of the characters in @[\'a\'..\'z\']@)
 --
 -- or else the validation functions will return one or more 'InvalidPolicyReason's.
 --
--- If you're unsure of what to do, please use the default value 'defaultPasswordPolicy_'
+-- If you're unsure of what to do, please use the default: 'defaultPasswordPolicy_'
 --
 -- @since 2.1.0.0
 data PasswordPolicy = PasswordPolicy
@@ -203,7 +237,10 @@ data PasswordPolicy = PasswordPolicy
     }
 
 -- NB: KEEP THIS THE SAME ORDER AS THE PasswordPolicy FIELDS!
--- OTHERWISE THE validatePasswordPolicyTH FUNCTION WILL BREAK.
+-- OTHERWISE THE 'validatePasswordPolicyTH' FUNCTION WILL BREAK.
+
+-- @since 2.1.0.0
+-- | All 'Int' fields of the 'PasswordPolicy' in a row
 allButCSP :: PasswordPolicy -> [Int]
 allButCSP PasswordPolicy{..} =
   [ minimumLength
@@ -304,17 +341,16 @@ defaultCharSetPredicate :: CharSetPredicate
 defaultCharSetPredicate =  CharSetPredicate $ \c -> ord c >= 32 && ord c <= 126
 {-# INLINE defaultCharSetPredicate #-}
 
+-- @since 2.1.0.0
 -- | Check if given 'Char' is a special character.
 -- (i.e. any non-alphanumeric non-control ASCII character)
---
--- @since 2.1.0.0
 isSpecial :: Char -> Bool
 isSpecial = \c ->
     isDefault c && not (isAsciiUpper c || isAsciiLower c || isDigit c)
   where
     CharSetPredicate isDefault = defaultCharSetPredicate
 
--- | Character Category
+-- | Character categories
 --
 -- @since 2.1.0.0
 data CharacterCategory
@@ -328,9 +364,8 @@ data CharacterCategory
   -- ^ ASCII digits
   deriving (Eq, Ord, Show)
 
--- | Convert a 'CharacterCategory' into its associated predicate function
---
 -- @since 2.1.0.0
+-- | Convert a 'CharacterCategory' into its associated predicate function
 categoryToPredicate :: CharacterCategory -> (Char -> Bool)
 categoryToPredicate = \case
   Uppercase -> isAsciiUpper
@@ -387,7 +422,9 @@ data InvalidPolicyReason
 data ValidationResult = ValidPassword | InvalidPassword [InvalidReason]
   deriving (Eq, Show)
 
--- | This function is equivalent to: @'validatePassword' policy password == 'ValidPassword'@
+-- | This function is equivalent to:
+--
+-- @'validatePassword' policy password == 'ValidPassword'@
 --
 -- >>> let pass = mkPassword "This_Is_Valid_PassWord1234"
 -- >>> isValidPassword defaultPasswordPolicy_ pass
@@ -398,9 +435,9 @@ isValidPassword :: ValidPasswordPolicy -> Password -> Bool
 isValidPassword policy pass = validatePassword policy pass == ValidPassword
 {-# INLINE isValidPassword #-}
 
--- | Checks if a given 'Password' adheres to the provided 'PasswordPolicy'.
+-- | Checks if a given 'Password' adheres to the provided 'ValidPasswordPolicy'.
 --
--- Note that if the 'PasswordPolicy' is invalid, this will never return 'ValidPassword'.
+-- In case of an invalid password, returns the reasons why it wasn't valid.
 --
 -- >>> let pass = mkPassword "This_Is_Valid_Password1234"
 -- >>> validatePassword defaultPasswordPolicy_ pass
@@ -448,8 +485,6 @@ validatePassword (VPP PasswordPolicy{..}) (Password password) =
 -- For instance, if 'PasswordPolicy' states that the password requires at least
 -- one uppercase letter, then 'CharSetPredicate' should return True on at least
 -- one uppercase letter.
---
--- @since 2.1.0.0
 validateCharSetPredicate :: PasswordPolicy -> [InvalidPolicyReason]
 validateCharSetPredicate PasswordPolicy{..} =
   let charSets = accumulateCharSet
@@ -476,9 +511,12 @@ validateCharSetPredicate PasswordPolicy{..} =
 -- | Template Haskell validation function for 'PasswordPolicy's.
 --
 -- @
--- -- Example usage
--- myValidPolicy :: ValidPasswordPolicy
--- myValidPolicy = $(validatePasswordPolicyTH myPolicy)
+-- {-\# LANGUAGE TemplateHaskell \#-}
+-- myPolicy :: 'PasswordPolicy'
+-- myPolicy = 'defaultPasswordPolicy'{ specialChars = 1 }
+--
+-- myValidPolicy :: 'ValidPasswordPolicy'
+-- myValidPolicy = $('validatePasswordPolicyTH' myPolicy)
 -- @
 --
 -- For technical reasons, the 'charSetPredicate' field is ignored and the
@@ -523,10 +561,9 @@ validatePasswordPolicy policy@PasswordPolicy{..} =
         total = sum $ capToZero <$> [lowercaseChars, uppercaseChars, digitChars, specialChars]
     validPredicate = validateCharSetPredicate policy
 
+-- @since 2.1.0.0
 -- | Default character set
 --
 -- Should be all non-control characters in the ASCII character set.
---
--- @since 2.1.0.0
 defaultCharSet :: String
 defaultCharSet = chr <$> [32 .. 126]
