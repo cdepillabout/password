@@ -1,0 +1,14 @@
+cradle:
+    stack:
+        - path: "./password/src"
+          component: "password:lib"
+        - path: "./password/test/doctest"
+          component: "password:test:doctests"
+        - path: "./password/test/tasty"
+          component: "password:test:password-tasty"
+        - path: "./password-instances/src"
+          component: "password-instances:lib"
+        - path: "./password-instances/test/doctest"
+          component: "password-instances:test:doctests"
+        - path: "./password-instances/test/tasty"
+          component: "password-instances:test:password-instances-tasty"
