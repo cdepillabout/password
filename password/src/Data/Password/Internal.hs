@@ -141,4 +141,3 @@ readT = readMaybe . T.unpack
 showT :: forall a. Show a => a -> Text
 showT = T.pack . show
 {-# INLINE showT #-}
-
