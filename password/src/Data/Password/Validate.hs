@@ -26,7 +26,9 @@ This module provides an API which enables you to set up your own
 
 The most important part is to have a valid and robust 'PasswordPolicy'.
 
-A 'defaultPasswordPolicy_' is provided to quickly set up a "good-enough"
+For policy recommendations look to <https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-63b.pdf>
+
+A 'defaultPasswordPolicy_' is provided to quickly set up a NIST recommended
 validation of passwords, but you can also adjust it, or just create your
 own.
 
@@ -292,8 +294,7 @@ newtype ValidPasswordPolicy = VPP
 
 -- | Default value for the 'PasswordPolicy'.
 --
--- Enforces that a password must be between 8-64 characters long and
--- have at least one uppercase letter, one lowercase letter and one digit,
+-- Enforces that a password must be between 8-64 characters long,
 -- though can easily be adjusted by using record update syntax:
 --
 -- @
@@ -305,17 +306,17 @@ newtype ValidPasswordPolicy = VPP
 -- 'InvalidPolicyReason's.
 --
 -- >>> defaultPasswordPolicy
--- PasswordPolicy {minimumLength = 8, maximumLength = 64, uppercaseChars = 1, lowercaseChars = 1, specialChars = 0, digitChars = 1, charSetPredicate = <FUNCTION>}
+-- PasswordPolicy {minimumLength = 8, maximumLength = 64, uppercaseChars = 0, lowercaseChars = 0, specialChars = 0, digitChars = 0, charSetPredicate = <FUNCTION>}
 --
 -- @since 2.1.0.0
 defaultPasswordPolicy :: PasswordPolicy
 defaultPasswordPolicy = PasswordPolicy
   { minimumLength = 8,
     maximumLength = 64,
-    uppercaseChars = 1,
-    lowercaseChars = 1,
+    uppercaseChars = 0,
+    lowercaseChars = 0,
     specialChars = 0,
-    digitChars = 1,
+    digitChars = 0,
     charSetPredicate = defaultCharSetPredicate
   }
 
