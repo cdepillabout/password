@@ -181,9 +181,9 @@ templateHaskellTest =
             defaultPassword
     , testProperty "prop test for charSetPredicate after TH" $ \(PredInts i) ->
         let policy = $(validatePasswordPolicyTH defaultPasswordPolicy{ charSetPredicate = CharSetPredicate $ const False})
-            pred = getCharSetPredicate . charSetPredicate $ fromValidPasswordPolicy policy
+            p = getCharSetPredicate . charSetPredicate $ fromValidPasswordPolicy policy
             c = chr i
-        in pred c == (c `elem` defaultCharSet)
+        in p c == (c `elem` defaultCharSet)
     ]
 
 newtype PredInts = PredInts { unPredInts :: Int } deriving (Eq, Show)
