@@ -47,11 +47,16 @@ jobs:
       run: |
         cabal test all --enable-tests
   stack:
-    name: stack / ghc ${{ matrix.ghc }}
+    name: stack ${{ matrix.resolver }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         stack: ["latest"]
+        resolver:
+          - "--stack-yaml ./stack.yaml"
+          - "--resolver lts-14"
+          - "--resolver lts-15"
+          - "--resolver lts-16"
 
     steps:
     - uses: actions/checkout@v2
@@ -66,11 +71,11 @@ jobs:
       name: Cache ~/.stack
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-stack
+        key: ${{ runner.os }}-${{ matrix.resolver }}-stack
 
     - name: Build
       run: |
-        stack build --test --bench --no-run-tests --no-run-benchmarks
+        stack build ${{ matrix.resolver }} --test --bench --no-run-tests --no-run-benchmarks
     - name: Test
       run: |
-        stack test
+        stack test ${{ matrix.resolver }}
