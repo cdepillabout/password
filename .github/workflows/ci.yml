@@ -54,6 +54,7 @@ jobs:
         stack: ["latest"]
         resolver:
           - "--stack-yaml ./stack.yaml"
+          - "--stack-yaml ./stack-lts-14.yaml"
           - "--resolver lts-15"
           - "--resolver lts-16"
 
