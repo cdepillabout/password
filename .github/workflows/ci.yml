@@ -10,6 +10,7 @@ jobs:
   cabal:
     name: ${{ matrix.os }} / ghc ${{ matrix.ghc }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.ghc == '8.2.2' }}
     strategy:
       matrix:
         os:
