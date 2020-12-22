@@ -17,6 +17,7 @@ jobs:
           - macOS-latest
         cabal: ["latest"]
         ghc:
+          - "8.2.2"
           - "8.4.4"
           - "8.6.5"
           - "8.8.4"
@@ -49,14 +50,16 @@ jobs:
   stack:
     name: stack ${{ matrix.resolver }}
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.resolver == '--resolver nightly' }}
     strategy:
       matrix:
         stack: ["latest"]
         resolver:
-          - "--stack-yaml ./stack.yaml"
-          - "--stack-yaml ./stack-lts-14.yaml"
-          - "--resolver lts-15"
-          - "--resolver lts-16"
+          - "--resolver lts-11 --stack-yaml ./stack-lts-14.yaml" # GHC 8.2.2
+          - "--resolver lts-12 --stack-yaml ./stack-lts-14.yaml" # GHC 8.4.4
+          - "--resolver lts-14 --stack-yaml ./stack-lts-14.yaml" # GHC 8.6.5
+          - "--resolver lts-16" # GHC 8.8.4
+          - "--resolver nightly" # GHC 8.10.* ?
 
     steps:
     - uses: actions/checkout@v2
