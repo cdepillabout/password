@@ -1,5 +1,12 @@
 # Changelog for password
 
+## 2.1.0.1 [UNRELEASED]
+
+-   Fixed `homepage` links in the `.cabal` files
+    [#34](https://github.com/cdepillabout/password/pull/34)
+    Thanks to [@Radicalautistt](https://github.com/Radicalautistt)
+-   Small spelling and other documentation fixes.
+
 ## 2.1.0.0
 
 -   A new `Validate` module has been added to dictate policies that passwords
