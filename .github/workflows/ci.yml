@@ -50,6 +50,14 @@ jobs:
   stack:
     name: stack ${{ matrix.resolver }}
     runs-on: ubuntu-latest
+    # This makes the CI jobs not all be cancelled if nightly fails to build.
+    # However, if nightly fails to build, CI still gets a red X in the GitHub UI.
+    # Ideally we want CI as a whole to pass even if nightly fails.  There doesn't
+    # appear to be a way to work around this for now.
+    #
+    # When some sort of `allow-failure` functionality is available in GitHub
+    # actions, we should switch to it:
+    # https://github.com/actions/toolkit/issues/399
     continue-on-error: ${{ matrix.resolver == '--resolver nightly' }}
     strategy:
       matrix:
