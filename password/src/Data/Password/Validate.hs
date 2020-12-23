@@ -14,19 +14,38 @@ Portability : POSIX
 
 = Password Validation
 
-It is common for passwords to have a set of requirements. For example,
-a password might have to contain at least a certain amount of characters
-that consist of uppercase and lowercase alphabetic characters combined with
-numbers and/or other special characters.
+It is common for passwords to have a set of requirements. The most obvious
+requirement being a minimum length, but another common requirement is for
+the password to at least include a certain amount of characters of a certain
+category, like uppercase and lowercase alphabetic characters, numbers and/or
+other special characters. /Though, nowadays, this last type of requirement is/
+/discouraged by security experts/.
 
 This module provides an API which enables you to set up your own
 'PasswordPolicy' to validate the format of 'Password's.
 
+== /Recommendations by the NIST/
+
+For policy recommendations and more, look to the following publication by
+the National Institute of Standards and Technology (especially the addendum):
+<https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-63b.pdf>
+
+A short summary:
+
+* Enforcing inclusion of specific character types (like special characters,
+numbers, lowercase and uppercase letters) actually makes passwords __less secure__.
+* The length of a password is __the most important__ factor, so let
+users make their passwords as lengthy as they want, within reason.
+(keep in mind some algorithms have length limitations, like /bcrypt/'s
+72 character limit)
+* Do allow spaces so users can use sentences for passwords.
+* Showing the "strength" of user's passwords is advised. A good algorithm
+to use is /zxcvbn/.
+* The best way to mitigate online attacks is to limit the rate of login attempts.
+
 == Password Policies
 
 The most important part is to have a valid and robust 'PasswordPolicy'.
-
-For policy recommendations look to <https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-63b.pdf>
 
 A 'defaultPasswordPolicy_' is provided to quickly set up a NIST recommended
 validation of passwords, but you can also adjust it, or just create your
@@ -298,7 +317,7 @@ newtype ValidPasswordPolicy = VPP
 -- though can easily be adjusted by using record update syntax:
 --
 -- @
--- myPolicy = defaultPasswordPolicy{ specialChars = 1 }
+-- myPolicy = defaultPasswordPolicy{ minimumLength = 12 }
 -- @
 --
 -- This policy on it's own is guaranteed to be valid. Any changes made to
