@@ -6,8 +6,7 @@
 [![Stackage Nightly](http://stackage.org/package/password/badge/nightly)](http://stackage.org/nightly/package/password)
 [![BSD3 license](https://img.shields.io/badge/license-BSD3-blue.svg)](./LICENSE)
 
-This library provides datatypes and functions for working with passwords and
-password hashes in Haskell.
+This library provides functions for working with passwords and password hashes in Haskell.
 
 Currently supports the following algorithms:
 

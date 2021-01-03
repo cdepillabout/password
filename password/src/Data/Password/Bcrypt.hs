@@ -60,17 +60,21 @@ module Data.Password.Bcrypt (
   ) where
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
-import Crypto.KDF.BCrypt as Bcrypt hiding (hashPassword)
+import Crypto.KDF.BCrypt as Bcrypt (bcrypt, validatePassword)
 import Data.ByteArray (Bytes, convert)
 
 import Data.Password (
-         PasswordCheck(..)
-       , PasswordHash(..)
-       , Salt(..)
-       , mkPassword
-       , unsafeShowPassword
-       )
-import Data.Password.Internal (Password(..), fromBytes, toBytes)
+    Password
+  , PasswordHash(..)
+  , mkPassword
+  , unsafeShowPassword
+  )
+import Data.Password.Internal (
+    PasswordCheck(..)
+  , Salt(..)
+  , fromBytes
+  , toBytes
+  )
 import qualified Data.Password.Internal (newSalt)
 
 
@@ -91,7 +95,7 @@ data Bcrypt
 -- >>> import Test.QuickCheck.Instances.Text ()
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 16
--- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
+-- >>> instance Arbitrary Password where arbitrary = fmap mkPassword arbitrary
 -- >>> let salt = Salt "abcdefghijklmnop"
 
 -- -- >>> instance Arbitrary (PasswordHash Bcrypt) where arbitrary = hashPasswordWithSalt 8 <$> arbitrary <*> arbitrary
@@ -126,8 +130,11 @@ hashPasswordWithSalt
   -> Salt Bcrypt -- ^ The salt. MUST be 16 bytes in length or an error will be raised.
   -> Password -- ^ The password to be hashed.
   -> PasswordHash Bcrypt -- ^ The bcrypt hash in standard format.
-hashPasswordWithSalt cost (Salt salt) (Password pass) =
-    let hash = Bcrypt.bcrypt cost (convert salt :: Bytes) (toBytes pass)
+hashPasswordWithSalt cost (Salt salt) pass =
+    let hash = Bcrypt.bcrypt
+            cost
+            (convert salt :: Bytes)
+            (toBytes $ unsafeShowPassword pass)
     in PasswordHash $ fromBytes hash
 
 -- | Hash a password using the /bcrypt/ algorithm with the given cost.
@@ -169,8 +176,10 @@ hashPasswordWithParams cost pass = liftIO $ do
 --
 -- prop> \(Blind badpass) -> let correctPasswordHash = hashPasswordWithSalt 8 salt "foobar" in checkPassword badpass correctPasswordHash == PasswordCheckFail
 checkPassword :: Password -> PasswordHash Bcrypt -> PasswordCheck
-checkPassword (Password pass) (PasswordHash passHash) =
-    if Bcrypt.validatePassword (toBytes pass) (toBytes passHash)
+checkPassword pass (PasswordHash passHash) =
+    if Bcrypt.validatePassword
+        (toBytes $ unsafeShowPassword pass)
+        (toBytes passHash)
       then PasswordCheckSuccess
       else PasswordCheckFail
 
