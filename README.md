@@ -8,11 +8,14 @@ This repo provides packages for easily working with passwords in Haskell.  This
 is mainly to be used for web applications that need to receive plain-text
 passwords from users, and store hashed passwords in a database.
 
-The [password](./password) package provides datatypes and functions for working
+The [password-types](./password-types) package provides datatypes for working
 with plain-text and hashed passwords.
-The [`Data.Password`](http://hackage.haskell.org/package/password/docs/Data-Password.html)
-module contains the base datatypes and every algorithm has its own module in the
-form of `Data.Password.ALGORITHM`
+The [`Data.Password`](http://hackage.haskell.org/package/password-types/docs/Data-Password.html)
+module contains the base datatypes.
+
+The [password](./password) package provides functions for working with
+plain-text and hashed passwords.
+Every algorithm has its own module in the form of `Data.Password.ALGORITHM`
 (e.g. [`Data.Password.Bcrypt`](http://hackage.haskell.org/package/password/docs/Data-Password-Bcrypt.html))
 with the functions for the hashing and checking of passwords.
 
