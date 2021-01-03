@@ -10,6 +10,20 @@ Portability : POSIX
 This library provides datatypes for interacting with passwords.
 It provides the types 'Password' and 'PasswordHash', which correspond
 to plain-text and hashed passwords.
+
+== Special instances
+
+There is an accompanying <http://hackage.haskell.org/package/password-instances password-instances>
+package that provides canonical typeclass instances for
+'Password' and 'PasswordHash' for many common typeclasses, like
+<http://hackage.haskell.org/package/aeson/docs/Data-Aeson.html#t:FromJSON FromJSON> from
+<http://hackage.haskell.org/package/aeson aeson>,
+<http://hackage.haskell.org/package/persistent/docs/Database-Persist-Class.html#t:PersistField PersistField>
+from
+<http://hackage.haskell.org/package/persistent persistent>, etc.
+
+See the <http://hackage.haskell.org/package/password-instances password-instances> package for more information.
+
 -}
 
 module Data.Password (
