@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -42,8 +41,8 @@ import Web.HttpApiData (FromHttpApiData(..), ToHttpApiData(..))
 -- Import needed functions.
 --
 -- >>> import Data.Aeson (decode)
--- >>> import Data.Password (Salt(..), unsafeShowPassword)
--- >>> import Data.Password.Scrypt (defaultParams, hashPasswordWithSalt)
+-- >>> import Data.Password (unsafeShowPassword)
+-- >>> import Data.Password.Scrypt (Salt(..), defaultParams, hashPasswordWithSalt)
 -- >>> import Database.Persist.Class (PersistField(toPersistValue))
 -- >>> import Web.HttpApiData (parseUrlPiece)
 

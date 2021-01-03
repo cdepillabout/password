@@ -1,4 +1,9 @@
-# Changelog for password-instances
+# Changelog for `password-instances`
+
+## 2.0.1.0
+
+-   Small update to the README and using the new `password-types` package,
+    instead of the `password` package.
 
 ## 2.0.0.1
 
@@ -35,4 +40,3 @@
 ## 0.1.0.0
 
 -   Initial version.
-
