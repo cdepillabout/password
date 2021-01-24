@@ -14,7 +14,7 @@ in its usage. It has a cost parameter that, when increased,
 slows down the hashing speed.
 
 It is a straightforward and easy way to get decent protection
-on passwords, it is also been around long enough to be battle-tested
+on passwords, it has also been around long enough to be battle-tested
 and generally considered to provide a good amount of security.
 
 == Other algorithms
