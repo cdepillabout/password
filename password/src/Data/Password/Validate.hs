@@ -58,9 +58,8 @@ able to validate any given 'Password's.
 = Example usage
 
 So let's say we're fine with the default policy, which requires the
-password to be between 8-64 characters, and have at least one lowercase,
-one uppercase and one digit character, then our function would look like
-the following:
+password to be between 8-64 characters, and doesn't enforce any specific
+character category usage, then our function would look like the following:
 
 @
 myValidateFunc :: 'Password' -> Bool
@@ -319,6 +318,13 @@ newtype ValidPasswordPolicy = VPP
 -- @
 -- myPolicy = defaultPasswordPolicy{ minimumLength = 12 }
 -- @
+--
+-- /Do note that this being a default policy doesn't make it a good/
+-- /enough policy in every situation. The most important field, 'minimumLength',/
+-- /has 8 characters as the default, because it is the bare minimum for some/
+-- /sense of security. The longer the password, the more difficult it will be/
+-- /to guess or brute-force, so a minimum of 12 or 16 would be advised in/
+-- /a production setting./
 --
 -- This policy on it's own is guaranteed to be valid. Any changes made to
 -- it might result in 'validatePasswordPolicy' returning one or more
