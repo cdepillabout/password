@@ -14,12 +14,12 @@ Portability : POSIX
 The PBKDF2 algorithm is one of the oldest and most solid password
 algorithms out there. It has also, however, been shown to be
 the least secure out of all major password algorithms. The main
-reason for this is that is doesn't make use of any memory cost
+reason for this is that it doesn't make use of any memory cost
 or other method of making it difficult for specialized hardware
 attacks, like GPU cracking attacks.
 
-It is still, however used all over the world, since it has been
-shown to be a very reliable way to encrypt passwords. Though it is
+It is still, however, used all over the world, since it has been
+shown to be a very reliable way to encrypt passwords. And it is
 most definitely better than trying to develop a password algorithm
 on your own, or god-forbid, not using /any/ encryption on your stored
 passwords.
