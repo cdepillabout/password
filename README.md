@@ -8,8 +8,9 @@ This repo provides packages for easily working with passwords in Haskell.  This
 is mainly to be used for web applications that need to receive plain-text
 passwords from users, and store hashed passwords in a database.
 
-The [password-types](./password-types) package provides datatypes for working
-with plain-text and hashed passwords.
+The [password-types](./password-types) package provides canonical datatypes for
+plain-text and hashed passwords. This package has minimal dependencies. It is
+meant to be used as a base for any other packages that wants to use these datatypes.
 The [`Data.Password`](http://hackage.haskell.org/package/password-types/docs/Data-Password.html)
 module contains the base datatypes.
 

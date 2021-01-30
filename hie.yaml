@@ -6,12 +6,14 @@ cradle:
           component: "password-types:test:doctests"
         - path: "./password-types/test/tasty"
           component: "password-types:test:password-types-tasty"
+
         - path: "./password/src"
           component: "password:lib"
         - path: "./password/test/doctest"
           component: "password:test:doctests"
         - path: "./password/test/tasty"
           component: "password:test:password-tasty"
+
         - path: "./password-instances/src"
           component: "password-instances:lib"
         - path: "./password-instances/test/doctest"
