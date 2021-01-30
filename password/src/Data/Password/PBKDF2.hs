@@ -85,10 +85,10 @@ import Data.Password (
   , PasswordHash(..)
   , mkPassword
   , unsafeShowPassword
+  , Salt(..)
   )
 import Data.Password.Internal (
     PasswordCheck(..)
-  , Salt(..)
   , from64
   , readT
   , toBytes

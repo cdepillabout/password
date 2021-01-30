@@ -10,7 +10,6 @@ Portability : POSIX
 module Data.Password.Internal (
   -- * Global types
     PasswordCheck(..)
-  , Salt(..)
   , newSalt
   -- * Utility
   , toBytes
@@ -25,16 +24,11 @@ import Crypto.Random (getRandomBytes)
 import Data.ByteArray (Bytes, convert)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64 (decodeBase64)
+import Data.Password (Salt(..))
 import Data.Text as T (Text, pack, unpack)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Text.Read (readMaybe)
 
-
--- | A salt used by a hashing algorithm.
---
--- @since 2.0.0.0
-newtype Salt a = Salt ByteString
-  deriving (Eq, Show)
 
 -- | Generate a random x-byte-long salt.
 --
