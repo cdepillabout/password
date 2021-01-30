@@ -34,9 +34,12 @@ module Data.Password (
   , PasswordHash(..)
     -- * Unsafe debugging function to show a Password
   , unsafeShowPassword
+    -- * Hashing salts
+  , Salt (..)
   ) where
 
 import Data.ByteArray (constEq)
+import Data.ByteString (ByteString)
 import Data.Function (on)
 import Data.String (IsString(..))
 import Data.Text (Text)
@@ -92,3 +95,8 @@ newtype PasswordHash a = PasswordHash
 
 instance Eq (PasswordHash a)  where
   (==) = constEq `on` encodeUtf8 . unPasswordHash
+
+-- | A salt used by a hashing algorithm.
+newtype Salt a = Salt
+  { getSalt :: ByteString
+  } deriving (Eq, Show)
