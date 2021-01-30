@@ -24,6 +24,18 @@ from
 
 See the <http://hackage.haskell.org/package/password-instances password-instances> package for more information.
 
+== Phantom types
+
+The 'PasswordHash' and 'Salt' data types have a phantom type parameter
+to be able to make sure salts and hashes can carry information about the
+algorithm they should be used with.
+
+For example, the @bcrypt@ algorithm requires its salt to be exactly
+16 bytes (128 bits) long, so this way you won't accidentally use a
+@'Salt' PBKDF2@ when the hashing function requires a @'Salt' Bcrypt@.
+And checking a password using @bcrypt@ would obviously fail if checked
+against a @'PasswordHash' PBKDF2@.
+
 -}
 
 module Data.Password (
@@ -31,8 +43,8 @@ module Data.Password (
     Password
   , mkPassword
     -- * Password Hashing
-  , PasswordHash(..)
-    -- * Unsafe debugging function to show a Password
+  , PasswordHash (..)
+    -- ** Unsafe debugging function to show a Password
   , unsafeShowPassword
     -- * Hashing salts
   , Salt (..)
@@ -56,7 +68,7 @@ import Data.Text.Encoding (encodeUtf8)
 -- store it in a database.
 --
 -- You can construct a 'Password' by using the 'mkPassword' function or as literal
--- strings together with the OverloadedStrings pragma (or manually, by using
+-- strings together with the @OverloadedStrings@ pragma (or manually, by using
 -- 'fromString' on a 'String'). Alternatively, you could also use some of the
 -- instances in the <http://hackage.haskell.org/package/password-instances password-instances>
 -- library.
@@ -80,7 +92,13 @@ mkPassword = Password
 -- >>> unsafeShowPassword ("foobar" :: Password)
 -- "foobar"
 --
--- You should generally not use this function.
+-- You should generally __not use this function__ in production settings,
+-- as you don't want to accidentally print a password anywhere, like
+-- logs, network responses, database entries, etc.
+--
+-- This will mostly be used by other libraries to handle the actual
+-- password internally, though it is conceivable that, even in a production
+-- setting, a password might have to be handled in an unsafe manner at some point.
 unsafeShowPassword :: Password -> Text
 unsafeShowPassword (Password pass) = pass
 {-# INLINE unsafeShowPassword #-}
