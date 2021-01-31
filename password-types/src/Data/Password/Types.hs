@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-|
-Module      : Data.Password
+Module      : Data.Password.Types
 Copyright   : (c) Dennis Gosnell, 2019; Felix Paulusma, 2020
 License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
@@ -38,7 +38,7 @@ against a @'PasswordHash' PBKDF2@.
 
 -}
 
-module Data.Password (
+module Data.Password.Types (
     -- * Plain-text Password
     Password
   , mkPassword
