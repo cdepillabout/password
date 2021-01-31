@@ -85,7 +85,7 @@ import Data.Text (Text)
 import qualified Data.Text as T (intercalate, length, split, splitAt)
 import Data.Word (Word32)
 
-import Data.Password (
+import Data.Password.Types (
     Password
   , PasswordHash(..)
   , mkPassword
@@ -113,7 +113,7 @@ data Argon2
 --
 -- Import needed libraries.
 --
--- >>> import Data.Password
+-- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
 -- >>> import Test.QuickCheck.Instances.Text ()

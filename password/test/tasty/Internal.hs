@@ -3,11 +3,11 @@
 module Internal where
 
 import Data.ByteArray (pack)
-import Test.Tasty ( TestTree )
+import Test.Tasty (TestTree)
 import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
 
-import Data.Password ( mkPassword, Password, PasswordHash )
+import Data.Password.Types (mkPassword, Password, PasswordHash)
 import Data.Password.Bcrypt (PasswordCheck(..), Salt(..))
 
 

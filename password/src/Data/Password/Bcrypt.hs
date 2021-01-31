@@ -63,7 +63,7 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.KDF.BCrypt as Bcrypt (bcrypt, validatePassword)
 import Data.ByteArray (Bytes, convert)
 
-import Data.Password (
+import Data.Password.Types (
     Password
   , PasswordHash(..)
   , mkPassword
@@ -89,7 +89,7 @@ data Bcrypt
 --
 -- Import needed libraries.
 --
--- >>> import Data.Password
+-- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
 -- >>> import Test.QuickCheck.Instances.Text ()

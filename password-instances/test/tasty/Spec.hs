@@ -10,7 +10,7 @@ import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
 import Web.HttpApiData (FromHttpApiData(..))
 
-import Data.Password (Password, PasswordHash(..), unsafeShowPassword)
+import Data.Password.Types (Password, PasswordHash(..), unsafeShowPassword)
 import Data.Password.Instances()
 
 

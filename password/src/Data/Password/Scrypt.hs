@@ -72,7 +72,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Text as T (intercalate, split)
 import Data.Word (Word32)
 
-import Data.Password (
+import Data.Password.Types (
     Password
   , PasswordHash(..)
   , mkPassword
@@ -99,7 +99,7 @@ data Scrypt
 --
 -- Import needed libraries.
 --
--- >>> import Data.Password
+-- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
 -- >>> import Test.QuickCheck.Instances.Text ()

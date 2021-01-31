@@ -80,7 +80,7 @@ import Data.Text (Text)
 import qualified Data.Text as T (intercalate, pack, split, stripPrefix)
 import Data.Word (Word32)
 
-import Data.Password (
+import Data.Password.Types (
     Password
   , PasswordHash(..)
   , mkPassword
@@ -107,7 +107,7 @@ data PBKDF2
 --
 -- Import needed libraries.
 --
--- >>> import Data.Password
+-- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
 -- >>> import Test.QuickCheck.Instances.Text ()

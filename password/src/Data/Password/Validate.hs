@@ -192,14 +192,14 @@ import qualified Data.Text as T
 import Language.Haskell.TH (Exp, Q, appE)
 import Language.Haskell.TH.Syntax (Lift (..))
 
-import Data.Password (Password, unsafeShowPassword)
+import Data.Password.Types (Password, unsafeShowPassword)
 
 -- $setup
 -- >>> :set -XOverloadedStrings
 --
 -- Import needed libraries.
 --
--- >>> import Data.Password
+-- >>> import Data.Password.Types
 
 -- | Set of policies used to validate a 'Password'.
 --

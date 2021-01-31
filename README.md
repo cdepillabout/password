@@ -11,7 +11,7 @@ passwords from users, and store hashed passwords in a database.
 The [password-types](./password-types) package provides canonical datatypes for
 plain-text and hashed passwords. This package has minimal dependencies. It is
 meant to be used as a base for any other packages that wants to use these datatypes.
-The [`Data.Password`](http://hackage.haskell.org/package/password-types/docs/Data-Password.html)
+The [`Data.Password.Types`](http://hackage.haskell.org/package/password-types/docs/Data-Password-Types.html)
 module contains the base datatypes.
 
 The [password](./password) package provides functions for working with

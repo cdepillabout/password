@@ -19,13 +19,13 @@ Portability : POSIX
 This module provides additional typeclass instances
 for 'Password' and 'PasswordHash'.
 
-See the "Data.Password" module for more information.
+See the "Data.Password.Types" module for more information.
 -}
 
 module Data.Password.Instances () where
 
 import Data.Aeson (FromJSON(..), ToJSON(..))
-import Data.Password (Password, PasswordHash(..), mkPassword)
+import Data.Password.Types (Password, PasswordHash(..), mkPassword)
 import Data.Text.Encoding as TE (decodeUtf8)
 import Database.Persist (PersistValue(..))
 import Database.Persist.Class (PersistField(..))

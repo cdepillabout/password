@@ -6,7 +6,7 @@ import Test.QuickCheck.Instances()
 import Test.Tasty ( defaultMain, testGroup )
 import Test.Tasty.QuickCheck ( (===), testProperty )
 
-import Data.Password ( mkPassword, unsafeShowPassword )
+import Data.Password.Types ( mkPassword, unsafeShowPassword )
 
 main :: IO ()
 main = defaultMain $
