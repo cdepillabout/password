@@ -41,8 +41,7 @@ import Web.HttpApiData (FromHttpApiData(..), ToHttpApiData(..))
 -- Import needed functions.
 --
 -- >>> import Data.Aeson (decode)
--- >>> import Data.Password (unsafeShowPassword)
--- >>> import Data.Password.Scrypt (Salt(..), defaultParams, hashPasswordWithSalt)
+-- >>> import Data.Password.Bcrypt (Salt(..), hashPasswordWithSalt, unsafeShowPassword)
 -- >>> import Database.Persist.Class (PersistField(toPersistValue))
 -- >>> import Web.HttpApiData (parseUrlPiece)
 
@@ -86,11 +85,11 @@ instance TypeError (ErrMsg "HttpApiData") => ToHttpApiData Password where
 -- | This instance allows a 'PasswordHash' to be stored as a field in a database using
 -- "Database.Persist".
 --
--- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
+-- >>> let salt = Salt "abcdefghijklmnop"
 -- >>> let pass = mkPassword "foobar"
--- >>> let hashedPassword = hashPasswordWithSalt defaultParams salt pass
+-- >>> let hashedPassword = hashPasswordWithSalt 10 salt pass
 -- >>> toPersistValue hashedPassword
--- PersistText "14|8|1|YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=|nENDaqWBmPKapAqQ3//H0iBImweGjoTqn5SvBS8Mc9FPFbzq6w65maYPZaO+SPamVZRXQjARQ8Y+5rhuDhjIhw=="
+-- PersistText "$2b$10$WUHhXETkX0fnYkrqZU3ta.N8Utt4U77kW4RVbchzgvBvBBEEdCD/u"
 --
 -- In the example above, the long 'PersistText' will be the value you store in
 -- the database.
