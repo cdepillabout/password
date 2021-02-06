@@ -1,10 +1,19 @@
-# Changelog for password
+# Changelog for `password`
 
-## 2.1.0.1 [UNRELEASED]
+## 2.1.1.0
 
--   Fixed `homepage` links in the `.cabal` files
+-   Fixed `homepage` links in the `.cabal` files.
     [#34](https://github.com/cdepillabout/password/pull/34)
     Thanks to [@Radicalautistt](https://github.com/Radicalautistt)
+-   Updated the `defaultPasswordPolicy` and documentation of the
+    `Data.Password.Validate` module using information about research done on
+    "memorized secrets" (i.e. passwords) by the NIST.
+    [#31] https://github.com/cdepillabout/password/pull/31
+    Thanks to [@agentultra](https://github.com/agentultra) for pointing out
+    the research and starting the PR.
+    [#39](https://github.com/cdepillabout/password/pull/39)
+    Thanks to [@Vlix](https://github.com/Vlix) for updating the rest of the
+    documentation.
 -   Small spelling and other documentation fixes.
 
 ## 2.1.0.0
@@ -15,8 +24,8 @@
     Huge thanks to [@HirotoShioi](https://github.com/HirotoShioi) for picking
     up the task of adding this functionality and doing most of the groundwork.
     [#27](https://github.com/cdepillabout/password/pull/27)
-    Thanks to Felix Paulusma ([@Vlix](https://github.com/Vlix)) for finishing
-    up the API and documentation.
+    Thanks to [@Vlix](https://github.com/Vlix) for finishing up the API and
+    documentation.
 
 ## 2.0.1.1
 
@@ -49,7 +58,8 @@
     `Password -> Text`. (Anyone who needs it to be a `String` knows where to
     find `Data.Text.unpack`)
     [#8](https://github.com/cdepillabout/password/pull/8)
--   GHC versions < 8.2 are no longer actively supported. (Tested to work for GHC 8.2.2)
+-   GHC versions < 8.2 are no longer actively supported.
+    (Tested to work for GHC 8.2.2)
 
 ## 1.0.0.0
 

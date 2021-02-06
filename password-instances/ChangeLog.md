@@ -1,5 +1,11 @@
 # Changelog for password-instances
 
+## 2.0.0.2
+
+-   Fixed `homepage` links in the `.cabal` files.
+    [#34](https://github.com/cdepillabout/password/pull/34)
+    Thanks to [@Radicalautistt](https://github.com/Radicalautistt)
+
 ## 2.0.0.1
 
 -   Fixed README markdown for hackage.
@@ -35,4 +41,3 @@
 ## 0.1.0.0
 
 -   Initial version.
-

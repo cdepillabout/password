@@ -14,19 +14,40 @@ Portability : POSIX
 
 = Password Validation
 
-It is common for passwords to have a set of requirements. For example,
-a password might have to contain at least a certain amount of characters
-that consist of uppercase and lowercase alphabetic characters combined with
-numbers and/or other special characters.
+It is common for passwords to have a set of requirements. The most obvious
+requirement being a minimum length, but another common requirement is for
+the password to at least include a certain amount of characters of a certain
+category, like uppercase and lowercase alphabetic characters, numbers and/or
+other special characters. /Though, nowadays, this last type of requirement is/
+/discouraged by security experts/.
 
 This module provides an API which enables you to set up your own
 'PasswordPolicy' to validate the format of 'Password's.
+
+== /Recommendations by the NIST/
+
+For policy recommendations and more, look to the following publication by
+the National Institute of Standards and Technology (especially the addendum):
+<https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-63b.pdf>
+
+A short summary:
+
+* Enforcing inclusion of specific character types (like special characters,
+numbers, lowercase and uppercase letters) actually makes passwords __less secure__.
+* The length of a password is __the most important__ factor, so let
+users make their passwords as lengthy as they want, within reason.
+(keep in mind some algorithms have length limitations, like /bcrypt/'s
+72 character limit)
+* Do allow spaces so users can use sentences for passwords.
+* Showing the "strength" of user's passwords is advised. A good algorithm
+to use is /zxcvbn/.
+* The best way to mitigate online attacks is to limit the rate of login attempts.
 
 == Password Policies
 
 The most important part is to have a valid and robust 'PasswordPolicy'.
 
-A 'defaultPasswordPolicy_' is provided to quickly set up a "good-enough"
+A 'defaultPasswordPolicy_' is provided to quickly set up a NIST recommended
 validation of passwords, but you can also adjust it, or just create your
 own.
 
@@ -37,9 +58,8 @@ able to validate any given 'Password's.
 = Example usage
 
 So let's say we're fine with the default policy, which requires the
-password to be between 8-64 characters, and have at least one lowercase,
-one uppercase and one digit character, then our function would look like
-the following:
+password to be between 8-64 characters, and doesn't enforce any specific
+character category usage, then our function would look like the following:
 
 @
 myValidateFunc :: 'Password' -> Bool
@@ -292,30 +312,36 @@ newtype ValidPasswordPolicy = VPP
 
 -- | Default value for the 'PasswordPolicy'.
 --
--- Enforces that a password must be between 8-64 characters long and
--- have at least one uppercase letter, one lowercase letter and one digit,
+-- Enforces that a password must be between 8-64 characters long,
 -- though can easily be adjusted by using record update syntax:
 --
 -- @
--- myPolicy = defaultPasswordPolicy{ specialChars = 1 }
+-- myPolicy = defaultPasswordPolicy{ minimumLength = 12 }
 -- @
+--
+-- /Do note that this being a default policy doesn't make it a good/
+-- /enough policy in every situation. The most important field, 'minimumLength',/
+-- /has 8 characters as the default, because it is the bare minimum for some/
+-- /sense of security. The longer the password, the more difficult it will be/
+-- /to guess or brute-force, so a minimum of 12 or 16 would be advised in/
+-- /a production setting./
 --
 -- This policy on it's own is guaranteed to be valid. Any changes made to
 -- it might result in 'validatePasswordPolicy' returning one or more
 -- 'InvalidPolicyReason's.
 --
 -- >>> defaultPasswordPolicy
--- PasswordPolicy {minimumLength = 8, maximumLength = 64, uppercaseChars = 1, lowercaseChars = 1, specialChars = 0, digitChars = 1, charSetPredicate = <FUNCTION>}
+-- PasswordPolicy {minimumLength = 8, maximumLength = 64, uppercaseChars = 0, lowercaseChars = 0, specialChars = 0, digitChars = 0, charSetPredicate = <FUNCTION>}
 --
 -- @since 2.1.0.0
 defaultPasswordPolicy :: PasswordPolicy
 defaultPasswordPolicy = PasswordPolicy
   { minimumLength = 8,
     maximumLength = 64,
-    uppercaseChars = 1,
-    lowercaseChars = 1,
+    uppercaseChars = 0,
+    lowercaseChars = 0,
     specialChars = 0,
-    digitChars = 1,
+    digitChars = 0,
     charSetPredicate = defaultCharSetPredicate
   }
 
