@@ -88,7 +88,7 @@ import Data.Password.Internal (
   )
 import qualified Data.Password.Internal (newSalt)
 
--- | Phantom type for __Argon2__
+-- | Phantom type for __scrypt__
 --
 -- @since 2.0.0.0
 data Scrypt

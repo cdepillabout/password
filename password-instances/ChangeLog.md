@@ -5,6 +5,12 @@
 -   Small update to the README and the `password-instances` library now depends
     on the new `password-types` package, instead of on the `password` package.
 
+## 2.0.0.2
+
+-   Fixed `homepage` links in the `.cabal` files.
+    [#34](https://github.com/cdepillabout/password/pull/34)
+    Thanks to [@Radicalautistt](https://github.com/Radicalautistt)
+
 ## 2.0.0.1
 
 -   Fixed README markdown for hackage.
