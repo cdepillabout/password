@@ -1,6 +1,6 @@
 # Changelog for `password-instances`
 
-## 2.0.0.2
+## 3.0.0.0
 
 -   Small update to the README and the `password-instances` library now depends
     on the new `password-types` package, instead of on the `password` package.
