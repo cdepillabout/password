@@ -77,7 +77,7 @@ import Data.ByteArray (Bytes, constEq, convert)
 import Data.ByteString as B (ByteString, length)
 import Data.ByteString.Base64 (encodeBase64)
 import Data.Maybe (fromMaybe)
-#if! MIN_VERSION_base(4,13,0)
+#if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
