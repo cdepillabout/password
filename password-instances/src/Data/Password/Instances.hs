@@ -27,6 +27,9 @@ module Data.Password.Instances () where
 
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Password (Password, PasswordHash(..), mkPassword)
+#if! MIN_VERSION_base(4,13,0)
+import Data.Semigroup ((<>))
+#endif
 import Data.Text (pack)
 import Data.Text.Encoding as TE (decodeUtf8')
 import Database.Persist (PersistValue(..))
