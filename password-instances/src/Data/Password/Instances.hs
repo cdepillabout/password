@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -27,7 +28,7 @@ module Data.Password.Instances () where
 
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Password (Password, PasswordHash(..), mkPassword)
-#if! MIN_VERSION_base(4,13,0)
+#if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
 import Data.Text (pack)

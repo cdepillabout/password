@@ -78,7 +78,7 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Base64 (encodeBase64)
 import qualified Data.ByteString.Char8 as C8 (length)
 import Data.Maybe (fromMaybe)
-#if! MIN_VERSION_base(4,13,0)
+#if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
