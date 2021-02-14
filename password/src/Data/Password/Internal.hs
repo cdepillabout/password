@@ -36,6 +36,9 @@ import Data.ByteArray (Bytes, constEq, convert)
 import Data.ByteString (ByteString)
 import Data.Function (on)
 import Data.ByteString.Base64 (decodeBase64)
+#if! MIN_VERSION_base(4,13,0)
+import Data.Semigroup ((<>))
+#endif
 import Data.String (IsString(..))
 import Data.Text as T (
     Text,
