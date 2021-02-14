@@ -190,7 +190,7 @@ defaultParams = Argon2Params {
 --
 -- >>> let salt = Salt "abcdefghijklmnop"
 -- >>> hashPasswordWithSalt defaultParams salt (mkPassword "foobar")
--- PasswordHash {unPasswordHash = "$argon2id$v=19$m=65536,t=2,p=1$YWJjZGVmZ2hpamtsbW5vcA==$BztdyfEefG5V18ZNlztPrfZaU5duVFKZiI6dJeWht0o="}
+-- PasswordHash {unPasswordHash = "$argon2id$v=19$m=65536,t=2,p=1$YWJjZGVmZ2hpamtsbW5vcA$BztdyfEefG5V18ZNlztPrfZaU5duVFKZiI6dJeWht0o"}
 --
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
 -- example is reproducible, but in general you should use 'hashPassword'. 'hashPassword'
