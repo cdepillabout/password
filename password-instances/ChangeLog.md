@@ -1,5 +1,11 @@
 # Changelog for password-instances
 
+## 2.0.0.3 [UNRELEASED]
+
+-   Changed `PersistField` instance of `PasswordHash` to use
+    `decodeUtf8'` for better handling of UTF8 decoding exceptions.
+    [#43](https://github.com/cdepillabout/password/pull/43)
+
 ## 2.0.0.2
 
 -   Fixed `homepage` links in the `.cabal` files.
