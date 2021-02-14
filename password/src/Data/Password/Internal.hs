@@ -1,5 +1,6 @@
 {-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-|
 Module      : Data.Password.Internal
 Copyright   : (c) Dennis Gosnell, 2019; Felix Paulusma, 2020
@@ -23,6 +24,8 @@ module Data.Password.Internal (
   , toBytes
   , fromBytes
   , from64
+  , unsafePad64
+  , unsafeRemovePad64
   , readT
   , showT
   ) where
@@ -34,7 +37,14 @@ import Data.ByteString (ByteString)
 import Data.Function (on)
 import Data.ByteString.Base64 (decodeBase64)
 import Data.String (IsString(..))
-import Data.Text as T (Text, pack, unpack)
+import Data.Text as T (
+    Text,
+    dropEnd,
+    length,
+    pack,
+    replicate,
+    unpack,
+ )
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Text.Read (readMaybe)
 
@@ -141,3 +151,25 @@ readT = readMaybe . T.unpack
 showT :: forall a. Show a => a -> Text
 showT = T.pack . show
 {-# INLINE showT #-}
+
+-- | (UNSAFE) Pad a base64 text to "length `rem` 4 == 0" with "="
+unsafePad64 :: Text -> Text
+unsafePad64 t
+    | remains == 0 = t
+    | otherwise = t <> pad
+  where
+    remains = T.length t `rem` 4
+    pad = T.replicate (4 - remains) "="
+
+-- | (UNSAFE) Removes the "=" padding from a base64 text
+-- given the length of the original bytestring.
+unsafeRemovePad64 :: Int -> Text -> Text
+unsafeRemovePad64 bsLen = T.dropEnd drops
+  where
+    drops = case bsLen `rem` 3 of
+        -- 1 extra byte results in 2 characters (4 - 2 = 2)
+        1 -> 2
+        -- 2 extra bytes results in 3 characters (4 - 3 = 1)
+        2 -> 1
+        -- This will just be 0
+        other -> other
