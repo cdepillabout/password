@@ -80,14 +80,19 @@ import Data.Text (Text)
 import qualified Data.Text as T (intercalate, pack, split, stripPrefix)
 import Data.Word (Word32)
 
-import Data.Password (
-         PasswordCheck(..)
-       , PasswordHash(..)
-       , Salt(..)
-       , mkPassword
-       , unsafeShowPassword
-       )
-import Data.Password.Internal (Password(..), from64, readT, toBytes)
+import Data.Password.Types (
+    Password
+  , PasswordHash(..)
+  , mkPassword
+  , unsafeShowPassword
+  , Salt(..)
+  )
+import Data.Password.Internal (
+    PasswordCheck(..)
+  , from64
+  , readT
+  , toBytes
+  )
 import qualified Data.Password.Internal (newSalt)
 
 
@@ -102,13 +107,13 @@ data PBKDF2
 --
 -- Import needed libraries.
 --
--- >>> import Data.Password
+-- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
 -- >>> import Test.QuickCheck.Instances.Text ()
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 16
--- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
+-- >>> instance Arbitrary Password where arbitrary = fmap mkPassword arbitrary
 -- >>> let testParams = defaultParams{ pbkdf2Iterations = 5000 }
 -- >>> let salt = Salt "abcdefghijklmnop"
 
@@ -185,10 +190,14 @@ hashPasswordWithSalt params@PBKDF2Params{..} s@(Salt salt) pass =
 
 -- | Only for internal use
 hashPasswordWithSalt' :: PBKDF2Params -> Salt PBKDF2 -> Password -> ByteString
-hashPasswordWithSalt' PBKDF2Params{..} (Salt salt) (Password pass) =
+hashPasswordWithSalt' PBKDF2Params{..} (Salt salt) pass =
     convert (pbkdf2Hash :: Bytes)
   where
-    pbkdf2Hash = algToFunc pbkdf2Algorithm params (toBytes pass) (convert salt :: Bytes)
+    pbkdf2Hash = algToFunc
+        pbkdf2Algorithm
+        params
+        (toBytes $ unsafeShowPassword pass)
+        (convert salt :: Bytes)
     params = PBKDF2.Parameters {
         PBKDF2.iterCounts = fromIntegral pbkdf2Iterations,
         PBKDF2.outputLength = fromIntegral $ maxOutputLength pbkdf2Algorithm pbkdf2OutputLength

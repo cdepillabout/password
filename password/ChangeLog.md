@@ -1,5 +1,11 @@
 # Changelog for `password`
 
+## 3.0.0.0
+
+-   Split the main datatypes module (`Data.Password`) into a separate package: `password-types`.
+    The new package just contains `Password`, `PasswordHash`, `Salt` and their helper functions/instances.
+-   Adjusted entire `password` package to use the `Data.Password.Types` from this new `password-types`.
+
 ## 2.1.1.0
 
 -   Fixed `homepage` links in the `.cabal` files.
