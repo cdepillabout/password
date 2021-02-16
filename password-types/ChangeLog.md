@@ -4,4 +4,4 @@
 
 -   Split out this package from the `password` package to not saddle up
     users with a `cryptonite` dependency, when they might only want to
-    use the data type.
+    use password data types.

@@ -5,6 +5,12 @@
 -   Split the main datatypes module (`Data.Password`) into a separate package: `password-types`.
     The new package just contains `Password`, `PasswordHash`, `Salt` and their helper functions/instances.
 -   Adjusted entire `password` package to use the `Data.Password.Types` from this new `password-types`.
+    Thanks to [@Vlix](https://github.com/Vlix)
+    [#40](https://github.com/cdepillabout/password/pull/40)
+-   Argon2: fixed the producing and checking of Argon2 hashes.
+    The base64 padding is removed when producing hashes and when
+    checking hashes it will accept hashes with or without padding.
+    [#45](https://github.com/cdepillabout/password/pull/45)
 
 ## 2.1.1.0
 
