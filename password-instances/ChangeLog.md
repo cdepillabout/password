@@ -4,9 +4,8 @@
 
 -   Small update to the README and the `password-instances` library now depends
     on the new `password-types` package, instead of on the `password` package.
-
-## 2.0.0.3 [UNRELEASED]
-
+    [#40](https://github.com/cdepillabout/password/pull/40)
+    Thanks to [@Vlix](https://github.com/Vlix)
 -   Changed `PersistField` instance of `PasswordHash` to use
     `decodeUtf8'` for better handling of UTF8 decoding exceptions.
     [#43](https://github.com/cdepillabout/password/pull/43)
