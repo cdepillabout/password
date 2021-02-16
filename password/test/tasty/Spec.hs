@@ -2,13 +2,13 @@ import Test.Tasty
 import Test.Tasty.QuickCheck
 import Test.Tasty.Runners (NumThreads(..))
 
-import Data.Password
+import Data.Password.Types
 
-import Argon2
-import Bcrypt
-import PBKDF2
-import Scrypt
-import Validate
+import Argon2 (testArgon2)
+import Bcrypt (testBcrypt)
+import PBKDF2 (testPBKDF2)
+import Scrypt (testScrypt)
+import Validate (testValidate)
 
 main :: IO ()
 main = defaultMain $ localOption (NumThreads 1) $

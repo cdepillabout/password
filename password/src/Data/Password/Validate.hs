@@ -212,14 +212,14 @@ import qualified Data.Text as T
 import Language.Haskell.TH (Exp, Q, appE)
 import Language.Haskell.TH.Syntax (Lift (..))
 
-import Data.Password.Internal (Password (..))
+import Data.Password.Types (Password, unsafeShowPassword)
 
 -- $setup
 -- >>> :set -XOverloadedStrings
 --
 -- Import needed libraries.
 --
--- >>> import Data.Password
+-- >>> import Data.Password.Types
 
 -- | Set of policies used to validate a 'Password'.
 --
@@ -471,12 +471,13 @@ isValidPassword policy pass = validatePassword policy pass == ValidPassword
 --
 -- @since 2.1.0.0
 validatePassword :: ValidPasswordPolicy -> Password -> ValidationResult
-validatePassword (VPP PasswordPolicy{..}) (Password password) =
+validatePassword (VPP PasswordPolicy{..}) pass =
   case validationFailures of
     [] -> ValidPassword
     _:_ -> InvalidPassword validationFailures
 
   where
+    password = unsafeShowPassword pass
     validationFailures = mconcat
         [ isTooShort
         , isTooLong
