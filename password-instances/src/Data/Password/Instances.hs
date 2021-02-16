@@ -1,6 +1,8 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -26,7 +28,11 @@ module Data.Password.Instances () where
 
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Password.Types (Password, PasswordHash(..), mkPassword)
-import Data.Text.Encoding as TE (decodeUtf8)
+#if !MIN_VERSION_base(4,13,0)
+import Data.Semigroup ((<>))
+#endif
+import Data.Text (pack)
+import Data.Text.Encoding as TE (decodeUtf8')
 import Database.Persist (PersistValue(..))
 import Database.Persist.Class (PersistField(..))
 import Database.Persist.Sql (PersistFieldSql(..))
@@ -98,9 +104,13 @@ instance TypeError (ErrMsg "HttpApiData") => ToHttpApiData Password where
 -- want to make it easy to store a plain-text password in the database.
 instance PersistField (PasswordHash a) where
   toPersistValue (PasswordHash hpw) = PersistText hpw
-  fromPersistValue (PersistText txt) = Right $ PasswordHash txt
-  fromPersistValue (PersistByteString bs) = Right $ PasswordHash $ TE.decodeUtf8 bs
-  fromPersistValue _ = Left "did not parse PasswordHash from PersistValue"
+  fromPersistValue = \case
+      PersistText txt -> Right $ PasswordHash txt
+      PersistByteString bs ->
+        either failed (Right . PasswordHash) $ TE.decodeUtf8' bs
+      _ -> Left "did not parse PasswordHash from PersistValue"
+    where
+      failed e = Left $ "Failed decoding PasswordHash to UTF8: " <> pack (show e)
 
 -- | This instance allows a 'PasswordHash' to be stored as a field in an SQL
 -- database in "Database.Persist.Sql".
