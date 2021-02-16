@@ -8,7 +8,7 @@ import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
 
 import qualified Crypto.Scrypt as Scrypt
-import Data.Password
+import Data.Password.Types
 import Data.Password.Scrypt
 
 import Internal

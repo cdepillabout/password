@@ -63,7 +63,7 @@ module Data.Password.Scrypt (
 
 import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO(liftIO))
-import Crypto.KDF.Scrypt as Scrypt
+import Crypto.KDF.Scrypt as Scrypt (Parameters(..), generate)
 import Data.ByteArray (Bytes, constEq, convert)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64 (encodeBase64)
@@ -72,14 +72,20 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Text as T (intercalate, split)
 import Data.Word (Word32)
 
-import Data.Password (
-         PasswordCheck(..)
-       , PasswordHash(..)
-       , Salt(..)
-       , mkPassword
-       , unsafeShowPassword
-       )
-import Data.Password.Internal (Password(..), from64, readT, showT, toBytes)
+import Data.Password.Types (
+    Password
+  , PasswordHash(..)
+  , mkPassword
+  , unsafeShowPassword
+  , Salt(..)
+  )
+import Data.Password.Internal (
+    PasswordCheck(..)
+  , from64
+  , readT
+  , showT
+  , toBytes
+  )
 import qualified Data.Password.Internal (newSalt)
 
 -- | Phantom type for __scrypt__
@@ -93,13 +99,13 @@ data Scrypt
 --
 -- Import needed libraries.
 --
--- >>> import Data.Password
+-- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
 -- >>> import Test.QuickCheck.Instances.Text ()
 --
 -- >>> instance Arbitrary (Salt a) where arbitrary = Salt . pack <$> vector 32
--- >>> instance Arbitrary Password where arbitrary = fmap Password arbitrary
+-- >>> instance Arbitrary Password where arbitrary = fmap mkPassword arbitrary
 -- >>> let salt = Salt "abcdefghijklmnopqrstuvwxyz012345"
 -- >>> let testParams = defaultParams {scryptRounds = 10}
 
@@ -181,10 +187,13 @@ hashPasswordWithSalt params@ScryptParams{..} s@(Salt salt) pass =
 
 -- | Only for internal use
 hashPasswordWithSalt' :: ScryptParams -> Salt Scrypt -> Password -> ByteString
-hashPasswordWithSalt' ScryptParams{..} (Salt salt) (Password pass) =
+hashPasswordWithSalt' ScryptParams{..} (Salt salt) pass =
     convert (scryptHash :: Bytes)
   where
-    scryptHash = Scrypt.generate params (toBytes pass) (convert salt :: Bytes)
+    scryptHash = Scrypt.generate
+        params
+        (toBytes $ unsafeShowPassword pass)
+        (convert salt :: Bytes)
     params = Scrypt.Parameters {
         n = 2 ^ scryptRounds,
         r = fromIntegral scryptBlockSize,

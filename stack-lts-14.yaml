@@ -35,6 +35,7 @@ resolver: lts-14.27
 packages:
   - password
   - password-instances
+  - password-types
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.

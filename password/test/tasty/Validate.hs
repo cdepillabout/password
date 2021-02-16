@@ -22,7 +22,7 @@ import Test.Tasty.QuickCheck (Arbitrary (..), Gen, Property, choose,
 import Data.Semigroup ((<>))
 #endif
 
-import Data.Password (Password, mkPassword)
+import Data.Password.Types (Password, mkPassword)
 import Data.Password.Validate hiding (ValidationResult(..))
 import qualified Data.Password.Validate as V
 
