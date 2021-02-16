@@ -33,15 +33,15 @@ testArgon2 = testGroup "Argon2"
 paddingTests :: TestTree
 paddingTests = testGroup "Padding"
     [ testCase "with padding" $
-        assertBool "Bad hash" $ checkPassword pass testHash1 == PasswordCheckSuccess
+        assertBool "Bad hash" $ checkPassword pass hashWithPadding == PasswordCheckSuccess
     , testCase "without padding" $
-        assertBool "Bad hash" $ checkPassword pass testHash2 == PasswordCheckSuccess
+        assertBool "Bad hash" $ checkPassword pass hashWithoutPadding == PasswordCheckSuccess
     ]
 
 pass :: Password
 pass = "foobar"
 
 -- Hashed password ("foobar") with salt ("abcdefghijklmnop")
-testHash1, testHash2 :: PasswordHash Argon2
-testHash1 = PasswordHash "$argon2id$v=19$m=65536,t=2,p=1$YWJjZGVmZ2hpamtsbW5vcA==$BztdyfEefG5V18ZNlztPrfZaU5duVFKZiI6dJeWht0o="
-testHash2 = PasswordHash "$argon2id$v=19$m=65536,t=2,p=1$YWJjZGVmZ2hpamtsbW5vcA$BztdyfEefG5V18ZNlztPrfZaU5duVFKZiI6dJeWht0o"
+hashWithPadding, hashWithoutPadding :: PasswordHash Argon2
+hashWithPadding    = PasswordHash "$argon2id$v=19$m=65536,t=2,p=1$YWJjZGVmZ2hpamtsbW5vcA==$BztdyfEefG5V18ZNlztPrfZaU5duVFKZiI6dJeWht0o="
+hashWithoutPadding = PasswordHash "$argon2id$v=19$m=65536,t=2,p=1$YWJjZGVmZ2hpamtsbW5vcA$BztdyfEefG5V18ZNlztPrfZaU5duVFKZiI6dJeWht0o"
