@@ -70,13 +70,12 @@ module Data.Password.Argon2 (
   ) where
 
 import Control.Monad (guard)
-import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import Crypto.Error (throwCryptoError)
-import Crypto.KDF.Argon2 as Argon2 (Options(..), Variant(..), Version(..), hash)
+import Crypto.KDF.Argon2 as Argon2 (Options (..), Variant (..), Version (..), hash)
 import Data.ByteArray (Bytes, constEq, convert)
-import Data.ByteString (ByteString)
+import Data.ByteString as B (ByteString, length)
 import Data.ByteString.Base64 (encodeBase64)
-import qualified Data.ByteString.Char8 as C8 (length)
 import Data.Maybe (fromMaybe)
 #if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
@@ -85,20 +84,22 @@ import Data.Text (Text)
 import qualified Data.Text as T (intercalate, length, split, splitAt)
 import Data.Word (Word32)
 
-import Data.Password.Types (
-    Password
-  , PasswordHash(..)
-  , mkPassword
-  , unsafeShowPassword
-  , Salt(..)
-  )
 import Data.Password.Internal (
-    PasswordCheck(..)
-  , from64
-  , readT
-  , showT
-  , toBytes
-  )
+    PasswordCheck (..),
+    from64,
+    readT,
+    showT,
+    toBytes,
+    unsafePad64,
+    unsafeRemovePad64,
+ )
+import Data.Password.Types (
+    Password,
+    PasswordHash (..),
+    Salt (..),
+    mkPassword,
+    unsafeShowPassword,
+ )
 import qualified Data.Password.Internal (newSalt)
 
 
@@ -189,7 +190,7 @@ defaultParams = Argon2Params {
 --
 -- >>> let salt = Salt "abcdefghijklmnop"
 -- >>> hashPasswordWithSalt defaultParams salt (mkPassword "foobar")
--- PasswordHash {unPasswordHash = "$argon2id$v=19$m=65536,t=2,p=1$YWJjZGVmZ2hpamtsbW5vcA==$BztdyfEefG5V18ZNlztPrfZaU5duVFKZiI6dJeWht0o="}
+-- PasswordHash {unPasswordHash = "$argon2id$v=19$m=65536,t=2,p=1$YWJjZGVmZ2hpamtsbW5vcA$BztdyfEefG5V18ZNlztPrfZaU5duVFKZiI6dJeWht0o"}
 --
 -- (Note that we use an explicit 'Salt' in the example above.  This is so that the
 -- example is reproducible, but in general you should use 'hashPassword'. 'hashPassword'
@@ -200,10 +201,12 @@ hashPasswordWithSalt params@Argon2Params{..} s@(Salt salt) pass =
     [ variantToLetter argon2Variant
     , "v=" <> versionToNum argon2Version
     , parameters
-    , encodeBase64 salt
-    , encodeBase64 key
+    , encodeWithoutPadding salt
+    , encodeWithoutPadding key
     ]
   where
+    encodeWithoutPadding bs =
+        unsafeRemovePad64 (B.length bs) $ encodeBase64 bs
     parameters = T.intercalate ","
         [ "m=" <> showT argon2MemoryCost
         , "t=" <> showT argon2TimeCost
@@ -274,7 +277,7 @@ checkPassword :: Password -> PasswordHash Argon2 -> PasswordCheck
 checkPassword pass (PasswordHash passHash) =
   fromMaybe PasswordCheckFail $ do
     let paramList = T.split (== '$') passHash
-    guard $ length paramList == 6
+    guard $ Prelude.length paramList == 6
     let [ _,
           variantT,
           versionT,
@@ -284,9 +287,9 @@ checkPassword pass (PasswordHash passHash) =
     argon2Variant <- parseVariant variantT
     argon2Version <- parseVersion versionT
     (argon2MemoryCost, argon2TimeCost, argon2Parallelism) <- parseParameters parametersT
-    salt <- from64 salt64
-    hashedKey <- from64 hashedKey64
-    let argon2OutputLength = fromIntegral $ C8.length hashedKey -- only here because of warnings
+    salt <- from64 $ unsafePad64 salt64
+    hashedKey <- from64 $ unsafePad64 hashedKey64
+    let argon2OutputLength = fromIntegral $ B.length hashedKey -- only here because of warnings
         producedKey = hashPasswordWithSalt' Argon2Params{..} (Salt salt) pass
     guard $ hashedKey `constEq` producedKey
     return PasswordCheckSuccess
@@ -296,7 +299,7 @@ checkPassword pass (PasswordHash passHash) =
     parseVersion = splitMaybe "v=" numToVersion
     parseParameters params = do
         let ps = T.split (== ',') params
-        guard $ length ps == 3
+        guard $ Prelude.length ps == 3
         go ps (Nothing, Nothing, Nothing)
       where
         go [] (Just m, Just t, Just p) = Just (m, t, p)
