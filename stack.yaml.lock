@@ -3,7 +3,35 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: basement-0.0.12@sha256:cbb9187d3575b78ee1165b7a49a0e8570ee563820330a944a67cd09e1cfe23bf,5516
+    pantry-tree:
+      size: 5859
+      sha256: 6462393c9058b93baea2c8ffb4a7e1d68c2aee14746ef0081dbb485a2faef71b
+  original:
+    hackage: basement-0.0.12
+- completed:
+    hackage: memory-0.16.0@sha256:3bf01f8267c0ee1745a1c0c4aa0dc311709801e950d605d90b5d1a26e2773e49,4895
+    pantry-tree:
+      size: 2436
+      sha256: 9bd98c34cb359b7f8cdc3ad900ec903461b4d785de7c03575f809980acc84073
+  original:
+    hackage: memory-0.16.0
+- completed:
+    hackage: doctest-0.18.1@sha256:f4d17e8739c2b97a98ec76bcba86f7097c6336bf36def795130cbc02d59b7c6d,7231
+    pantry-tree:
+      size: 7975
+      sha256: 8b79ba765d7d59daee484e1f32e88ce42ccbf628b2bd191ab035cd0e78fb948a
+  original:
+    hackage: doctest-0.18.1
+- completed:
+    hackage: cryptonite-0.28@sha256:edf00c7b00b9a1c07a178c0fe446c6ebe462637d498590757c8eac2075bb0b43,18215
+    pantry-tree:
+      size: 23132
+      sha256: 3737ee32d6629b4b915c01911fdb9dc0e255b96233799479c29420d986634726
+  original:
+    hackage: cryptonite-0.28
 snapshots:
 - completed:
     size: 567241
