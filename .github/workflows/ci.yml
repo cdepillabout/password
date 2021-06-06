@@ -17,11 +17,12 @@ jobs:
           - macOS-latest
         cabal: ["latest"]
         ghc:
-          # - "8.2.2"  # persistent-2.11 doesn't build on ghc-8.2.2
+          - "8.2.2"
           - "8.4.4"
           - "8.6.5"
           - "8.8.4"
           - "8.10.4"
+          - "9.0.1"
 
     steps:
     - uses: actions/checkout@v2
@@ -58,7 +59,8 @@ jobs:
     # When some sort of `allow-failure` functionality is available in GitHub
     # actions, we should switch to it:
     # https://github.com/actions/toolkit/issues/399
-    continue-on-error: ${{ matrix.resolver == '--resolver nightly' }}
+    continue-on-error: |-
+      ${{ matrix.resolver == '--resolver nightly' || matrix.resolver == '--compiler ghc-9.0.1 --stack-yaml ./stack-ghc-9.yaml'}}
     strategy:
       matrix:
         stack: ["latest"]
@@ -69,6 +71,7 @@ jobs:
           - "--resolver lts-16" # GHC 8.8.4
           - "--resolver lts-17" # GHC 8.10.4
           - "--resolver nightly" # GHC 8.10.* ?
+          - "--compiler ghc-9.0.1 --stack-yaml ./stack-ghc-9.yaml" # GHC 9.0.1
 
     steps:
     - uses: actions/checkout@v2
