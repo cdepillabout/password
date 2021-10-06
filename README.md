@@ -1,7 +1,7 @@
 
 # password
 
-[![Build Status](https://secure.travis-ci.org/cdepillabout/password.svg)](http://travis-ci.org/cdepillabout/password)
+[![CI](https://github.com/cdepillabout/password/actions/workflows/ci.yml/badge.svg)](http://github.com/cdepillabout/password/actions/workflows/ci.yml)
 [![BSD3 license](https://img.shields.io/badge/license-BSD3-blue.svg)](./LICENSE)
 
 This repo provides packages for easily working with passwords in Haskell.  This
