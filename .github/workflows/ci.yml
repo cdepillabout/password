@@ -17,11 +17,10 @@ jobs:
           - macOS-latest
         cabal: ["latest"]
         ghc:
-          # - "8.2.2"  # persistent-2.11 doesn't build on ghc-8.2.2
           - "8.4.4"
           - "8.6.5"
           - "8.8.4"
-          - "8.10.4"
+          - "8.10.7"
 
     steps:
     - uses: actions/checkout@v2
@@ -47,6 +46,15 @@ jobs:
     - name: Test
       run: |
         cabal test all --enable-tests
+
+    - name: Fetch cabal-docspec                                       
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |                                                          
+        wget https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20210111/cabal-docspec-0.0.0.20210111.xz &&
+        unxz cabal-docspec-0.0.0.20210111.xz && mv cabal-docspec-0.0.0.20210111 cabal-docspec
+        chmod +x cabal-docspec                                        
+    - name: Run cabal-docspec                                         
+      run: ./cabal-docspec --check-properties --timeout=30
   stack:
     name: stack ${{ matrix.resolver }}
     runs-on: ubuntu-latest

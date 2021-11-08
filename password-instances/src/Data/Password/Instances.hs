@@ -48,6 +48,7 @@ import Web.HttpApiData (FromHttpApiData(..), ToHttpApiData(..))
 --
 -- >>> import Data.Aeson (decode)
 -- >>> import Data.Password.Bcrypt (Salt(..), hashPasswordWithSalt, unsafeShowPassword)
+-- >>> import Data.Password.Types
 -- >>> import Database.Persist.Class (PersistField(toPersistValue))
 -- >>> import Web.HttpApiData (parseUrlPiece)
 
