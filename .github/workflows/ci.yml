@@ -17,11 +17,12 @@ jobs:
           - macOS-latest
         cabal: ["latest"]
         ghc:
-          # - "8.2.2"  # persistent-2.11 doesn't build on ghc-8.2.2
+          - "8.2.2"
           - "8.4.4"
           - "8.6.5"
           - "8.8.4"
-          - "8.10.4"
+          - "8.10.7"
+          - "9.0.2"
 
     steps:
     - uses: actions/checkout@v2
@@ -67,8 +68,8 @@ jobs:
           - "--resolver lts-12 --stack-yaml ./stack-lts-14.yaml" # GHC 8.4.4
           - "--resolver lts-14 --stack-yaml ./stack-lts-14.yaml" # GHC 8.6.5
           - "--resolver lts-16" # GHC 8.8.4
-          - "--resolver lts-17" # GHC 8.10.4
-          - "--resolver nightly" # GHC 8.10.* ?
+          - "--resolver lts-18" # GHC 8.10.7
+          - "--resolver nightly" # GHC 9.0.2
 
     steps:
     - uses: actions/checkout@v2
