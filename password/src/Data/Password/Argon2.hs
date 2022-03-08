@@ -300,13 +300,18 @@ parseArgon2Params (_:variantT:vp:ps:sh:rest) = do
   where
     parseVariant = splitMaybe "argon2" letterToVariant
     parseVersion = splitMaybe "v=" numToVersion
-    parseAll argon2Variant argon2Version parametersT salt64 hashedKey64 = do
-        (argon2MemoryCost, argon2TimeCost, argon2Parallelism) <- parseParameters parametersT
-        salt <- from64 $ unsafePad64 salt64
-        hashedKey <- from64 $ unsafePad64 hashedKey64
-        let argon2OutputLength = fromIntegral $ B.length hashedKey -- only here because of warnings
-            argon2Salt = 16 -- only here because of warnings
-        pure (Argon2Params{..}, Salt salt, hashedKey)
+-- If there are less than 5 parts, the hash is malformed
+parseArgon2Params _ = Nothing
+
+parseAll :: Argon2.Variant -> Argon2.Version -> Text -> Text -> Text -> Maybe (Argon2Params, Salt Argon2, ByteString)
+parseAll argon2Variant argon2Version parametersT salt64 hashedKey64 = do
+    (argon2MemoryCost, argon2TimeCost, argon2Parallelism) <- parseParameters parametersT
+    salt <- from64 $ unsafePad64 salt64
+    hashedKey <- from64 $ unsafePad64 hashedKey64
+    let argon2OutputLength = fromIntegral $ B.length hashedKey -- only here because of warnings
+        argon2Salt = 16 -- only here because of warnings
+    pure (Argon2Params{..}, Salt salt, hashedKey)
+  where
     parseParameters paramsT = do
         let paramsL = T.split (== ',') paramsT
         guard $ Prelude.length paramsL == 3
@@ -320,8 +325,6 @@ parseArgon2Params (_:variantT:vp:ps:sh:rest) = do
             ("t=", i) -> go xs (m, readT i, p)
             ("p=", i) -> go xs (m, t, readT i)
             _ -> Nothing
--- If there are less than 5 parts, the hash is malformed
-parseArgon2Params _ = Nothing
 
 -- | Strips the given 'match' if it matches and uses
 --   the function on the remainder of the given text.
