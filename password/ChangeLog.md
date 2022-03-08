@@ -1,5 +1,11 @@
 # Changelog for `password`
 
+## 3.0.1.0
+
+-   Argon2 hashes without a version field are interpreted as being of version 1.0
+    Thanks to [@Vlix](https://github.com/Vlix)
+    [#56](https://github.com/cdepillabout/password/pull/56)
+
 ## 3.0.0.0
 
 -   Split the main datatypes module (`Data.Password`) into a separate package: `password-types`.
