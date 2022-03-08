@@ -81,7 +81,7 @@ import Data.Maybe (fromMaybe)
 import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
-import qualified Data.Text as T (intercalate, length, split, splitAt)
+import qualified Data.Text as T (intercalate, split, splitAt, stripPrefix)
 import Data.Word (Word32)
 
 import Data.Password.Internal (
@@ -277,30 +277,45 @@ checkPassword :: Password -> PasswordHash Argon2 -> PasswordCheck
 checkPassword pass (PasswordHash passHash) =
   fromMaybe PasswordCheckFail $ do
     let paramList = T.split (== '$') passHash
-    guard $ Prelude.length paramList == 6
-    let [ _,
-          variantT,
-          versionT,
-          parametersT,
-          salt64,
-          hashedKey64 ] = paramList
-    argon2Variant <- parseVariant variantT
-    argon2Version <- parseVersion versionT
+    (argon2Params, salt, hashedKey) <- parseArgon2Params paramList
+    let producedKey = hashPasswordWithSalt' argon2Params salt pass
+    guard $ hashedKey `constEq` producedKey
+    return PasswordCheckSuccess
+
+parseArgon2Params :: [Text] -> Maybe (Argon2Params, Salt Argon2, ByteString)
+-- vp - version or params
+-- ps - params or salt
+-- sh - salt or hash
+parseArgon2Params (_:variantT:vp:ps:sh:rest) = do
+    variant <- parseVariant variantT
+    case rest of
+        -- If there is a 6th part, we'll assume the version is included
+        [hashedKey64] -> do
+            version <- parseVersion vp
+            parseAll variant version ps sh hashedKey64
+        -- If there are only 5 parts, we'll assume the version is 'Version10'
+        [] -> parseAll variant Version10 vp ps sh
+        -- Any other amount of parts means the provided hash is malformed
+        _ -> Nothing
+  where
+    parseVariant = splitMaybe "argon2" letterToVariant
+    parseVersion = splitMaybe "v=" numToVersion
+-- If there are less than 5 parts, the hash is malformed
+parseArgon2Params _ = Nothing
+
+parseAll :: Argon2.Variant -> Argon2.Version -> Text -> Text -> Text -> Maybe (Argon2Params, Salt Argon2, ByteString)
+parseAll argon2Variant argon2Version parametersT salt64 hashedKey64 = do
     (argon2MemoryCost, argon2TimeCost, argon2Parallelism) <- parseParameters parametersT
     salt <- from64 $ unsafePad64 salt64
     hashedKey <- from64 $ unsafePad64 hashedKey64
     let argon2OutputLength = fromIntegral $ B.length hashedKey -- only here because of warnings
-        producedKey = hashPasswordWithSalt' Argon2Params{..} (Salt salt) pass
-    guard $ hashedKey `constEq` producedKey
-    return PasswordCheckSuccess
+        argon2Salt = 16 -- only here because of warnings
+    pure (Argon2Params{..}, Salt salt, hashedKey)
   where
-    argon2Salt = 16 -- only here because of warnings
-    parseVariant = splitMaybe "argon2" letterToVariant
-    parseVersion = splitMaybe "v=" numToVersion
-    parseParameters params = do
-        let ps = T.split (== ',') params
-        guard $ Prelude.length ps == 3
-        go ps (Nothing, Nothing, Nothing)
+    parseParameters paramsT = do
+        let paramsL = T.split (== ',') paramsT
+        guard $ Prelude.length paramsL == 3
+        go paramsL (Nothing, Nothing, Nothing)
       where
         go [] (Just m, Just t, Just p) = Just (m, t, p)
         go [] _ = Nothing
@@ -310,11 +325,12 @@ checkPassword pass (PasswordHash passHash) =
             ("t=", i) -> go xs (m, readT i, p)
             ("p=", i) -> go xs (m, t, readT i)
             _ -> Nothing
-    splitMaybe :: Text -> (Text -> Maybe a) -> Text -> Maybe a
-    splitMaybe match f t =
-      case T.splitAt (T.length match) t of
-        (m, x) | m == match -> f x
-        _  -> Nothing
+
+-- | Strips the given 'match' if it matches and uses
+--   the function on the remainder of the given text.
+splitMaybe :: Text -> (Text -> Maybe a) -> Text -> Maybe a
+splitMaybe match f t =
+    T.stripPrefix match t >>= f
 
 -- | Generate a random 16-byte @Argon2@ salt
 --
