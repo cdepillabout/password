@@ -49,6 +49,7 @@ module Data.Password.Argon2 (
   -- * Verify Passwords (Argon2)
   , checkPassword
   , PasswordCheck(..)
+  , extractParams
   -- * Hashing Manually (Argon2)
   , hashPasswordWithParams
   , defaultParams
@@ -114,6 +115,7 @@ data Argon2
 --
 -- Import needed libraries.
 --
+-- >>> import Data.Maybe(isJust)
 -- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
@@ -274,13 +276,16 @@ hashPasswordWithParams params pass = liftIO $ do
 --
 -- prop> \(Blind badpass) -> let correctPasswordHash = hashPasswordWithSalt testParams salt "foobar" in checkPassword badpass correctPasswordHash == PasswordCheckFail
 checkPassword :: Password -> PasswordHash Argon2 -> PasswordCheck
-checkPassword pass (PasswordHash passHash) =
+checkPassword pass passHash =
   fromMaybe PasswordCheckFail $ do
-    let paramList = T.split (== '$') passHash
-    (argon2Params, salt, hashedKey) <- parseArgon2Params paramList
+    (argon2Params, salt, hashedKey) <- parseArgon2PasswordHashParams passHash 
     let producedKey = hashPasswordWithSalt' argon2Params salt pass
     guard $ hashedKey `constEq` producedKey
     return PasswordCheckSuccess
+
+parseArgon2PasswordHashParams :: PasswordHash Argon2 -> Maybe (Argon2Params, Salt Argon2, ByteString)
+parseArgon2PasswordHashParams (PasswordHash passHash) =
+  parseArgon2Params $ T.split (== '$') passHash
 
 parseArgon2Params :: [Text] -> Maybe (Argon2Params, Salt Argon2, ByteString)
 -- vp - version or params
@@ -325,6 +330,23 @@ parseAll argon2Variant argon2Version parametersT salt64 hashedKey64 = do
             ("t=", i) -> go xs (m, readT i, p)
             ("p=", i) -> go xs (m, t, readT i)
             _ -> Nothing
+
+-- | Extract 'Argon2Params' from a 'PasswordHash' 'Argon2'.
+--
+-- Returns 'Just Argon2Params' on success.
+--
+-- (Note that 'argon2Salt' is defaulted)
+--
+-- >>> let pass = mkPassword "foobar"
+-- >>> passHash <- hashPassword pass
+-- >>> isJust $ extractParams passHash
+-- True
+--
+-- prop> \(Blind pass) -> let passwordHash = hashPasswordWithSalt testParams salt "foobar" in isJust $ extractParams passwordHash
+-- @since 3.0.2.0
+extractParams :: PasswordHash Argon2 -> Maybe Argon2Params
+extractParams passHash =
+  (\(params, _, _) -> params) <$> parseArgon2PasswordHashParams passHash
 
 -- | Strips the given 'match' if it matches and uses
 --   the function on the remainder of the given text.

@@ -43,6 +43,7 @@ module Data.Password.Scrypt (
   -- * Verify Passwords (scrypt)
   , checkPassword
   , PasswordCheck(..)
+  , extractParams
   -- * Hashing Manually (scrypt)
   , hashPasswordWithParams
   , defaultParams
@@ -99,6 +100,7 @@ data Scrypt
 --
 -- Import needed libraries.
 --
+-- >>> import Data.Maybe(isJust)
 -- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
@@ -243,8 +245,15 @@ hashPasswordWithParams params pass = liftIO $ do
 --
 -- prop> \(Blind badpass) -> let correctPasswordHash = hashPasswordWithSalt testParams salt "foobar" in checkPassword badpass correctPasswordHash == PasswordCheckFail
 checkPassword :: Password -> PasswordHash Scrypt -> PasswordCheck
-checkPassword pass (PasswordHash passHash) =
+checkPassword pass passHash =
   fromMaybe PasswordCheckFail $ do
+    (params, salt, hashedKey) <- parseScryptPasswordHashParams passHash
+    let producedKey = hashPasswordWithSalt' params salt pass
+    guard $ hashedKey `constEq` producedKey
+    return PasswordCheckSuccess
+
+parseScryptPasswordHashParams :: PasswordHash Scrypt -> Maybe (ScryptParams, Salt Scrypt, ByteString)
+parseScryptPasswordHashParams (PasswordHash passHash) = do
     let paramList = T.split (== '|') passHash
     guard $ length paramList == 5
     let [ scryptRoundsT,
@@ -258,11 +267,26 @@ checkPassword pass (PasswordHash passHash) =
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
     let scryptOutputLength = fromIntegral $ C8.length hashedKey
-        producedKey = hashPasswordWithSalt' ScryptParams{..} (Salt salt) pass
-    guard $ hashedKey `constEq` producedKey
-    return PasswordCheckSuccess
+    return (ScryptParams{..}, Salt salt, hashedKey)
   where
     scryptSalt = 32 -- only here because of warnings
+
+-- | Extract 'ScryptParams' from a 'PasswordHash' 'Scrypt'.
+--
+-- Returns 'Just ScryptParams' on success.
+--
+-- (Note that 'argon2Salt' is defaulted)
+--
+-- >>> let pass = mkPassword "foobar"
+-- >>> passHash <- hashPassword pass
+-- >>> isJust $ extractParams passHash
+-- True
+--
+-- prop> \(Blind pass) -> let passwordHash = hashPasswordWithSalt testParams salt "foobar" in isJust $ extractParams passwordHash
+-- @since 3.0.2.0
+extractParams :: PasswordHash Scrypt -> Maybe ScryptParams
+extractParams passHash =
+  (\(params, _, _) -> params) <$> parseScryptPasswordHashParams passHash
 
 -- | Generate a random 32-byte @scrypt@ salt
 --
