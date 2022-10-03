@@ -12,13 +12,13 @@ import Internal
 testArgon2 :: TestTree
 testArgon2 = testGroup "Argon2"
   [ referenceTest
-  , testCorrectPassword "Argon2 (hashPassword)" hashFast checkPassword
+  , testCorrectPassword "Argon2 (hashPassword)" hashFast checkPassword extractParams
   , testIncorrectPassword "Argon2 (hashPassword) fail" hashFast checkPassword
   , testWithSalt "Argon2 (hashPasswordWithSalt)"
                  (hashPasswordWithSalt fastParams)
-                 checkPassword
-  , testWithParams "Argon2 (Argon2i)" $ fastParams{ argon2Variant = Argon2i }
-  , testWithParams "Argon2 (Argon2d)" $ fastParams{ argon2Variant = Argon2d }
+                 checkPassword extractParams
+  , testWithParams "Argon2 (Argon2i)" (fastParams{ argon2Variant = Argon2i }) extractParams
+  , testWithParams "Argon2 (Argon2d)" (fastParams{ argon2Variant = Argon2d }) extractParams
   , paddingTests
   , omittedVersionTest
   ]

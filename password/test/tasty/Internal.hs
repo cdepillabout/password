@@ -3,6 +3,7 @@
 module Internal where
 
 import Data.ByteArray (pack)
+import Data.Maybe (isJust)
 import Test.Tasty (TestTree)
 import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
@@ -14,12 +15,13 @@ import Data.Password.Bcrypt (PasswordCheck(..), Salt(..))
 testCorrectPassword :: String
                     -> (Password -> IO (PasswordHash a))
                     -> (Password -> PasswordHash a -> PasswordCheck)
+                    -> (PasswordHash a -> Maybe params)
                     -> TestTree
-testCorrectPassword s hashF checkF = testProperty s $
+testCorrectPassword s hashF checkF extractParamsF = testProperty s $
   \pass -> ioProperty $ do
     let pw = mkPassword pass
     hpw <- hashF pw
-    return $ checkF pw hpw === PasswordCheckSuccess
+    return $ (checkF pw hpw === PasswordCheckSuccess) .&&. isJust (extractParamsF hpw) === True
 
 testIncorrectPassword :: String
                       -> (Password -> IO (PasswordHash a))
@@ -38,12 +40,13 @@ testIncorrectPassword s hashF checkF = testProperty s $
 testWithSalt :: String
              -> (Salt a -> Password -> PasswordHash a)
              -> (Password -> PasswordHash a -> PasswordCheck)
+             -> (PasswordHash a -> Maybe params)
              -> TestTree
-testWithSalt s hashWithSalt checkF = testProperty s $
+testWithSalt s hashWithSalt checkF extractParamsF = testProperty s $
   \pass salt ->
     let pw = mkPassword pass
         hpw = hashWithSalt salt pw
-    in checkF pw hpw === PasswordCheckSuccess
+    in (checkF pw hpw === PasswordCheckSuccess) .&&. isJust (extractParamsF hpw) === True
 
 instance Arbitrary (Salt a) where
   arbitrary = Salt . pack <$> vector 16

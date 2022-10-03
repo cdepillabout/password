@@ -16,11 +16,12 @@ import Internal
 
 testScrypt :: TestTree
 testScrypt = testGroup "scrypt"
-  [ testCorrectPassword "Scrypt (hashPassword)" hash8Rounds checkPassword
+  [ testCorrectPassword "Scrypt (hashPassword)" hash8Rounds checkPassword extractParams
   , testIncorrectPassword "Scrypt (hashPassword) fail" hash8Rounds checkPassword
   , testWithSalt "Scrypt (hashPasswordWithSalt)"
                  (hashPasswordWithSalt defaultParams{ scryptRounds = 8 })
                  checkPassword
+                 extractParams
   , testProperty "scrypt <-> cryptonite" $ withMaxSuccess 10 checkScrypt
   ]
   where

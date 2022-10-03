@@ -19,7 +19,7 @@ import Internal
 
 testPBKDF2 :: TestTree
 testPBKDF2 = testGroup "PBKDF2"
-  [ testIt "PBKDF2 (hashPassword)" testParams -- This is PBKDF2_SHA512
+  [ testIt "PBKDF2 (hashPassword)" testParams extractParams -- This is PBKDF2_SHA512
   , testIncorrectPassword
       "PBKDF2 (hashPassword) fail"
       (hashPasswordWithParams testParams)
@@ -28,9 +28,10 @@ testPBKDF2 = testGroup "PBKDF2"
       "PBKDF2 (hashPasswordWithSalt)"
       (hashPasswordWithSalt testParams)
       checkPassword
-  , testIt "PBKDF2 (md5)"    (defaultParams{ pbkdf2Algorithm = PBKDF2_MD5, pbkdf2Iterations = 1000 })
-  , testIt "PBKDF2 (sha1)"   (testParams{ pbkdf2Algorithm = PBKDF2_SHA1 })
-  , testIt "PBKDF2 (sha256)" (testParams{ pbkdf2Algorithm = PBKDF2_SHA256 })
+      extractParams
+  , testIt "PBKDF2 (md5)"    (defaultParams{ pbkdf2Algorithm = PBKDF2_MD5, pbkdf2Iterations = 1000 }) extractParams
+  , testIt "PBKDF2 (sha1)"   (testParams{ pbkdf2Algorithm = PBKDF2_SHA1 }) extractParams
+  , testIt "PBKDF2 (sha256)" (testParams{ pbkdf2Algorithm = PBKDF2_SHA256 }) extractParams
   , testFast Crypto.SHA1   20 PBKDF2.fastPBKDF2_SHA1
   , testFast Crypto.SHA256 32 PBKDF2.fastPBKDF2_SHA256
   , testFast Crypto.SHA512 64 PBKDF2.fastPBKDF2_SHA512
@@ -38,7 +39,7 @@ testPBKDF2 = testGroup "PBKDF2"
   , testCorrectPassword
       "PBKDF2 (pbkdf2:sha-...)"
       (hashPasswordWithParams testParams)
-      (\pass (PasswordHash hash) -> checkPassword pass . PasswordHash $ "pbkdf2:" <> hash)
+      (\pass (PasswordHash hash) -> checkPassword pass . PasswordHash $ "pbkdf2:" <> hash) extractParams
   ]
   where
     testIt s params = testCorrectPassword s (hashPasswordWithParams params) checkPassword
