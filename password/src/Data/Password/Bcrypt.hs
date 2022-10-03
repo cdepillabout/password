@@ -43,6 +43,7 @@ module Data.Password.Bcrypt (
   -- * Verify Passwords (bcrypt)
   , checkPassword
   , PasswordCheck(..)
+  , extractParams
   -- * Hashing Manually (bcrypt)
   , hashPasswordWithParams
   -- ** Hashing with salt (DISADVISED)
@@ -59,9 +60,12 @@ module Data.Password.Bcrypt (
     -- $setup
   ) where
 
+import Control.Monad(guard)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.KDF.BCrypt as Bcrypt (bcrypt, validatePassword)
 import Data.ByteArray (Bytes, convert)
+import qualified Data.Text as T
+import Text.Read (readMaybe)
 
 import Data.Password.Types (
     Password
@@ -73,7 +77,9 @@ import Data.Password.Types (
 import Data.Password.Internal (
     PasswordCheck(..)
   , fromBytes
+  , from64
   , toBytes
+  , unsafePad64
   )
 import qualified Data.Password.Internal (newSalt)
 
@@ -89,6 +95,7 @@ data Bcrypt
 --
 -- Import needed libraries.
 --
+-- >>> import Data.Maybe (isJust)
 -- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
@@ -182,6 +189,25 @@ checkPassword pass (PasswordHash passHash) =
         (toBytes passHash)
       then PasswordCheckSuccess
       else PasswordCheckFail
+
+-- | Extract 'BcryptParams' from a 'PasswordHash' 'Bcrypt'.
+--
+-- Returns 'Just BcryptParams' on success.
+--
+-- >>> let pass = mkPassword "foobar"
+-- >>> passHash <- hashPassword pass
+-- >>> isJust $ extractParams passHash
+-- True
+--
+-- @since 3.0.2.0
+extractParams :: PasswordHash Bcrypt -> Maybe Int
+extractParams (PasswordHash passHash) = do
+  let params = T.split (== '$') passHash
+  guard $ Prelude.length params == 4
+  let [_, _version, cost, pass] = params
+  finalCost <- readMaybe $ T.unpack cost
+  _hashedKey <- from64 $ unsafePad64 pass
+  return finalCost
 
 -- | Generate a random 16-byte @bcrypt@ salt
 --

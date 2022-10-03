@@ -100,7 +100,7 @@ data Scrypt
 --
 -- Import needed libraries.
 --
--- >>> import Data.Maybe(isJust)
+-- >>> import Data.Maybe (isJust)
 -- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
@@ -267,22 +267,18 @@ parseScryptPasswordHashParams (PasswordHash passHash) = do
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
     let scryptOutputLength = fromIntegral $ C8.length hashedKey
+        scryptSalt = fromIntegral $ C8.length salt
     return (ScryptParams{..}, Salt salt, hashedKey)
-  where
-    scryptSalt = 32 -- only here because of warnings
 
 -- | Extract 'ScryptParams' from a 'PasswordHash' 'Scrypt'.
 --
 -- Returns 'Just ScryptParams' on success.
---
--- (Note that 'argon2Salt' is defaulted)
 --
 -- >>> let pass = mkPassword "foobar"
 -- >>> passHash <- hashPassword pass
 -- >>> isJust $ extractParams passHash
 -- True
 --
--- prop> \(Blind pass) -> let passwordHash = hashPasswordWithSalt testParams salt "foobar" in isJust $ extractParams passwordHash
 -- @since 3.0.2.0
 extractParams :: PasswordHash Scrypt -> Maybe ScryptParams
 extractParams passHash =

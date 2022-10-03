@@ -108,7 +108,7 @@ data PBKDF2
 --
 -- Import needed libraries.
 --
--- >>> import Data.Maybe(isJust)
+-- >>> import Data.Maybe (isJust)
 -- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
@@ -258,22 +258,18 @@ parsePBKDF2PasswordHashParams (PasswordHash passHash) = do
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
     let pbkdf2OutputLength = fromIntegral $ C8.length hashedKey
+        pbkdf2Salt = fromIntegral $ C8.length salt
     return (PBKDF2Params{..}, Salt salt, hashedKey)
-  where
-    pbkdf2Salt = 16
 
 -- | Extract 'PBKDF2Params' from a 'PasswordHash' 'PBKDF2'.
 --
 -- Returns 'Just PBKDF2Params' on success.
---
--- (Note that 'argon2Salt' is defaulted)
 --
 -- >>> let pass = mkPassword "foobar"
 -- >>> passHash <- hashPassword pass
 -- >>> isJust $ extractParams passHash
 -- True
 --
--- prop> \(Blind pass) -> let passwordHash = hashPasswordWithSalt testParams salt "foobar" in isJust $ extractParams passwordHash
 -- @since 3.0.2.0
 extractParams :: PasswordHash PBKDF2 -> Maybe PBKDF2Params
 extractParams passHash =

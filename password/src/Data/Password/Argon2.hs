@@ -115,7 +115,7 @@ data Argon2
 --
 -- Import needed libraries.
 --
--- >>> import Data.Maybe(isJust)
+-- >>> import Data.Maybe (isJust)
 -- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
@@ -314,7 +314,7 @@ parseAll argon2Variant argon2Version parametersT salt64 hashedKey64 = do
     salt <- from64 $ unsafePad64 salt64
     hashedKey <- from64 $ unsafePad64 hashedKey64
     let argon2OutputLength = fromIntegral $ B.length hashedKey -- only here because of warnings
-        argon2Salt = 16 -- only here because of warnings
+        argon2Salt = fromIntegral $ B.length salt
     pure (Argon2Params{..}, Salt salt, hashedKey)
   where
     parseParameters paramsT = do
@@ -335,14 +335,11 @@ parseAll argon2Variant argon2Version parametersT salt64 hashedKey64 = do
 --
 -- Returns 'Just Argon2Params' on success.
 --
--- (Note that 'argon2Salt' is defaulted)
---
 -- >>> let pass = mkPassword "foobar"
 -- >>> passHash <- hashPassword pass
 -- >>> isJust $ extractParams passHash
 -- True
 --
--- prop> \(Blind pass) -> let passwordHash = hashPasswordWithSalt testParams salt "foobar" in isJust $ extractParams passwordHash
 -- @since 3.0.2.0
 extractParams :: PasswordHash Argon2 -> Maybe Argon2Params
 extractParams passHash =
