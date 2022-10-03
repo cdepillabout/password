@@ -49,10 +49,10 @@ module Data.Password.Argon2 (
   -- * Verify Passwords (Argon2)
   , checkPassword
   , PasswordCheck(..)
-  , extractParams
   -- * Hashing Manually (Argon2)
   , hashPasswordWithParams
   , defaultParams
+  , extractParams
   , Argon2Params(..)
   , Argon2.Variant(..)
   , Argon2.Version(..)
@@ -115,7 +115,6 @@ data Argon2
 --
 -- Import needed libraries.
 --
--- >>> import Data.Maybe (isJust)
 -- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
@@ -331,13 +330,13 @@ parseAll argon2Variant argon2Version parametersT salt64 hashedKey64 = do
             ("p=", i) -> go xs (m, t, readT i)
             _ -> Nothing
 
--- | Extract 'Argon2Params' from a 'PasswordHash' 'Argon2'.
+-- | Extracts 'Argon2Params' from a 'PasswordHash' 'Argon2'.
 --
 -- Returns 'Just Argon2Params' on success.
 --
 -- >>> let pass = mkPassword "foobar"
 -- >>> passHash <- hashPassword pass
--- >>> isJust $ extractParams passHash
+-- >>> extractParams passHash == Just defaultParams
 -- True
 --
 -- @since 3.0.2.0

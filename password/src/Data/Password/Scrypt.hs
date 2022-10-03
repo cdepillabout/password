@@ -43,10 +43,10 @@ module Data.Password.Scrypt (
   -- * Verify Passwords (scrypt)
   , checkPassword
   , PasswordCheck(..)
-  , extractParams
   -- * Hashing Manually (scrypt)
   , hashPasswordWithParams
   , defaultParams
+  , extractParams
   , ScryptParams(..)
   -- ** Hashing with salt (DISADVISED)
   --
@@ -100,7 +100,6 @@ data Scrypt
 --
 -- Import needed libraries.
 --
--- >>> import Data.Maybe (isJust)
 -- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
@@ -270,13 +269,13 @@ parseScryptPasswordHashParams (PasswordHash passHash) = do
         scryptSalt = fromIntegral $ C8.length salt
     return (ScryptParams{..}, Salt salt, hashedKey)
 
--- | Extract 'ScryptParams' from a 'PasswordHash' 'Scrypt'.
+-- | Extracts 'ScryptParams' from a 'PasswordHash' 'Scrypt'.
 --
 -- Returns 'Just ScryptParams' on success.
 --
 -- >>> let pass = mkPassword "foobar"
 -- >>> passHash <- hashPassword pass
--- >>> isJust $ extractParams passHash
+-- >>> extractParams passHash == Just defaultParams
 -- True
 --
 -- @since 3.0.2.0

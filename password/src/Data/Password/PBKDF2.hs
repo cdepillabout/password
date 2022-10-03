@@ -48,10 +48,10 @@ module Data.Password.PBKDF2 (
   -- * Verify Passwords (PBKDF2)
   , checkPassword
   , PasswordCheck(..)
-  , extractParams
   -- * Hashing Manually (PBKDF2)
   , hashPasswordWithParams
   , defaultParams
+  , extractParams
   , PBKDF2Params(..)
   , PBKDF2Algorithm(..)
   -- ** Hashing with salt (DISADVISED)
@@ -108,7 +108,6 @@ data PBKDF2
 --
 -- Import needed libraries.
 --
--- >>> import Data.Maybe (isJust)
 -- >>> import Data.Password.Types
 -- >>> import Data.ByteString (pack)
 -- >>> import Test.QuickCheck (Arbitrary(arbitrary), Blind(Blind), vector)
@@ -261,13 +260,13 @@ parsePBKDF2PasswordHashParams (PasswordHash passHash) = do
         pbkdf2Salt = fromIntegral $ C8.length salt
     return (PBKDF2Params{..}, Salt salt, hashedKey)
 
--- | Extract 'PBKDF2Params' from a 'PasswordHash' 'PBKDF2'.
+-- | Extracts 'PBKDF2Params' from a 'PasswordHash' 'PBKDF2'.
 --
 -- Returns 'Just PBKDF2Params' on success.
 --
 -- >>> let pass = mkPassword "foobar"
 -- >>> passHash <- hashPassword pass
--- >>> isJust $ extractParams passHash
+-- >>> extractParams passHash == Just defaultParams
 -- True
 --
 -- @since 3.0.2.0
