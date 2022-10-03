@@ -60,6 +60,7 @@ module Data.Password.Bcrypt (
     -- $setup
   ) where
 
+import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.KDF.BCrypt as Bcrypt (bcrypt, validatePassword)
 import Data.ByteArray (Bytes, convert)
@@ -195,9 +196,11 @@ checkPassword pass (PasswordHash passHash) =
 --
 -- @since 3.0.2.0
 extractParams :: PasswordHash Bcrypt -> Maybe Int
-extractParams (PasswordHash passHash) = do
+extractParams (PasswordHash passHash) =
   case T.split (== '$') passHash of
-    [_, _version, cost, _pass] -> readMaybe $ T.unpack cost
+    [_, version, cost, _pass] -> do
+      guard $ elem version $ map T.pack ["2", " 2a", " 2x", " 2y", " 2b"]
+      readMaybe $ T.unpack cost
     _ -> Nothing
 
 -- | Generate a random 16-byte @bcrypt@ salt
