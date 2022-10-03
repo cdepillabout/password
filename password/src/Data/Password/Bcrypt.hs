@@ -43,9 +43,9 @@ module Data.Password.Bcrypt (
   -- * Verify Passwords (bcrypt)
   , checkPassword
   , PasswordCheck(..)
-  , extractParams
   -- * Hashing Manually (bcrypt)
   , hashPasswordWithParams
+  , extractParams
   -- ** Hashing with salt (DISADVISED)
   --
   -- | Hashing with a set 'Salt' is almost never what you want
