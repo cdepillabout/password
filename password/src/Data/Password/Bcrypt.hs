@@ -204,10 +204,8 @@ extractParams :: PasswordHash Bcrypt -> Maybe Int
 extractParams (PasswordHash passHash) = do
   let params = T.split (== '$') passHash
   guard $ Prelude.length params == 4
-  let [_, _version, cost, pass] = params
-  finalCost <- readMaybe $ T.unpack cost
-  _hashedKey <- from64 $ unsafePad64 pass
-  return finalCost
+  let [_, _version, cost, _pass] = params
+  readMaybe $ T.unpack cost
 
 -- | Generate a random 16-byte @bcrypt@ salt
 --
