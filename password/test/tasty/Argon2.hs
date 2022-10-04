@@ -12,21 +12,21 @@ import TestUtils
 testArgon2 :: TestTree
 testArgon2 = testGroup "Argon2"
   [ referenceTest
-  , testCorrectPassword "Argon2 (hashPassword)" hashFast checkPassword extractParams defaultParams
+  , testCorrectPassword "Argon2 (hashPassword)" hashFast checkPassword extractParams fastParams
   , testIncorrectPassword "Argon2 (hashPassword) fail" hashFast checkPassword
   , testWithSalt "Argon2 (hashPasswordWithSalt)"
                  (hashPasswordWithSalt fastParams)
                  checkPassword
                  extractParams
-                 defaultParams
-  , testWithParams "Argon2 (Argon2i)" (fastParams{ argon2Variant = Argon2i }) extractParams defaultParams
-  , testWithParams "Argon2 (Argon2d)" (fastParams{ argon2Variant = Argon2d }) extractParams defaultParams
+                 fastParams
+  , testWithParams "Argon2 (Argon2i)" (fastParams{ argon2Variant = Argon2i })
+  , testWithParams "Argon2 (Argon2d)" (fastParams{ argon2Variant = Argon2d })
   , paddingTests
   , omittedVersionTest
   ]
   where
     testWithParams s params =
-      testWithSalt s (hashPasswordWithSalt params) checkPassword
+      testWithSalt s (hashPasswordWithSalt params) checkPassword extractParams params
     hashFast = hashPasswordWithParams fastParams
     fastParams =
       defaultParams{
