@@ -1,52 +1,36 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
-module Internal where
+module Internal (testInternal) where
 
-import Data.ByteArray (pack)
-import Data.Maybe (isJust)
-import Test.Tasty (TestTree)
+import qualified Data.ByteString as B
+import Data.Text.Encoding(encodeUtf8)
+import Data.ByteString.Base64 (encodeBase64)
+import Data.Word (Word16)
+import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
 
-import Data.Password.Types (mkPassword, Password, PasswordHash)
-import Data.Password.Bcrypt (PasswordCheck(..), Salt(..))
+import Data.Password.Bcrypt (Salt(..))
+
+import Data.Password.Internal
 
 
-testCorrectPassword :: String
-                    -> (Password -> IO (PasswordHash a))
-                    -> (Password -> PasswordHash a -> PasswordCheck)
-                    -> (PasswordHash a -> Maybe params)
-                    -> TestTree
-testCorrectPassword s hashF checkF extractParamsF = testProperty s $
-  \pass -> ioProperty $ do
-    let pw = mkPassword pass
-    hpw <- hashF pw
-    return $ (checkF pw hpw === PasswordCheckSuccess) .&&. isJust (extractParamsF hpw) === True
+testInternal :: TestTree
+testInternal = testGroup "Internal"
+  [ newSaltTest
+  , padding64Test
+  ]
 
-testIncorrectPassword :: String
-                      -> (Password -> IO (PasswordHash a))
-                      -> (Password -> PasswordHash a -> PasswordCheck)
-                      -> TestTree
-testIncorrectPassword s hashF checkF = testProperty s $
-  \pass pass2 -> pass /= pass2 && not (all isEmpty [pass, pass2]) ==>
-    ioProperty $ do
-      let pw = mkPassword pass
-          pw2 = mkPassword pass2
-      hpw <- hashF pw
-      return $ checkF pw2 hpw === PasswordCheckFail
-  where
-    isEmpty c = c `elem` ["", "\NUL"]
+newSaltTest :: TestTree
+newSaltTest =
+  testProperty "newSalt <-> length salt" $
+    \i -> ioProperty $ do
+      let n = fromIntegral (i :: Word16)
+      Salt salt <- newSalt n
+      pure $ B.length salt === n
 
-testWithSalt :: String
-             -> (Salt a -> Password -> PasswordHash a)
-             -> (Password -> PasswordHash a -> PasswordCheck)
-             -> (PasswordHash a -> Maybe params)
-             -> TestTree
-testWithSalt s hashWithSalt checkF extractParamsF = testProperty s $
-  \pass salt ->
-    let pw = mkPassword pass
-        hpw = hashWithSalt salt pw
-    in (checkF pw hpw === PasswordCheckSuccess) .&&. isJust (extractParamsF hpw) === True
-
-instance Arbitrary (Salt a) where
-  arbitrary = Salt . pack <$> vector 16
+padding64Test :: TestTree
+padding64Test =
+  testProperty "unsafePad64 <-> unsafeRemovePad64" $
+    \it -> let i = encodeUtf8 it
+               bs = encodeBase64 i
+           in unsafeRemovePad64 (B.length i) (unsafePad64 bs) === bs

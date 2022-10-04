@@ -6,19 +6,21 @@ import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
 
 import Data.Password.Argon2
 
-import Internal
+import TestUtils
 
 
 testArgon2 :: TestTree
 testArgon2 = testGroup "Argon2"
   [ referenceTest
-  , testCorrectPassword "Argon2 (hashPassword)" hashFast checkPassword extractParams
+  , testCorrectPassword "Argon2 (hashPassword)" hashFast checkPassword extractParams defaultParams
   , testIncorrectPassword "Argon2 (hashPassword) fail" hashFast checkPassword
   , testWithSalt "Argon2 (hashPasswordWithSalt)"
                  (hashPasswordWithSalt fastParams)
-                 checkPassword extractParams
-  , testWithParams "Argon2 (Argon2i)" (fastParams{ argon2Variant = Argon2i }) extractParams
-  , testWithParams "Argon2 (Argon2d)" (fastParams{ argon2Variant = Argon2d }) extractParams
+                 checkPassword
+                 extractParams
+                 defaultParams
+  , testWithParams "Argon2 (Argon2i)" (fastParams{ argon2Variant = Argon2i }) extractParams defaultParams
+  , testWithParams "Argon2 (Argon2d)" (fastParams{ argon2Variant = Argon2d }) extractParams defaultParams
   , paddingTests
   , omittedVersionTest
   ]

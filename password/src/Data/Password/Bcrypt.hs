@@ -45,6 +45,7 @@ module Data.Password.Bcrypt (
   , PasswordCheck(..)
   -- * Hashing Manually (bcrypt)
   , hashPasswordWithParams
+  , defaultParams
   , extractParams
   -- ** Hashing with salt (DISADVISED)
   --
@@ -208,3 +209,12 @@ extractParams (PasswordHash passHash) =
 -- @since 2.0.0.0
 newSalt :: MonadIO m => m (Salt Bcrypt)
 newSalt = Data.Password.Internal.newSalt 16
+
+-- | Default parameters for the 'Bcrypt' algorithm.
+--
+-- >>> defaultParams
+-- 10
+--
+-- @since 3.0.2.0
+defaultParams :: Int
+defaultParams = 10

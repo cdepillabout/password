@@ -4,12 +4,12 @@ import Test.Tasty
 
 import Data.Password.Bcrypt
 
-import Internal (testCorrectPassword, testIncorrectPassword, testWithSalt)
+import TestUtils
 
 
 testBcrypt :: TestTree
 testBcrypt = testGroup "bcrypt"
-  [ testCorrectPassword "Bcrypt (hashPassword)" (hashPasswordWithParams 4) checkPassword extractParams
+  [ testCorrectPassword "Bcrypt (hashPassword)" (hashPasswordWithParams 4) checkPassword extractParams defaultParams
   , testIncorrectPassword "Bcrypt (hashPassword) fail" (hashPasswordWithParams 4) checkPassword
-  , testWithSalt "Bcrypt (hashPasswordWithSalt)" (hashPasswordWithSalt 4) checkPassword extractParams
+  , testWithSalt "Bcrypt (hashPasswordWithSalt)" (hashPasswordWithSalt 4) checkPassword extractParams defaultParams
   ]

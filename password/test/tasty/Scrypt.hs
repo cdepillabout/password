@@ -11,17 +11,18 @@ import qualified Crypto.Scrypt as Scrypt
 import Data.Password.Types
 import Data.Password.Scrypt
 
-import Internal
+import TestUtils
 
 
 testScrypt :: TestTree
 testScrypt = testGroup "scrypt"
-  [ testCorrectPassword "Scrypt (hashPassword)" hash8Rounds checkPassword extractParams
+  [ testCorrectPassword "Scrypt (hashPassword)" hash8Rounds checkPassword extractParams defaultParams
   , testIncorrectPassword "Scrypt (hashPassword) fail" hash8Rounds checkPassword
   , testWithSalt "Scrypt (hashPasswordWithSalt)"
                  (hashPasswordWithSalt defaultParams{ scryptRounds = 8 })
                  checkPassword
                  extractParams
+                 defaultParams
   , testProperty "scrypt <-> cryptonite" $ withMaxSuccess 10 checkScrypt
   ]
   where
