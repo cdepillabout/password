@@ -6,7 +6,7 @@ import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
 
 import Data.Password.Argon2
 
-import TestUtils
+import Internal
 
 
 testArgon2 :: TestTree

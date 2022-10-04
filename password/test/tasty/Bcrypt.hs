@@ -4,7 +4,7 @@ import Test.Tasty
 
 import Data.Password.Bcrypt
 
-import TestUtils
+import Internal
 
 
 testBcrypt :: TestTree

@@ -11,7 +11,7 @@ import qualified Crypto.Scrypt as Scrypt
 import Data.Password.Types
 import Data.Password.Scrypt
 
-import TestUtils
+import Internal
 
 
 testScrypt :: TestTree

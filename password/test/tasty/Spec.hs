@@ -6,7 +6,6 @@ import Data.Password.Types
 
 import Argon2 (testArgon2)
 import Bcrypt (testBcrypt)
-import Internal (testInternal)
 import PBKDF2 (testPBKDF2)
 import Scrypt (testScrypt)
 import Validate (testValidate)
@@ -18,7 +17,6 @@ main = defaultMain $ localOption (NumThreads 1) $
         unsafeShowPassword (mkPassword pass) === pass
     , testArgon2
     , testBcrypt
-    , testInternal
     , testPBKDF2
     , testScrypt
     , testValidate

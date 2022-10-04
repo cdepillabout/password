@@ -15,7 +15,7 @@ import Test.QuickCheck.Instances.Text ()
 
 import Data.Password.PBKDF2
 
-import TestUtils
+import Internal
 
 testPBKDF2 :: TestTree
 testPBKDF2 = testGroup "PBKDF2"
