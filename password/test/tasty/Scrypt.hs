@@ -16,18 +16,21 @@ import Internal
 
 testScrypt :: TestTree
 testScrypt = testGroup "scrypt"
-  [ testCorrectPassword "Scrypt (hashPassword)" hash8Rounds checkPassword extractParams testParams
+  [ testCorrectPassword "Scrypt (hashPassword, 8 rounds)" hash8Rounds checkPassword extractParams testsParams8Rounds
+  , testCorrectPassword "Scrypt (hashPassword, 16 rounds)" hash16Rounds checkPassword extractParams testsParams16Rounds
   , testIncorrectPassword "Scrypt (hashPassword) fail" hash8Rounds checkPassword
   , testWithSalt "Scrypt (hashPasswordWithSalt)"
-                 (hashPasswordWithSalt testParams)
+                 (hashPasswordWithSalt testsParams8Rounds)
                  checkPassword
                  extractParams
-                 testParams
+                 testsParams8Rounds
   , testProperty "scrypt <-> cryptonite" $ withMaxSuccess 10 checkScrypt
   ]
   where
-    hash8Rounds = hashPasswordWithParams testParams
-    testParams = defaultParams{ scryptRounds = 8 }
+    hash8Rounds = hashPasswordWithParams testsParams8Rounds
+    testsParams8Rounds = defaultParams{ scryptRounds = 8 }
+    hash16Rounds = hashPasswordWithParams testsParams16Rounds
+    testsParams16Rounds = defaultParams{ scryptRounds = 16 }
 
 checkScrypt :: Text -> Property
 checkScrypt pass = ioProperty $ do
