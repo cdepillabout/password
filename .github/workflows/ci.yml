@@ -9,7 +9,7 @@ on:
 jobs:
   cabal:
     name: cabal / ghc-${{matrix.ghc}} / ${{ matrix.os }}
-    continue-on-error: ${{ matrix.ghc == '9.2.2' }}
+    continue-on-error: ${{ matrix.ghc == '9.2.4' || matrix.ghc == '9.4.2'}}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -18,12 +18,12 @@ jobs:
           - macOS-latest
         cabal: ["latest"]
         ghc:
-          - "8.4.4"
           - "8.6.5"
           - "8.8.4"
           - "8.10.7"
           - "9.0.2"
-          - "9.2.2"
+          - "9.2.4"
+          - "9.4.2"
 
     steps:
     - uses: actions/checkout@v2
@@ -45,10 +45,10 @@ jobs:
     - name: Build
       run: |
         cabal update
-        cabal build all --enable-tests --enable-benchmarks --write-ghc-environment-files=always
+        cabal build all --enable-tests --enable-benchmarks --write-ghc-environment-files=always -f internal
     - name: Test
       run: |
-        cabal test all --enable-tests
+        cabal test all --enable-tests -f internal
   stack:
     name: stack ${{ matrix.resolver }}
     runs-on: ubuntu-latest
@@ -65,12 +65,11 @@ jobs:
       matrix:
         stack: ["latest"]
         resolver:
-          - "--resolver lts-12 --stack-yaml ./stack-lts-14.yaml" # GHC 8.4.4
           - "--resolver lts-14 --stack-yaml ./stack-lts-14.yaml" # GHC 8.6.5
           - "--resolver lts-16" # GHC 8.8.4
           - "--resolver lts-18" # GHC 8.10.7
           - "--resolver lts-19" # GHC 9.0.2
-          - "--resolver nightly" # GHC 9.2.2
+          - "--resolver nightly" # GHC 9.2.4
 
     steps:
     - uses: actions/checkout@v2
@@ -90,7 +89,7 @@ jobs:
 
     - name: Build
       run: |
-        stack build ${{ matrix.resolver }} --test --bench --no-run-tests --no-run-benchmarks
+        stack build ${{ matrix.resolver }} --test --bench --no-run-tests --no-run-benchmarks --flag password:internal
     - name: Test
       run: |
-        stack test ${{ matrix.resolver }}
+        stack test ${{ matrix.resolver }} --flag password:internal
