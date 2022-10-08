@@ -46,6 +46,7 @@ module Data.Password.Scrypt (
   -- * Hashing Manually (scrypt)
   , hashPasswordWithParams
   , defaultParams
+  , extractParams
   , ScryptParams(..)
   -- ** Hashing with salt (DISADVISED)
   --
@@ -243,8 +244,15 @@ hashPasswordWithParams params pass = liftIO $ do
 --
 -- prop> \(Blind badpass) -> let correctPasswordHash = hashPasswordWithSalt testParams salt "foobar" in checkPassword badpass correctPasswordHash == PasswordCheckFail
 checkPassword :: Password -> PasswordHash Scrypt -> PasswordCheck
-checkPassword pass (PasswordHash passHash) =
+checkPassword pass passHash =
   fromMaybe PasswordCheckFail $ do
+    (params, salt, hashedKey) <- parseScryptPasswordHashParams passHash
+    let producedKey = hashPasswordWithSalt' params salt pass
+    guard $ hashedKey `constEq` producedKey
+    return PasswordCheckSuccess
+
+parseScryptPasswordHashParams :: PasswordHash Scrypt -> Maybe (ScryptParams, Salt Scrypt, ByteString)
+parseScryptPasswordHashParams (PasswordHash passHash) = do
     let paramList = T.split (== '|') passHash
     guard $ length paramList == 5
     let [ scryptRoundsT,
@@ -258,11 +266,22 @@ checkPassword pass (PasswordHash passHash) =
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
     let scryptOutputLength = fromIntegral $ C8.length hashedKey
-        producedKey = hashPasswordWithSalt' ScryptParams{..} (Salt salt) pass
-    guard $ hashedKey `constEq` producedKey
-    return PasswordCheckSuccess
-  where
-    scryptSalt = 32 -- only here because of warnings
+        scryptSalt = fromIntegral $ C8.length salt
+    return (ScryptParams{..}, Salt salt, hashedKey)
+
+-- | Extracts 'ScryptParams' from a 'PasswordHash' 'Scrypt'.
+--
+-- Returns 'Just ScryptParams' on success.
+--
+-- >>> let pass = mkPassword "foobar"
+-- >>> passHash <- hashPassword pass
+-- >>> extractParams passHash == Just defaultParams
+-- True
+--
+-- @since 3.0.2.0
+extractParams :: PasswordHash Scrypt -> Maybe ScryptParams
+extractParams passHash =
+  (\(params, _, _) -> params) <$> parseScryptPasswordHashParams passHash
 
 -- | Generate a random 32-byte @scrypt@ salt
 --

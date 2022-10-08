@@ -45,6 +45,7 @@ module Data.Password.Bcrypt (
   , PasswordCheck(..)
   -- * Hashing Manually (bcrypt)
   , hashPasswordWithParams
+  , extractParams
   -- ** Hashing with salt (DISADVISED)
   --
   -- | Hashing with a set 'Salt' is almost never what you want
@@ -59,9 +60,12 @@ module Data.Password.Bcrypt (
     -- $setup
   ) where
 
+import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.KDF.BCrypt as Bcrypt (bcrypt, validatePassword)
 import Data.ByteArray (Bytes, convert)
+import qualified Data.Text as T
+import Text.Read (readMaybe)
 
 import Data.Password.Types (
     Password
@@ -182,6 +186,22 @@ checkPassword pass (PasswordHash passHash) =
         (toBytes passHash)
       then PasswordCheckSuccess
       else PasswordCheckFail
+
+-- | Extracts the cost parameter as an 'Int' from a 'PasswordHash' 'Bcrypt'
+--
+-- >>> let pass = mkPassword "foobar"
+-- >>> passHash <- hashPassword pass
+-- >>> extractParams passHash == Just 10
+-- True
+--
+-- @since 3.0.2.0
+extractParams :: PasswordHash Bcrypt -> Maybe Int
+extractParams (PasswordHash passHash) =
+  case T.split (== '$') passHash of
+    [_, version, cost, _pass] -> do
+      guard $ elem version $ map T.pack ["2", "2a", "2x", "2y", "2b"]
+      readMaybe $ T.unpack cost
+    _ -> Nothing
 
 -- | Generate a random 16-byte @bcrypt@ salt
 --

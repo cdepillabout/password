@@ -51,6 +51,7 @@ module Data.Password.PBKDF2 (
   -- * Hashing Manually (PBKDF2)
   , hashPasswordWithParams
   , defaultParams
+  , extractParams
   , PBKDF2Params(..)
   , PBKDF2Algorithm(..)
   -- ** Hashing with salt (DISADVISED)
@@ -233,8 +234,15 @@ hashPasswordWithParams params pass = liftIO $ do
 --
 -- prop> \(Blind badpass) -> let correctPasswordHash = hashPasswordWithSalt testParams salt "foobar" in checkPassword badpass correctPasswordHash == PasswordCheckFail
 checkPassword :: Password -> PasswordHash PBKDF2 -> PasswordCheck
-checkPassword pass (PasswordHash passHash) =
+checkPassword pass passHash =
   fromMaybe PasswordCheckFail $ do
+    (params, salt, hashedKey) <- parsePBKDF2PasswordHashParams passHash
+    let producedKey = hashPasswordWithSalt' params salt pass
+    guard $ hashedKey `constEq` producedKey
+    return PasswordCheckSuccess
+
+parsePBKDF2PasswordHashParams :: PasswordHash PBKDF2 -> Maybe (PBKDF2Params, Salt PBKDF2, ByteString)
+parsePBKDF2PasswordHashParams (PasswordHash passHash) = do
     -- This step makes it possible to also check the following format:
     -- "pbkdf2:sha256:150000:etc.etc."
     let passHash' = fromMaybe passHash $ "pbkdf2:" `T.stripPrefix` passHash
@@ -249,11 +257,22 @@ checkPassword pass (PasswordHash passHash) =
     salt <- from64 salt64
     hashedKey <- from64 hashedKey64
     let pbkdf2OutputLength = fromIntegral $ C8.length hashedKey
-        producedKey = hashPasswordWithSalt' PBKDF2Params{..} (Salt salt) pass
-    guard $ hashedKey `constEq` producedKey
-    return PasswordCheckSuccess
-  where
-    pbkdf2Salt = 16
+        pbkdf2Salt = fromIntegral $ C8.length salt
+    return (PBKDF2Params{..}, Salt salt, hashedKey)
+
+-- | Extracts 'PBKDF2Params' from a 'PasswordHash' 'PBKDF2'.
+--
+-- Returns 'Just PBKDF2Params' on success.
+--
+-- >>> let pass = mkPassword "foobar"
+-- >>> passHash <- hashPassword pass
+-- >>> extractParams passHash == Just defaultParams
+-- True
+--
+-- @since 3.0.2.0
+extractParams :: PasswordHash PBKDF2 -> Maybe PBKDF2Params
+extractParams passHash =
+  (\(params, _, _) -> params) <$> parsePBKDF2PasswordHashParams passHash
 
 
 -- | Type of algorithm to use for hashing PBKDF2 passwords.

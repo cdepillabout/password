@@ -1,5 +1,11 @@
 # Changelog for `password`
 
+## 3.0.2.0
+
+-   Add `extractParams` on `PasswordHash`s
+    Thanks to [@blackheaven](https://github.com/blackheaven)
+    [#61](https://github.com/cdepillabout/password/pull/61)
+
 ## 3.0.1.0
 
 -   Argon2 hashes without a version field are interpreted as being of version 1.0

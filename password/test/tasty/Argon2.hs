@@ -12,25 +12,26 @@ import Internal
 testArgon2 :: TestTree
 testArgon2 = testGroup "Argon2"
   [ referenceTest
-  , testCorrectPassword "Argon2 (hashPassword)" hashFast checkPassword
+  , testCorrectPassword "Argon2 (hashPassword, fast)" hashFast checkPassword extractParams fastParams
+  , testCorrectPassword "Argon2 (hashPassword, slow)" hashSlow checkPassword extractParams slowParams
   , testIncorrectPassword "Argon2 (hashPassword) fail" hashFast checkPassword
   , testWithSalt "Argon2 (hashPasswordWithSalt)"
                  (hashPasswordWithSalt fastParams)
                  checkPassword
-  , testWithParams "Argon2 (Argon2i)" $ fastParams{ argon2Variant = Argon2i }
-  , testWithParams "Argon2 (Argon2d)" $ fastParams{ argon2Variant = Argon2d }
+                 extractParams
+                 fastParams
+  , testWithParams "Argon2 (Argon2i)" (fastParams{ argon2Variant = Argon2i })
+  , testWithParams "Argon2 (Argon2d)" (fastParams{ argon2Variant = Argon2d })
   , paddingTests
   , omittedVersionTest
   ]
   where
     testWithParams s params =
-      testWithSalt s (hashPasswordWithSalt params) checkPassword
+      testWithSalt s (hashPasswordWithSalt params) checkPassword extractParams params
     hashFast = hashPasswordWithParams fastParams
-    fastParams =
-      defaultParams{
-        argon2MemoryCost = 2 ^ (8 :: Int),
-        argon2TimeCost = 1
-      }
+    fastParams = defaultParams{ argon2MemoryCost = 2 ^ (8 :: Int), argon2TimeCost = 1 }
+    hashSlow = hashPasswordWithParams slowParams
+    slowParams = defaultParams{ argon2MemoryCost = 2 ^ (8 :: Int), argon2TimeCost = 4 }
 
 paddingTests :: TestTree
 paddingTests = testGroup "Padding"

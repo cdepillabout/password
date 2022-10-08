@@ -52,6 +52,7 @@ module Data.Password.Argon2 (
   -- * Hashing Manually (Argon2)
   , hashPasswordWithParams
   , defaultParams
+  , extractParams
   , Argon2Params(..)
   , Argon2.Variant(..)
   , Argon2.Version(..)
@@ -274,13 +275,16 @@ hashPasswordWithParams params pass = liftIO $ do
 --
 -- prop> \(Blind badpass) -> let correctPasswordHash = hashPasswordWithSalt testParams salt "foobar" in checkPassword badpass correctPasswordHash == PasswordCheckFail
 checkPassword :: Password -> PasswordHash Argon2 -> PasswordCheck
-checkPassword pass (PasswordHash passHash) =
+checkPassword pass passHash =
   fromMaybe PasswordCheckFail $ do
-    let paramList = T.split (== '$') passHash
-    (argon2Params, salt, hashedKey) <- parseArgon2Params paramList
+    (argon2Params, salt, hashedKey) <- parseArgon2PasswordHashParams passHash 
     let producedKey = hashPasswordWithSalt' argon2Params salt pass
     guard $ hashedKey `constEq` producedKey
     return PasswordCheckSuccess
+
+parseArgon2PasswordHashParams :: PasswordHash Argon2 -> Maybe (Argon2Params, Salt Argon2, ByteString)
+parseArgon2PasswordHashParams (PasswordHash passHash) =
+  parseArgon2Params $ T.split (== '$') passHash
 
 parseArgon2Params :: [Text] -> Maybe (Argon2Params, Salt Argon2, ByteString)
 -- vp - version or params
@@ -309,7 +313,7 @@ parseAll argon2Variant argon2Version parametersT salt64 hashedKey64 = do
     salt <- from64 $ unsafePad64 salt64
     hashedKey <- from64 $ unsafePad64 hashedKey64
     let argon2OutputLength = fromIntegral $ B.length hashedKey -- only here because of warnings
-        argon2Salt = 16 -- only here because of warnings
+        argon2Salt = fromIntegral $ B.length salt
     pure (Argon2Params{..}, Salt salt, hashedKey)
   where
     parseParameters paramsT = do
@@ -325,6 +329,20 @@ parseAll argon2Variant argon2Version parametersT salt64 hashedKey64 = do
             ("t=", i) -> go xs (m, readT i, p)
             ("p=", i) -> go xs (m, t, readT i)
             _ -> Nothing
+
+-- | Extracts 'Argon2Params' from a 'PasswordHash' 'Argon2'.
+--
+-- Returns 'Just Argon2Params' on success.
+--
+-- >>> let pass = mkPassword "foobar"
+-- >>> passHash <- hashPassword pass
+-- >>> extractParams passHash == Just defaultParams
+-- True
+--
+-- @since 3.0.2.0
+extractParams :: PasswordHash Argon2 -> Maybe Argon2Params
+extractParams passHash =
+  (\(params, _, _) -> params) <$> parseArgon2PasswordHashParams passHash
 
 -- | Strips the given 'match' if it matches and uses
 --   the function on the remainder of the given text.

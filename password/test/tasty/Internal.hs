@@ -11,15 +11,18 @@ import Data.Password.Types (mkPassword, Password, PasswordHash)
 import Data.Password.Bcrypt (PasswordCheck(..), Salt(..))
 
 
-testCorrectPassword :: String
+testCorrectPassword :: (Eq params, Show params)
+                    => String
                     -> (Password -> IO (PasswordHash a))
                     -> (Password -> PasswordHash a -> PasswordCheck)
+                    -> (PasswordHash a -> Maybe params)
+                    -> params
                     -> TestTree
-testCorrectPassword s hashF checkF = testProperty s $
+testCorrectPassword s hashF checkF extractParamsF defaultParams = testProperty s $
   \pass -> ioProperty $ do
     let pw = mkPassword pass
     hpw <- hashF pw
-    return $ checkF pw hpw === PasswordCheckSuccess
+    return $ (checkF pw hpw === PasswordCheckSuccess) .&&. extractParamsF hpw === Just defaultParams
 
 testIncorrectPassword :: String
                       -> (Password -> IO (PasswordHash a))
@@ -35,15 +38,18 @@ testIncorrectPassword s hashF checkF = testProperty s $
   where
     isEmpty c = c `elem` ["", "\NUL"]
 
-testWithSalt :: String
+testWithSalt :: (Eq params, Show params)
+             => String
              -> (Salt a -> Password -> PasswordHash a)
              -> (Password -> PasswordHash a -> PasswordCheck)
+             -> (PasswordHash a -> Maybe params)
+             -> params
              -> TestTree
-testWithSalt s hashWithSalt checkF = testProperty s $
+testWithSalt s hashWithSalt checkF extractParamsF defaultParams = testProperty s $
   \pass salt ->
     let pw = mkPassword pass
         hpw = hashWithSalt salt pw
-    in checkF pw hpw === PasswordCheckSuccess
+    in (checkF pw hpw === PasswordCheckSuccess) .&&. extractParamsF hpw === Just defaultParams
 
 instance Arbitrary (Salt a) where
   arbitrary = Salt . pack <$> vector 16
