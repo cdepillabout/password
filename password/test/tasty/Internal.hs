@@ -18,11 +18,11 @@ testCorrectPassword :: (Eq params, Show params)
                     -> (PasswordHash a -> Maybe params)
                     -> params
                     -> TestTree
-testCorrectPassword s hashF checkF extractParamsF defaultParams = testProperty s $
+testCorrectPassword s hashF checkF extractParamsF params = testProperty s $
   \pass -> ioProperty $ do
     let pw = mkPassword pass
     hpw <- hashF pw
-    return $ (checkF pw hpw === PasswordCheckSuccess) .&&. extractParamsF hpw === Just defaultParams
+    return $ (checkF pw hpw === PasswordCheckSuccess) .&&. extractParamsF hpw === Just params
 
 testIncorrectPassword :: String
                       -> (Password -> IO (PasswordHash a))
@@ -45,11 +45,11 @@ testWithSalt :: (Eq params, Show params)
              -> (PasswordHash a -> Maybe params)
              -> params
              -> TestTree
-testWithSalt s hashWithSalt checkF extractParamsF defaultParams = testProperty s $
+testWithSalt s hashWithSalt checkF extractParamsF params = testProperty s $
   \pass salt ->
     let pw = mkPassword pass
         hpw = hashWithSalt salt pw
-    in (checkF pw hpw === PasswordCheckSuccess) .&&. extractParamsF hpw === Just defaultParams
+    in (checkF pw hpw === PasswordCheckSuccess) .&&. extractParamsF hpw === Just params
 
 instance Arbitrary (Salt a) where
   arbitrary = Salt . pack <$> vector 16
