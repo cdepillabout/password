@@ -33,7 +33,7 @@ import Data.Semigroup ((<>))
 #endif
 import Data.Text as T (
     Text,
-    dropEnd,
+    dropWhileEnd,
     length,
     pack,
     replicate,
@@ -98,15 +98,6 @@ unsafePad64 t
     remains = T.length t `rem` 4
     pad = T.replicate (4 - remains) "="
 
--- | (UNSAFE) Removes the "=" padding from a base64 text
--- given the length of the original bytestring.
-unsafeRemovePad64 :: Int -> Text -> Text
-unsafeRemovePad64 bsLen = T.dropEnd drops
-  where
-    drops = case bsLen `rem` 3 of
-        -- 1 extra byte results in 2 characters (4 - 2 = 2)
-        1 -> 2
-        -- 2 extra bytes results in 3 characters (4 - 3 = 1)
-        2 -> 1
-        -- This will just be 0
-        other -> other
+-- | (UNSAFE) Removes the "=" padding from any text
+unsafeRemovePad64 :: Text -> Text
+unsafeRemovePad64 = T.dropWhileEnd (== '=')
