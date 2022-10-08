@@ -199,7 +199,7 @@ extractParams :: PasswordHash Bcrypt -> Maybe Int
 extractParams (PasswordHash passHash) =
   case T.split (== '$') passHash of
     [_, version, cost, _pass] -> do
-      guard $ elem version $ map T.pack ["2", " 2a", " 2x", " 2y", " 2b"]
+      guard $ elem version $ map T.pack ["2", "2a", "2x", "2y", "2b"]
       readMaybe $ T.unpack cost
     _ -> Nothing
 
