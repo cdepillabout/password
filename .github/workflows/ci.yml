@@ -9,7 +9,7 @@ on:
 jobs:
   cabal:
     name: cabal / ghc-${{matrix.ghc}} / ${{ matrix.os }}
-    continue-on-error: ${{ matrix.ghc == '9.2.4' || matrix.ghc == '9.4.2'}}
+    continue-on-error: ${{ matrix.ghc == '9.4.2'}}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -45,10 +45,10 @@ jobs:
     - name: Build
       run: |
         cabal update
-        cabal build all --enable-tests --enable-benchmarks --write-ghc-environment-files=always -f internal
+        cabal build all --enable-tests --enable-benchmarks --write-ghc-environment-files=always
     - name: Test
       run: |
-        cabal test all --enable-tests -f internal
+        cabal test all --enable-tests
   stack:
     name: stack ${{ matrix.resolver }}
     runs-on: ubuntu-latest
@@ -89,7 +89,7 @@ jobs:
 
     - name: Build
       run: |
-        stack build ${{ matrix.resolver }} --test --bench --no-run-tests --no-run-benchmarks --flag password:internal
+        stack build ${{ matrix.resolver }} --test --bench --no-run-tests --no-run-benchmarks
     - name: Test
       run: |
-        stack test ${{ matrix.resolver }} --flag password:internal
+        stack test ${{ matrix.resolver }}
