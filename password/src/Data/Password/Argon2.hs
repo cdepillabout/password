@@ -82,7 +82,7 @@ import Data.Maybe (fromMaybe)
 import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
-import qualified Data.Text as T (intercalate, split, splitAt, stripPrefix)
+import qualified Data.Text as T (dropWhileEnd, intercalate, split, splitAt, stripPrefix)
 import Data.Word (Word32)
 
 import Data.Password.Internal (
@@ -92,7 +92,6 @@ import Data.Password.Internal (
     showT,
     toBytes,
     unsafePad64,
-    unsafeRemovePad64,
  )
 import Data.Password.Types (
     Password,
@@ -206,8 +205,7 @@ hashPasswordWithSalt params@Argon2Params{..} s@(Salt salt) pass =
     , encodeWithoutPadding key
     ]
   where
-    encodeWithoutPadding bs =
-        unsafeRemovePad64 (B.length bs) $ encodeBase64 bs
+    encodeWithoutPadding = T.dropWhileEnd (== '=') . encodeBase64
     parameters = T.intercalate ","
         [ "m=" <> showT argon2MemoryCost
         , "t=" <> showT argon2TimeCost
@@ -277,7 +275,7 @@ hashPasswordWithParams params pass = liftIO $ do
 checkPassword :: Password -> PasswordHash Argon2 -> PasswordCheck
 checkPassword pass passHash =
   fromMaybe PasswordCheckFail $ do
-    (argon2Params, salt, hashedKey) <- parseArgon2PasswordHashParams passHash 
+    (argon2Params, salt, hashedKey) <- parseArgon2PasswordHashParams passHash
     let producedKey = hashPasswordWithSalt' argon2Params salt pass
     guard $ hashedKey `constEq` producedKey
     return PasswordCheckSuccess

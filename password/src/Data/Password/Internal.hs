@@ -18,9 +18,10 @@ module Data.Password.Internal (
   , fromBytes
   , from64
   , unsafePad64
-  , unsafeRemovePad64
   , readT
   , showT
+  , -- * Setup for doctests.
+    -- $setup
   ) where
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
@@ -33,7 +34,6 @@ import Data.Semigroup ((<>))
 #endif
 import Data.Text as T (
     Text,
-    dropEnd,
     length,
     pack,
     replicate,
@@ -43,8 +43,25 @@ import Data.Password.Types (Salt(..))
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Text.Read (readMaybe)
 
+-- $setup
+-- >>> import Data.ByteString as B (length)
+-- >>> import Data.ByteString.Base64 (encodeBase64)
+-- >>> import Data.Text as T (dropWhileEnd)
+-- >>> import Data.Word (Word16)
+-- >>> import Test.QuickCheck (ioProperty, quickCheck, (===))
+-- >>> import Test.QuickCheck.Instances.ByteString()
 
 -- | Generate a random x-byte-long salt.
+--
+-- >>> :{
+-- quickCheck $ \w ->
+--   ioProperty $ do
+--     let i :: Num a => a
+--         i = fromIntegral (w :: Word16)
+--     Salt bs <- newSalt i
+--     pure $ B.length bs === i
+-- :}
+-- +++ OK, passed 100 tests.
 --
 -- @since 2.0.0.0
 newSalt :: MonadIO m => Int -> m (Salt a)
@@ -90,6 +107,8 @@ showT = T.pack . show
 {-# INLINE showT #-}
 
 -- | (UNSAFE) Pad a base64 text to "length `rem` 4 == 0" with "="
+--
+-- prop> \bs -> let b64 = encodeBase64 bs in unsafePad64 (T.dropWhileEnd (== '=') b64) == b64
 unsafePad64 :: Text -> Text
 unsafePad64 t
     | remains == 0 = t
@@ -97,16 +116,3 @@ unsafePad64 t
   where
     remains = T.length t `rem` 4
     pad = T.replicate (4 - remains) "="
-
--- | (UNSAFE) Removes the "=" padding from a base64 text
--- given the length of the original bytestring.
-unsafeRemovePad64 :: Int -> Text -> Text
-unsafeRemovePad64 bsLen = T.dropEnd drops
-  where
-    drops = case bsLen `rem` 3 of
-        -- 1 extra byte results in 2 characters (4 - 2 = 2)
-        1 -> 2
-        -- 2 extra bytes results in 3 characters (4 - 3 = 1)
-        2 -> 1
-        -- This will just be 0
-        other -> other
