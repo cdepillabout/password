@@ -18,7 +18,6 @@ module Data.Password.Internal (
   , fromBytes
   , from64
   , unsafePad64
-  , unsafeRemovePad64
   , readT
   , showT
   ) where
@@ -33,7 +32,6 @@ import Data.Semigroup ((<>))
 #endif
 import Data.Text as T (
     Text,
-    dropWhileEnd,
     length,
     pack,
     replicate,
@@ -97,7 +95,3 @@ unsafePad64 t
   where
     remains = T.length t `rem` 4
     pad = T.replicate (4 - remains) "="
-
--- | (UNSAFE) Removes the "=" padding from any text
-unsafeRemovePad64 :: Text -> Text
-unsafeRemovePad64 = T.dropWhileEnd (== '=')
