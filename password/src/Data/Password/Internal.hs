@@ -20,6 +20,8 @@ module Data.Password.Internal (
   , unsafePad64
   , readT
   , showT
+  , -- * Setup for doctests.
+    -- $setup
   ) where
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
@@ -41,8 +43,25 @@ import Data.Password.Types (Salt(..))
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Text.Read (readMaybe)
 
+-- $setup
+-- >>> import Data.ByteString as B (length)
+-- >>> import Data.ByteString.Base64 (encodeBase64)
+-- >>> import Data.Text as T (dropWhileEnd)
+-- >>> import Data.Word (Word16)
+-- >>> import Test.QuickCheck (ioProperty, quickCheck, (===))
+-- >>> import Test.QuickCheck.Instances.ByteString()
 
 -- | Generate a random x-byte-long salt.
+--
+-- >>> :{
+-- quickCheck $ \w ->
+--   ioProperty $ do
+--     let i :: Num a => a
+--         i = fromIntegral (w :: Word16)
+--     Salt bs <- newSalt i
+--     pure $ B.length bs === i
+-- :}
+-- +++ OK, passed 100 tests.
 --
 -- @since 2.0.0.0
 newSalt :: MonadIO m => Int -> m (Salt a)
@@ -88,6 +107,8 @@ showT = T.pack . show
 {-# INLINE showT #-}
 
 -- | (UNSAFE) Pad a base64 text to "length `rem` 4 == 0" with "="
+--
+-- prop> \bs -> let b64 = encodeBase64 bs in unsafePad64 (T.dropWhileEnd (== '=') b64) == b64
 unsafePad64 :: Text -> Text
 unsafePad64 t
     | remains == 0 = t
