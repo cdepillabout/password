@@ -1,5 +1,15 @@
 # Changelog for `password`
 
+## 3.0.2.1
+
+-   Add Cabal flags to control which hashing algorithms are exported. These flags are
+    `argon2`, `bcrypt`, `pbkdf2`, and `scrypt`. Each flag is enabled by default -
+    disabling it will elide the corresponding module from the library. This allows
+    downstream packagers to disable hashing algorithms which aren't supported on
+    certain platforms.
+    Thanks to [@ivanbakel](https://github.com/ivanbakel)
+    [#63](https://github.com/cdepillabout/password/pull/63)
+
 ## 3.0.2.0
 
 -   Add `extractParams` on `PasswordHash`s

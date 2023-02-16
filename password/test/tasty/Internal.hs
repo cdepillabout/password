@@ -7,8 +7,8 @@ import Test.Tasty (TestTree)
 import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
 
-import Data.Password.Types (mkPassword, Password, PasswordHash)
-import Data.Password.Bcrypt (PasswordCheck(..), Salt(..))
+import Data.Password.Types (mkPassword, Password, PasswordHash, Salt(..))
+import Data.Password.Internal (PasswordCheck(..))
 
 
 testCorrectPassword :: (Eq params, Show params)
