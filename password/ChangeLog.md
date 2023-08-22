@@ -1,5 +1,11 @@
 # Changelog for `password`
 
+## 3.0.2.2
+
+-   Added extra documentation about `bcrypt` hashes.
+    Thanks to [@Vlix](https://github.com/Vlix)
+    [#69](https://github.com/cdepillabout/password/pull/69)
+
 ## 3.0.2.1
 
 -   Add Cabal flags to control which hashing algorithms are exported. These flags are
