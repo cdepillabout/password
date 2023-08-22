@@ -24,7 +24,7 @@ module Data.Password.Internal (
     -- $setup
   ) where
 
-import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import Crypto.Random (getRandomBytes)
 import Data.ByteArray (Bytes, convert)
 import Data.ByteString (ByteString)
