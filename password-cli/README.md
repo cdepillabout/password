@@ -11,12 +11,12 @@ This package provides a simple CLI for [password](https://hackage.haskell.org/pa
 Pipeline usage:
 
 ```
-$ password-cli argon2 check --quiet --hash $(password-cli argon2 hash --quiet)
+$ password-cli check argon2 --quiet --hash $(password-cli hash argon2 --quiet)
 ```
 
 Interactive mode (default):
 
 ```
-$ password-cli argon2 hash
-$ password-cli argon2 check --hash "SOME-HASH"
+$ password-cli hash argon2
+$ password-cli check argon2 --hash "SOME-HASH"
 ```
