@@ -1,8 +1,12 @@
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Main (main) where
 
-import Control.Monad (join, void)
+import Control.Monad (unless, void)
+import Data.Text (Text)
 import qualified Data.Password.Argon2 as Argon2
 import Data.Password.Bcrypt (PasswordCheck (..))
 import qualified Data.Password.Bcrypt as Bcrypt
@@ -15,127 +19,92 @@ import System.Exit (exitFailure)
 import System.IO (stdin)
 
 main :: IO ()
-main = join $ execParser cliOpts
+main = execParser cliOpts >>= runCmd
 
-cliOpts :: ParserInfo (IO ())
-cliOpts = info (commandsParser <**> helper) (fullDesc <> header "password CLI usage")
+data Cmd
+  = Argon2Cmd GenericAlgoSubCmd
+  | BcryptCmd GenericAlgoSubCmd
+  | PBKDF2Cmd GenericAlgoSubCmd
+  | ScryptCmd GenericAlgoSubCmd
+  | HelpCmd (Maybe String)
+
+data GenericAlgoSubCmd
+  = HashGenericAlgoSubCmd HashGenericAlgoSubCmdOpts
+  | CheckGenericAlgoSubCmd CheckGenericAlgoSubCmdOpts
+
+newtype HashGenericAlgoSubCmdOpts = HashGenericAlgoSubCmdOpts
+  { quiet :: Bool
+  }
+
+data CheckGenericAlgoSubCmdOpts = CheckGenericAlgoSubCmdOpts
+  { quiet :: Bool
+  , hash :: Text
+  }
+
+cliOpts :: ParserInfo Cmd
+cliOpts = info commandsParser (fullDesc <> header "password CLI usage")
   where
-    commandsParser :: Parser (IO ())
+    commandsParser :: Parser Cmd
     commandsParser =
       subparser
-        ( command "argon2" (info commandArgon2 (progDesc "Argon2 operations"))
-            <> command "bcrypt" (info commandBcrypt (progDesc "Bcrypt operations"))
-            <> command "pbkdf2" (info commandPBKDF2 (progDesc "Pbkdf2 operations"))
-            <> command "scrypt" (info commandScrypt (progDesc "Scrypt operations"))
-            <> command "help" (info commandHelp (progDesc "Show command help"))
+        ( command "argon2" (info (Argon2Cmd <$> genericAlgoSubCmdParser) (progDesc "Argon2 operations"))
+            <> command "bcrypt" (info (BcryptCmd <$> genericAlgoSubCmdParser) (progDesc "Bcrypt operations"))
+            <> command "pbkdf2" (info (PBKDF2Cmd <$> genericAlgoSubCmdParser) (progDesc "Pbkdf2 operations"))
+            <> command "scrypt" (info (ScryptCmd <$> genericAlgoSubCmdParser) (progDesc "Scrypt operations"))
+            <> command "help" (info (HelpCmd <$> optional (argument str (metavar "COMMAND")) <**> helper) (progDesc "Show command help"))
         )
+        <**> helper
+    genericAlgoSubCmdParser :: Parser GenericAlgoSubCmd
+    genericAlgoSubCmdParser =
+      subparser
+        ( command
+            "hash"
+            (info (HashGenericAlgoSubCmd <$> hashGenericAlgoSubCmdOptsParser) (progDesc "hash password (via STDIN)"))
+            <> command
+              "check"
+              (info (CheckGenericAlgoSubCmd <$> checkGenericAlgoSubCmdOptsParser) (progDesc "check hashed password (via STDIN)"))
+        )
+        <**> helper
+    hashGenericAlgoSubCmdOptsParser :: Parser HashGenericAlgoSubCmdOpts
+    hashGenericAlgoSubCmdOptsParser =
+      HashGenericAlgoSubCmdOpts
+        <$> switch (short 'q' <> long "quiet")
+    checkGenericAlgoSubCmdOptsParser :: Parser CheckGenericAlgoSubCmdOpts
+    checkGenericAlgoSubCmdOptsParser =
+      CheckGenericAlgoSubCmdOpts
+        <$> switch (short 'q' <> long "quiet")
+        <*> option str (metavar "HASH" <> long "hash")
 
-commandHelp :: Parser (IO ())
-commandHelp =
-  go
-    <$> optional (argument str (metavar "COMMAND"))
-    <**> helper
-  where
-    go mCmd =
+runCmd :: Cmd -> IO ()
+runCmd =
+  \case
+    Argon2Cmd subCmd -> runGenericAlgoSubCmd Argon2.hashPassword Argon2.checkPassword subCmd
+    BcryptCmd subCmd -> runGenericAlgoSubCmd Bcrypt.hashPassword Bcrypt.checkPassword subCmd
+    PBKDF2Cmd subCmd -> runGenericAlgoSubCmd PBKDF2.hashPassword PBKDF2.checkPassword subCmd
+    ScryptCmd subCmd -> runGenericAlgoSubCmd Scrypt.hashPassword Scrypt.checkPassword subCmd
+    HelpCmd mCmd ->
       let args = maybe id (:) mCmd ["-h"]
        in void $ handleParseResult $ execParserPure defaultPrefs cliOpts args
-
-commandArgon2 :: Parser (IO ())
-commandArgon2 =
-  subparser
-    ( command
-        "hash"
-        ( info
-            (pure commandHash)
-            (progDesc "hash password (via STDIN)")
-        )
-        <> command
-          "check"
-          ( info
-              (commandCheck <$> option str (metavar "HASH" <> long "hash") <**> helper)
-              (progDesc "check hashed password (via STDIN)")
-          )
-    )
-    <**> helper
-  where
-    commandHash = runHash Argon2.hashPassword
-    commandCheck hash = runCheck $ \password -> Argon2.checkPassword password $ PasswordHash hash
-
-commandBcrypt :: Parser (IO ())
-commandBcrypt =
-  subparser
-    ( command
-        "hash"
-        ( info
-            (pure commandHash)
-            (progDesc "hash password (via STDIN)")
-        )
-        <> command
-          "check"
-          ( info
-              (commandCheck <$> option str (metavar "HASH" <> long "hash") <**> helper)
-              (progDesc "check hashed password (via STDIN)")
-          )
-    )
-    <**> helper
-  where
-    commandHash = runHash Bcrypt.hashPassword
-    commandCheck hash = runCheck $ \password -> Bcrypt.checkPassword password $ PasswordHash hash
-
-commandPBKDF2 :: Parser (IO ())
-commandPBKDF2 =
-  subparser
-    ( command
-        "hash"
-        ( info
-            (pure commandHash)
-            (progDesc "hash password (via STDIN)")
-        )
-        <> command
-          "check"
-          ( info
-              (commandCheck <$> option str (metavar "HASH" <> long "hash") <**> helper)
-              (progDesc "check hashed password (via STDIN)")
-          )
-    )
-    <**> helper
-  where
-    commandHash = runHash PBKDF2.hashPassword
-    commandCheck hash = runCheck $ \password -> PBKDF2.checkPassword password $ PasswordHash hash
-
-commandScrypt :: Parser (IO ())
-commandScrypt =
-  subparser
-    ( command
-        "hash"
-        ( info
-            (pure commandHash)
-            (progDesc "hash password (via STDIN)")
-        )
-        <> command
-          "check"
-          ( info
-              (commandCheck <$> option str (metavar "HASH" <> long "hash") <**> helper)
-              (progDesc "check hashed password (via STDIN)")
-          )
-    )
-    <**> helper
-  where
-    commandHash = runHash Scrypt.hashPassword
-    commandCheck hash = runCheck $ \password -> Scrypt.checkPassword password $ PasswordHash hash
-
-runHash :: (Password -> IO (PasswordHash a)) -> IO ()
-runHash f = do
-  password <- mkPassword <$> T.hGetLine stdin
-  hash <- f password
-  T.putStr $ unPasswordHash hash
-
-runCheck :: (Password -> PasswordCheck) -> IO ()
-runCheck f = do
-  password <- mkPassword <$> T.hGetLine stdin
-  case f password of
-    PasswordCheckSuccess ->
-      T.putStrLn "Hash and password match"
-    PasswordCheckFail -> do
-      T.putStrLn "Hash and password do not match"
-      exitFailure
+  where runGenericAlgoSubCmd
+          :: (Password -> IO (PasswordHash a)) ->
+             (Password -> PasswordHash a -> PasswordCheck) ->
+             GenericAlgoSubCmd ->
+             IO ()
+        runGenericAlgoSubCmd mkHash mkCheck =
+          \case
+            HashGenericAlgoSubCmd HashGenericAlgoSubCmdOpts {..} -> do
+              unless quiet $
+                putStrLn "Enter password:"
+              password <- mkPassword <$> T.hGetLine stdin
+              hash <- mkHash password
+              T.putStr $ unPasswordHash hash
+            CheckGenericAlgoSubCmd CheckGenericAlgoSubCmdOpts {..} -> do
+              unless quiet $
+                putStrLn "Enter password:"
+              password <- mkPassword <$> T.hGetLine stdin
+              case mkCheck password (PasswordHash hash) of
+                PasswordCheckSuccess ->
+                  T.putStrLn "Hash and password match"
+                PasswordCheckFail -> do
+                  T.putStrLn "Hash and password do not match"
+                  exitFailure
