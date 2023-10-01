@@ -6,13 +6,13 @@
 module Main (main) where
 
 import Control.Monad (unless, void)
-import Data.Text (Text)
 import qualified Data.Password.Argon2 as Argon2
 import Data.Password.Bcrypt (PasswordCheck (..))
 import qualified Data.Password.Bcrypt as Bcrypt
 import qualified Data.Password.PBKDF2 as PBKDF2
 import qualified Data.Password.Scrypt as Scrypt
 import Data.Password.Types
+import Data.Text (Text)
 import qualified Data.Text.IO as T
 import Options.Applicative
 import System.Exit (exitFailure)
@@ -37,8 +37,8 @@ newtype HashGenericAlgoSubCmdOpts = HashGenericAlgoSubCmdOpts
   }
 
 data CheckGenericAlgoSubCmdOpts = CheckGenericAlgoSubCmdOpts
-  { quiet :: Bool
-  , hash :: Text
+  { quiet :: Bool,
+    hash :: Text
   }
 
 cliOpts :: ParserInfo Cmd
@@ -85,26 +85,27 @@ runCmd =
     HelpCmd mCmd ->
       let args = maybe id (:) mCmd ["-h"]
        in void $ handleParseResult $ execParserPure defaultPrefs cliOpts args
-  where runGenericAlgoSubCmd
-          :: (Password -> IO (PasswordHash a)) ->
-             (Password -> PasswordHash a -> PasswordCheck) ->
-             GenericAlgoSubCmd ->
-             IO ()
-        runGenericAlgoSubCmd mkHash mkCheck =
-          \case
-            HashGenericAlgoSubCmd HashGenericAlgoSubCmdOpts {..} -> do
-              unless quiet $
-                putStrLn "Enter password:"
-              password <- mkPassword <$> T.hGetLine stdin
-              hash <- mkHash password
-              T.putStr $ unPasswordHash hash
-            CheckGenericAlgoSubCmd CheckGenericAlgoSubCmdOpts {..} -> do
-              unless quiet $
-                putStrLn "Enter password:"
-              password <- mkPassword <$> T.hGetLine stdin
-              case mkCheck password (PasswordHash hash) of
-                PasswordCheckSuccess ->
-                  T.putStrLn "Hash and password match"
-                PasswordCheckFail -> do
-                  T.putStrLn "Hash and password do not match"
-                  exitFailure
+  where
+    runGenericAlgoSubCmd ::
+      (Password -> IO (PasswordHash a)) ->
+      (Password -> PasswordHash a -> PasswordCheck) ->
+      GenericAlgoSubCmd ->
+      IO ()
+    runGenericAlgoSubCmd mkHash mkCheck =
+      \case
+        HashGenericAlgoSubCmd HashGenericAlgoSubCmdOpts {..} -> do
+          unless quiet $
+            putStrLn "Enter password:"
+          password <- mkPassword <$> T.hGetLine stdin
+          hash <- mkHash password
+          T.putStr $ unPasswordHash hash
+        CheckGenericAlgoSubCmd CheckGenericAlgoSubCmdOpts {..} -> do
+          unless quiet $
+            putStrLn "Enter password:"
+          password <- mkPassword <$> T.hGetLine stdin
+          case mkCheck password (PasswordHash hash) of
+            PasswordCheckSuccess ->
+              T.putStrLn "Hash and password match"
+            PasswordCheckFail -> do
+              T.putStrLn "Hash and password do not match"
+              exitFailure
