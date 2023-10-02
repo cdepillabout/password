@@ -6,6 +6,7 @@
 module Main (main) where
 
 import Control.Monad (unless, void)
+import Data.Version (showVersion)
 import qualified Data.Password.Argon2 as Argon2
 import Data.Password.Bcrypt (PasswordCheck (..))
 import qualified Data.Password.Bcrypt as Bcrypt
@@ -15,6 +16,7 @@ import Data.Password.Types
 import Data.Text (Text)
 import qualified Data.Text.IO as T
 import Options.Applicative
+import Paths_password_cli (version)
 import System.Exit (exitFailure)
 import System.IO (IOMode(ReadMode), stdin, withFile)
 
@@ -50,11 +52,11 @@ data CheckAlgorithm
   | Argon2CheckAlgo
 
 cliOpts :: ParserInfo Cmd
-cliOpts = info commandsParser (fullDesc <> header "password CLI usage -")
+cliOpts = info commandsParser (fullDesc <> header ("Password CLI " <> showVersion version))
   where
     commandsParser :: Parser Cmd
     commandsParser =
-      subparser
+      hsubparser
         ( command
             "hash"
             (info (HashCmd <$> hashOptsParser) (progDesc "hash password"))
@@ -80,7 +82,7 @@ cliOpts = info commandsParser (fullDesc <> header "password CLI usage -")
         <*> algorithmCheckParser
     algorithmHashParser :: Parser HashAlgorithm
     algorithmHashParser =
-      subparser
+      hsubparser
         ( command "argon2" (info (Argon2HashAlgo <$> algoParser argon2Def) (progDesc "Argon2"))
             <> command "bcrypt" (info (BcryptHashAlgo <$> algoParser bcryptDef) (progDesc "Bcrypt"))
             <> command "pbkdf2" (info (PBKDF2HashAlgo <$> algoParser pbkdf2Def) (progDesc "PBKDF2"))
@@ -89,7 +91,7 @@ cliOpts = info commandsParser (fullDesc <> header "password CLI usage -")
         <**> helper
     algorithmCheckParser :: Parser CheckAlgorithm
     algorithmCheckParser =
-      subparser
+      hsubparser
         ( command "argon2" (info (pure Argon2CheckAlgo) (progDesc "Argon2"))
             <> command "bcrypt" (info (pure BcryptCheckAlgo) (progDesc "Bcrypt"))
             <> command "pbkdf2" (info (pure PBKDF2CheckAlgo) (progDesc "PBKDF2"))
@@ -134,44 +136,56 @@ scryptDef = AlgorithmeDef
 runCmd :: Cmd -> IO ()
 runCmd =
   \case
-    HashCmd HashOpts {..} -> do
-      pw <- getPassword password
-      hash <-
-            case hashAlgorithm of
-                Argon2HashAlgo p -> unPasswordHash <$> algoHash argon2Def p pw
-                BcryptHashAlgo p -> unPasswordHash <$> algoHash bcryptDef p pw
-                PBKDF2HashAlgo p -> unPasswordHash <$> algoHash pbkdf2Def p pw
-                ScryptHashAlgo p -> unPasswordHash <$> algoHash scryptDef p pw
-      T.putStr hash
-    CheckCmd CheckOpts {..} -> do
-      pw <- getPassword password
-      checked <-
-            case checkAlgorithm of
-                Argon2CheckAlgo -> algoCheck argon2Def pw <$> getHash hash
-                BcryptCheckAlgo -> algoCheck bcryptDef pw <$> getHash hash
-                PBKDF2CheckAlgo -> algoCheck pbkdf2Def pw <$> getHash hash
-                ScryptCheckAlgo -> algoCheck scryptDef pw <$> getHash hash
-      case checked of
-        PasswordCheckSuccess ->
-          T.putStrLn "Hash and password match"
-        PasswordCheckFail -> do
-          T.putStrLn "Hash and password do not match"
-          exitFailure
-    HelpCmd mCmd ->
-      let args = maybe id (:) mCmd ["-h"]
-       in void $ handleParseResult $ execParserPure defaultPrefs cliOpts args
-  where
-    readLine x = withFile x ReadMode T.hGetLine
-    getPassword :: Either FilePath Bool -> IO Password
-    getPassword =
-      \case
-        Left path -> mkPassword <$> readLine path
-        Right quiet -> do
-          unless quiet $
-            putStrLn "Enter password:"
-          mkPassword <$> T.hGetLine stdin
-    getHash :: Either FilePath Text -> IO (PasswordHash a)
-    getHash =
-      \case
-        Left path -> PasswordHash <$> readLine path
-        Right hash -> return $ PasswordHash hash
+    HashCmd opts -> runHashCmd opts
+    CheckCmd opts -> runCheckCmd opts
+    HelpCmd mCmd -> runHelpCmd mCmd
+
+runHashCmd :: HashOpts -> IO ()
+runHashCmd HashOpts {..} = do
+  pw <- getPassword password
+  hash <-
+        case hashAlgorithm of
+            Argon2HashAlgo p -> unPasswordHash <$> algoHash argon2Def p pw
+            BcryptHashAlgo p -> unPasswordHash <$> algoHash bcryptDef p pw
+            PBKDF2HashAlgo p -> unPasswordHash <$> algoHash pbkdf2Def p pw
+            ScryptHashAlgo p -> unPasswordHash <$> algoHash scryptDef p pw
+  T.putStr hash
+
+runCheckCmd :: CheckOpts -> IO ()
+runCheckCmd CheckOpts {..} = do
+  pw <- getPassword password
+  checked <-
+        case checkAlgorithm of
+            Argon2CheckAlgo -> algoCheck argon2Def pw <$> getHash hash
+            BcryptCheckAlgo -> algoCheck bcryptDef pw <$> getHash hash
+            PBKDF2CheckAlgo -> algoCheck pbkdf2Def pw <$> getHash hash
+            ScryptCheckAlgo -> algoCheck scryptDef pw <$> getHash hash
+  case checked of
+    PasswordCheckSuccess ->
+      T.putStrLn "Hash and password match"
+    PasswordCheckFail -> do
+      T.putStrLn "Hash and password do not match"
+      exitFailure
+
+runHelpCmd :: Maybe String -> IO ()
+runHelpCmd mCmd =
+  let args = maybe id (:) mCmd ["-h"]
+   in void $ handleParseResult $ execParserPure defaultPrefs cliOpts args
+
+getPassword :: Either FilePath Bool -> IO Password
+getPassword =
+  \case
+    Left path -> mkPassword <$> readLine path
+    Right quiet -> do
+      unless quiet $
+        putStrLn "Enter password:"
+      mkPassword <$> T.hGetLine stdin
+
+getHash :: Either FilePath Text -> IO (PasswordHash a)
+getHash =
+  \case
+    Left path -> PasswordHash <$> readLine path
+    Right hash -> return $ PasswordHash hash
+
+readLine :: FilePath -> IO Text
+readLine x = withFile x ReadMode T.hGetLine
