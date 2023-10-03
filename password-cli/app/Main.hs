@@ -17,11 +17,19 @@ import Data.Text (Text)
 import qualified Data.Text.IO as T
 import Options.Applicative
 import Paths_password_cli (version)
+import System.Environment (getArgs)
 import System.Exit (exitFailure)
 import System.IO (IOMode(ReadMode), stdin, withFile)
 
 main :: IO ()
-main = execParser cliOpts >>= runCmd
+main =
+  execParserPure defaultPrefs cliOpts . defaultHelp <$> getArgs
+  >>= handleParseResult
+  >>= runCmd
+  where defaultHelp =
+          \case
+            [] -> ["help"]
+            xs -> xs
 
 data Cmd
   = HashCmd HashOpts
