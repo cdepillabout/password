@@ -2,6 +2,10 @@
 
 ## 3.0.2.2
 
+-  Added `bcrypt` `defaultParams` used by `hashPassword`
+
+## 3.0.2.2
+
 -   Added extra documentation about `bcrypt` hashes.
     Thanks to [@Vlix](https://github.com/Vlix)
     [#69](https://github.com/cdepillabout/password/pull/69)

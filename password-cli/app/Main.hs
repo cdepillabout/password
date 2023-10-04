@@ -5,7 +5,8 @@
 
 module Main (main) where
 
-import Control.Monad (unless, void)
+import Control.Exception (bracket_)
+import Control.Monad (unless, void, when)
 import Data.Version (showVersion)
 import qualified Data.Password.Argon2 as Argon2
 import Data.Password.Bcrypt (PasswordCheck (..))
@@ -19,7 +20,7 @@ import Options.Applicative
 import Paths_password_cli (version)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
-import System.IO (IOMode(ReadMode), stdin, withFile)
+import System.IO (IOMode(ReadMode), hSetEcho, stdin, stderr, withFile)
 
 main :: IO ()
 main =
@@ -37,13 +38,15 @@ data Cmd
   | HelpCmd (Maybe String)
 
 data HashOpts = HashOpts {
-    password :: Either FilePath Bool,
+    quiet :: Bool,
+    password :: Maybe FilePath,
     hashAlgorithm :: HashAlgorithm
   }
 
 data CheckOpts = CheckOpts {
     hash :: Either FilePath Text,
-    password :: Either FilePath Bool,
+    quiet :: Bool,
+    password :: Maybe FilePath,
     checkAlgorithm :: CheckAlgorithm
   }
 
@@ -77,16 +80,16 @@ cliOpts = info commandsParser (fullDesc <> header ("Password CLI " <> showVersio
     hashOptsParser :: Parser HashOpts
     hashOptsParser =
       HashOpts
-        <$> (   (Left <$> option str (metavar "PASSWORD-FILE" <> long "password-file"))
-            <|> (Right <$> switch (short 'q' <> long "quiet")))
+        <$> switch (short 'q' <> long "quiet")
+        <*> optional (option str (metavar "PASSWORD-FILE" <> long "password-file"))
         <*> algorithmHashParser
     checkOptsParser :: Parser CheckOpts
     checkOptsParser =
       CheckOpts
         <$> (   (Right <$> option str (metavar "HASH" <> long "hash"))
             <|> (Left <$> option str (metavar "HASH-FILE" <> long "hash-file")))
-        <*> (   (Left <$> option str (metavar "PASSWORD-FILE" <> long "password-file"))
-            <|> (Right <$> switch (short 'q' <> long "quiet")))
+        <*> switch (short 'q' <> long "quiet")
+        <*> optional (option str (metavar "PASSWORD-FILE" <> long "password-file"))
         <*> algorithmCheckParser
     algorithmHashParser :: Parser HashAlgorithm
     algorithmHashParser =
@@ -150,7 +153,7 @@ runCmd =
 
 runHashCmd :: HashOpts -> IO ()
 runHashCmd HashOpts {..} = do
-  pw <- getPassword password
+  pw <- getPassword quiet password
   hash <-
         case hashAlgorithm of
             Argon2HashAlgo p -> unPasswordHash <$> algoHash argon2Def p pw
@@ -161,7 +164,7 @@ runHashCmd HashOpts {..} = do
 
 runCheckCmd :: CheckOpts -> IO ()
 runCheckCmd CheckOpts {..} = do
-  pw <- getPassword password
+  pw <- getPassword quiet password
   checked <-
         case checkAlgorithm of
             Argon2CheckAlgo -> algoCheck argon2Def pw <$> getHash hash
@@ -172,7 +175,7 @@ runCheckCmd CheckOpts {..} = do
     PasswordCheckSuccess ->
       T.putStrLn "Hash and password match"
     PasswordCheckFail -> do
-      T.putStrLn "Hash and password do not match"
+      T.hPutStrLn stderr "Hash and password do not match"
       exitFailure
 
 runHelpCmd :: Maybe String -> IO ()
@@ -180,14 +183,21 @@ runHelpCmd mCmd =
   let args = maybe id (:) mCmd ["-h"]
    in void $ handleParseResult $ execParserPure defaultPrefs cliOpts args
 
-getPassword :: Either FilePath Bool -> IO Password
-getPassword =
+getPassword :: Bool -> Maybe FilePath -> IO Password
+getPassword quiet =
   \case
-    Left path -> mkPassword <$> readLine path
-    Right quiet -> do
+    Just path -> do
+      when quiet $ do
+        T.hPutStrLn stderr "Can't use --password-file and -q at the same time"
+        exitFailure
+      mkPassword <$> readLine path
+    Nothing -> do
       unless quiet $
         putStrLn "Enter password:"
-      mkPassword <$> T.hGetLine stdin
+      bracket_
+        (hSetEcho stdin False)
+        (hSetEcho stdin True)
+        (mkPassword <$> T.hGetLine stdin)
 
 getHash :: Either FilePath Text -> IO (PasswordHash a)
 getHash =

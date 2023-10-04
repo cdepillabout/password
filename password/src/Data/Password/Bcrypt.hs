@@ -134,7 +134,7 @@ hashPassword = hashPasswordWithParams defaultParams
 -- >>> defaultParams
 -- 10
 --
--- @since 3.0.2.3
+-- @since 3.0.3.0
 defaultParams :: Int
 defaultParams = 10
 
