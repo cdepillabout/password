@@ -3,6 +3,8 @@
 ## 3.0.3.0
 
 -  Added `bcrypt` `defaultParams` used by `hashPassword`
+  Thanks to [@blackheaven](https://github.com/blackheaven)
+    [#70](https://github.com/cdepillabout/password/pull/70)
 
 ## 3.0.2.2
 
