@@ -6,7 +6,7 @@
 module Main (main) where
 
 import Control.Exception (bracket_)
-import Control.Monad (unless, void, when)
+import Control.Monad (unless, void)
 import Data.Version (showVersion)
 import qualified Data.Password.Argon2 as Argon2
 import Data.Password.Bcrypt (PasswordCheck (..))
@@ -18,19 +18,12 @@ import Data.Text (Text)
 import qualified Data.Text.IO as T
 import Options.Applicative
 import Paths_password_cli (version)
-import System.Environment (getArgs)
 import System.Exit (exitFailure)
 import System.IO (IOMode(ReadMode), hSetEcho, stdin, stderr, withFile)
 
 main :: IO ()
 main =
-  execParserPure defaultPrefs cliOpts . defaultHelp <$> getArgs
-  >>= handleParseResult
-  >>= runCmd
-  where defaultHelp =
-          \case
-            [] -> ["help"]
-            xs -> xs
+  customExecParser (prefs showHelpOnEmpty) cliOpts >>= runCmd
 
 data Cmd
   = HashCmd HashOpts
@@ -76,7 +69,6 @@ cliOpts = info commandsParser (fullDesc <> header ("Password CLI " <> showVersio
               (info (CheckCmd <$> checkOptsParser) (progDesc "check hashed password"))
             <> command "help" (info (HelpCmd <$> optional (argument str (metavar "COMMAND")) <**> helper) (progDesc "Show command help"))
         )
-        <**> helper
     hashOptsParser :: Parser HashOpts
     hashOptsParser =
       HashOpts
@@ -99,7 +91,6 @@ cliOpts = info commandsParser (fullDesc <> header ("Password CLI " <> showVersio
             <> command "pbkdf2" (info (PBKDF2HashAlgo <$> algoParser pbkdf2Def) (progDesc "PBKDF2"))
             <> command "scrypt" (info (ScryptHashAlgo <$> algoParser scryptDef) (progDesc "Scrypt"))
         )
-        <**> helper
     algorithmCheckParser :: Parser CheckAlgorithm
     algorithmCheckParser =
       hsubparser
@@ -108,7 +99,6 @@ cliOpts = info commandsParser (fullDesc <> header ("Password CLI " <> showVersio
             <> command "pbkdf2" (info (pure PBKDF2CheckAlgo) (progDesc "PBKDF2"))
             <> command "scrypt" (info (pure ScryptCheckAlgo) (progDesc "Scrypt"))
         )
-        <**> helper
 
 data AlgorithmeDef a p = AlgorithmeDef
   { algoParser :: Parser p
@@ -173,9 +163,11 @@ runCheckCmd CheckOpts {..} = do
             ScryptCheckAlgo -> algoCheck scryptDef pw <$> getHash hash
   case checked of
     PasswordCheckSuccess ->
-      T.putStrLn "Hash and password match"
+      unless quiet $
+        T.putStrLn "Hash and password match"
     PasswordCheckFail -> do
-      T.hPutStrLn stderr "Hash and password do not match"
+      unless quiet $
+        T.hPutStrLn stderr "Hash and password do not match"
       exitFailure
 
 runHelpCmd :: Maybe String -> IO ()
@@ -186,10 +178,7 @@ runHelpCmd mCmd =
 getPassword :: Bool -> Maybe FilePath -> IO Password
 getPassword quiet =
   \case
-    Just path -> do
-      when quiet $ do
-        T.hPutStrLn stderr "Can't use --password-file and -q at the same time"
-        exitFailure
+    Just path ->
       mkPassword <$> readLine path
     Nothing -> do
       unless quiet $

@@ -1,6 +1,6 @@
 # Changelog for `password`
 
-## 3.0.2.2
+## 3.0.3.0
 
 -  Added `bcrypt` `defaultParams` used by `hashPassword`
 
