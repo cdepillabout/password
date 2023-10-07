@@ -127,24 +127,27 @@ checkOptsParser =
             <|> Left <$> hashFileOption
     hashOptionMsg = "Provide the hash as an option."
 
-fromFileOption :: Parser FilePath -> Parser FromFileOptions
-fromFileOption fileOption =
+fromFileOption :: Bool -> Parser FilePath -> Parser FromFileOptions
+fromFileOption acceptLiteral fileOption =
     FromFileOptions <$> fileOption <*> literalParseSwitch
   where
-    literalParseSwitch =
-        switch $ long "literal-contents" <> help helpMsg
+    literalParseSwitch
+        | acceptLiteral =
+            switch $ long "literal-contents" <> help helpMsg
+        | otherwise = pure False
     helpMsg =
         "Hash all contents of the file. (by default only reads first line)"
 
 passwordFileOption :: Parser (Maybe FromFileOptions)
 passwordFileOption =
-    optional . fromFileOption $
+    optional . fromFileOption True $
         strOption (metavar "FILE" <> long "password-file" <> help "Hash password from file contents")
 
-
+-- | We don't want to allow the '--literal-contents' option,
+-- because hashes never have newlines and 'readLine' reads up to the first newline.
 hashFileOption :: Parser FromFileOptions
 hashFileOption =
-    fromFileOption $
+    fromFileOption False $
         strOption (metavar "FILE" <> long "hash-file" <> help "Use hash from file contents")
 
 

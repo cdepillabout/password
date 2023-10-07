@@ -7,6 +7,7 @@ module Main (main) where
 import Control.Exception (bracket_, evaluate)
 import Control.Monad (unless, void, (<=<))
 import qualified Data.ByteString.Char8 as B (readFile)
+import Data.Maybe (isNothing)
 import Data.Password.Bcrypt (PasswordCheck (..))
 import Data.Password.Types (Password, mkPassword)
 import Data.Text as T (Text, strip)
@@ -34,8 +35,12 @@ runHashCmd quiet HashOpts {..} = do
     pw <- getPassword quiet hashPassword
     hash <- hashWithAlgorithm pw hashAlgorithm
     b <- hIsTerminalDevice stdin
+    -- We only want the extra newline in interactive mode
+    -- and NOT when the password is given via file path.
     let output =
-            if b then T.putStrLn else T.putStr
+            if b && isNothing hashPassword
+                then T.putStrLn
+                else T.putStr
     output hash
 
 runCheckCmd :: Bool -> CheckOpts -> IO ()
@@ -61,6 +66,8 @@ getPassword quiet = \case
     Just FromFileOptions{..} ->
         mkPassword <$> readLine parseLiteralContents fromFile
     Nothing -> do
+        -- Wondering if we should also gate this behind `hIsTerminalDevice`?
+        -- Though that could mean Windows users would never see this in certain terminals.
         unless quiet $
             putStrLn "Enter password:"
         bracket_
