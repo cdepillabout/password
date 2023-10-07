@@ -58,6 +58,7 @@ module Data.Password.Bcrypt (
   , PasswordCheck(..)
   -- * Hashing Manually (bcrypt)
   , hashPasswordWithParams
+  , defaultParams
   , extractParams
   -- ** Hashing with salt (DISADVISED)
   --
@@ -126,7 +127,16 @@ data Bcrypt
 -- >>> hashPassword $ mkPassword "foobar"
 -- PasswordHash {unPasswordHash = "$2b$10$..."}
 hashPassword :: MonadIO m => Password -> m (PasswordHash Bcrypt)
-hashPassword = hashPasswordWithParams 10
+hashPassword = hashPasswordWithParams defaultParams
+
+-- | Default parameters for the 'Bcrypt' algorithm.
+--
+-- >>> defaultParams
+-- 10
+--
+-- @since 3.0.3.0
+defaultParams :: Int
+defaultParams = 10
 
 -- | Hash a password with the given cost and also with the given 'Salt'
 -- instead of generating a random salt. Using 'hashPasswordWithSalt' is strongly __disadvised__,
