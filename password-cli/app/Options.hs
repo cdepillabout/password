@@ -90,8 +90,14 @@ cliOpts =
         CLIOptions
             <$> switch (short 'q' <> long "quiet" <> help "Suppress logging to stdout and stderr")
             <*> commandsParser
-            <**> simpleVersioner v
+            <**> versionOpt v
             <**> helper
+
+-- Copied over from 'optparse-applicative-0.17.1.0's 'simpleVersioner'
+versionOpt :: String -> Parser (a -> a)
+versionOpt v =
+    infoOption v $
+        long "version" <> help "Show version information" <> hidden
 
 commandsParser :: Parser Cmd
 commandsParser =
