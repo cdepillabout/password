@@ -20,3 +20,6 @@ cradle:
           component: "password-instances:test:doctests"
         - path: "./password-instances/test/tasty"
           component: "password-instances:test:password-instances-tasty"
+
+        - path: "./password-cli/app"
+          component: "password-cli:exe:password-cli"
