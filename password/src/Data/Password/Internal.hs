@@ -48,9 +48,6 @@ import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Text.Read (readMaybe)
 
 -- $setup
-#if MIN_VERSION_base64(1,0,0)
--- >>> import Data.Base64.Types (extractBase64)
-#endif
 -- >>> import Data.ByteString as B (length)
 -- >>> import Data.ByteString.Base64 (encodeBase64)
 -- >>> import Data.Text as T (dropWhileEnd)
@@ -120,6 +117,7 @@ showT = T.pack . show
 -- | (UNSAFE) Pad a base64 text to "length `rem` 4 == 0" with "="
 --
 #if MIN_VERSION_base64(1,0,0)
+-- >>> import Data.Base64.Types (extractBase64)
 -- prop> \bs -> let b64 = extractBase64 (encodeBase64 bs) in unsafePad64 (T.dropWhileEnd (== '=') b64) == b64
 #else
 -- prop> \bs -> let b64 = encodeBase64 bs in unsafePad64 (T.dropWhileEnd (== '=') b64) == b64
