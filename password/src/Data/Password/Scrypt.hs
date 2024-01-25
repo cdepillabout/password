@@ -261,22 +261,20 @@ checkPassword pass passHash =
     return PasswordCheckSuccess
 
 parseScryptPasswordHashParams :: PasswordHash Scrypt -> Maybe (ScryptParams, Salt Scrypt, ByteString)
-parseScryptPasswordHashParams (PasswordHash passHash) = do
-    let paramList = T.split (== '|') passHash
-    guard $ length paramList == 5
-    let [ scryptRoundsT,
-          scryptBlockSizeT,
-          scryptParallelismT,
-          salt64,
-          hashedKey64 ] = paramList
-    scryptRounds <- readT scryptRoundsT
-    scryptBlockSize <- readT scryptBlockSizeT
-    scryptParallelism <- readT scryptParallelismT
-    salt <- from64 salt64
-    hashedKey <- from64 hashedKey64
-    let scryptOutputLength = fromIntegral $ C8.length hashedKey
-        scryptSalt = fromIntegral $ C8.length salt
-    return (ScryptParams{..}, Salt salt, hashedKey)
+parseScryptPasswordHashParams (PasswordHash passHash) =
+    case paramList of
+        [scryptRoundsT, scryptBlockSizeT, scryptParallelismT, salt64, hashedKey64] -> do
+            scryptRounds <- readT scryptRoundsT
+            scryptBlockSize <- readT scryptBlockSizeT
+            scryptParallelism <- readT scryptParallelismT
+            salt <- from64 salt64
+            hashedKey <- from64 hashedKey64
+            let scryptOutputLength = fromIntegral $ C8.length hashedKey
+                scryptSalt = fromIntegral $ C8.length salt
+            return (ScryptParams{..}, Salt salt, hashedKey)
+        _ -> Nothing
+  where
+    paramList = T.split (== '|') passHash
 
 -- | Extracts 'ScryptParams' from a 'PasswordHash' 'Scrypt'.
 --

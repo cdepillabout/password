@@ -255,18 +255,16 @@ parsePBKDF2PasswordHashParams (PasswordHash passHash) = do
     -- "pbkdf2:sha256:150000:etc.etc."
     let passHash' = fromMaybe passHash $ "pbkdf2:" `T.stripPrefix` passHash
         paramList = T.split (== ':') passHash'
-    guard $ length paramList == 4
-    let [ algT,
-          iterationsT,
-          salt64,
-          hashedKey64 ] = paramList
-    pbkdf2Algorithm <- textToAlg algT
-    pbkdf2Iterations <- readT iterationsT
-    salt <- from64 salt64
-    hashedKey <- from64 hashedKey64
-    let pbkdf2OutputLength = fromIntegral $ C8.length hashedKey
-        pbkdf2Salt = fromIntegral $ C8.length salt
-    return (PBKDF2Params{..}, Salt salt, hashedKey)
+    case paramList of
+        [algT, iterationsT, salt64, hashedKey64] -> do
+            pbkdf2Algorithm <- textToAlg algT
+            pbkdf2Iterations <- readT iterationsT
+            salt <- from64 salt64
+            hashedKey <- from64 hashedKey64
+            let pbkdf2OutputLength = fromIntegral $ C8.length hashedKey
+                pbkdf2Salt = fromIntegral $ C8.length salt
+            return (PBKDF2Params{..}, Salt salt, hashedKey)
+        _ -> Nothing
 
 -- | Extracts 'PBKDF2Params' from a 'PasswordHash' 'PBKDF2'.
 --
