@@ -28,7 +28,11 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 import Crypto.Random (getRandomBytes)
 import Data.ByteArray (Bytes, convert)
 import Data.ByteString (ByteString)
+#if MIN_VERSION_base64(1,0,0)
+import Data.ByteString.Base64 (decodeBase64Untyped)
+#else
 import Data.ByteString.Base64 (decodeBase64)
+#endif
 #if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
@@ -44,6 +48,9 @@ import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Text.Read (readMaybe)
 
 -- $setup
+#if MIN_VERSION_base64(1,0,0)
+-- >>> import Data.Base64.Types (extractBase64)
+#endif
 -- >>> import Data.ByteString as B (length)
 -- >>> import Data.ByteString.Base64 (encodeBase64)
 -- >>> import Data.Text as T (dropWhileEnd)
@@ -91,7 +98,11 @@ fromBytes = decodeUtf8 . convert
 
 -- | Decodes a base64 'Text' to a regular 'ByteString' (if possible)
 from64 :: Text -> Maybe ByteString
+#if MIN_VERSION_base64(1,0,0)
+from64 = toMaybe . decodeBase64Untyped . encodeUtf8
+#else
 from64 = toMaybe . decodeBase64 . encodeUtf8
+#endif
   where
     toMaybe = either (const Nothing) Just
 {-# INLINE from64 #-}
@@ -108,7 +119,11 @@ showT = T.pack . show
 
 -- | (UNSAFE) Pad a base64 text to "length `rem` 4 == 0" with "="
 --
+#if MIN_VERSION_base64(1,0,0)
+-- prop> \bs -> let b64 = extractBase64 (encodeBase64 bs) in unsafePad64 (T.dropWhileEnd (== '=') b64) == b64
+#else
 -- prop> \bs -> let b64 = encodeBase64 bs in unsafePad64 (T.dropWhileEnd (== '=') b64) == b64
+#endif
 unsafePad64 :: Text -> Text
 unsafePad64 t
     | remains == 0 = t
