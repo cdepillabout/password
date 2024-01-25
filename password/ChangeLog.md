@@ -1,9 +1,19 @@
 # Changelog for `password`
 
+## 3.0.4.0
+
+-   Support `base64` package up to and including `base64-1.0`.
+-   Added a Cabal flag `crypton` to replace the current `cryptonite`
+    dependency with the `crypton` package. In a future release, this
+    will be reversed, so that the `crypton` flag will be a no-op and
+    you'd have to supply `cryptonite` to build with the `cryptonite` package.
+    Thanks to [@Vlix](https://github.com/Vlix)
+    [#74](https://github.com/cdepillabout/password/pull/74)
+
 ## 3.0.3.0
 
--  Added `bcrypt` `defaultParams` used by `hashPassword`
-  Thanks to [@blackheaven](https://github.com/blackheaven)
+-   Added `bcrypt` `defaultParams` used by `hashPassword`
+    Thanks to [@blackheaven](https://github.com/blackheaven)
     [#70](https://github.com/cdepillabout/password/pull/70)
 
 ## 3.0.2.2
