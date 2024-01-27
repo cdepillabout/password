@@ -3,10 +3,14 @@
 ## 3.0.4.0
 
 -   Support `base64` package up to and including `base64-1.0`.
--   Added a Cabal flag `crypton` to replace the current `cryptonite`
-    dependency with the `crypton` package. In a future release, this
-    will be reversed, so that the `crypton` flag will be a no-op and
-    you'd have to supply `cryptonite` to build with the `cryptonite` package.
+-   Added the Cabal flags `crypton` and `cryptonite` to choose which dependency to
+    build with. Right now the default is `cryptonite` and setting `crypton` changes
+    it to `crypton`. Setting the `cryptonite` flag does nothing at the moment, but
+    will replace the `crypton` flag in a future major release, so if you want to keep
+    using the `cryptonite` package you should start building with this flag.
+    When the flags get switched the `crypton` package will be the default and the
+    `crypton` flag will turn into a no-op, and you'll have to supply the `cryptonite`
+    flag to build with the `cryptonite` package.
     Thanks to [@Vlix](https://github.com/Vlix)
     [#74](https://github.com/cdepillabout/password/pull/74)
 
