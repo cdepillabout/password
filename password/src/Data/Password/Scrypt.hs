@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-|
@@ -65,6 +66,9 @@ module Data.Password.Scrypt (
 import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.KDF.Scrypt as Scrypt (Parameters(..), generate)
+#if MIN_VERSION_base64(1,0,0)
+import Data.Base64.Types (extractBase64)
+#endif
 import Data.ByteArray (Bytes, constEq, convert)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64 (encodeBase64)
@@ -180,11 +184,16 @@ hashPasswordWithSalt params@ScryptParams{..} s@(Salt salt) pass =
     [ showT scryptRounds
     , showT scryptBlockSize
     , showT scryptParallelism
-    , encodeBase64 salt
-    , encodeBase64 key
+    , toB64 salt
+    , toB64 key
     ]
   where
     key = hashPasswordWithSalt' params s pass
+#if MIN_VERSION_base64(1,0,0)
+    toB64 = extractBase64 . encodeBase64
+#else
+    toB64 = encodeBase64
+#endif
 
 -- | Only for internal use
 hashPasswordWithSalt' :: ScryptParams -> Salt Scrypt -> Password -> ByteString
@@ -252,22 +261,20 @@ checkPassword pass passHash =
     return PasswordCheckSuccess
 
 parseScryptPasswordHashParams :: PasswordHash Scrypt -> Maybe (ScryptParams, Salt Scrypt, ByteString)
-parseScryptPasswordHashParams (PasswordHash passHash) = do
-    let paramList = T.split (== '|') passHash
-    guard $ length paramList == 5
-    let [ scryptRoundsT,
-          scryptBlockSizeT,
-          scryptParallelismT,
-          salt64,
-          hashedKey64 ] = paramList
-    scryptRounds <- readT scryptRoundsT
-    scryptBlockSize <- readT scryptBlockSizeT
-    scryptParallelism <- readT scryptParallelismT
-    salt <- from64 salt64
-    hashedKey <- from64 hashedKey64
-    let scryptOutputLength = fromIntegral $ C8.length hashedKey
-        scryptSalt = fromIntegral $ C8.length salt
-    return (ScryptParams{..}, Salt salt, hashedKey)
+parseScryptPasswordHashParams (PasswordHash passHash) =
+    case paramList of
+        [scryptRoundsT, scryptBlockSizeT, scryptParallelismT, salt64, hashedKey64] -> do
+            scryptRounds <- readT scryptRoundsT
+            scryptBlockSize <- readT scryptBlockSizeT
+            scryptParallelism <- readT scryptParallelismT
+            salt <- from64 salt64
+            hashedKey <- from64 hashedKey64
+            let scryptOutputLength = fromIntegral $ C8.length hashedKey
+                scryptSalt = fromIntegral $ C8.length salt
+            return (ScryptParams{..}, Salt salt, hashedKey)
+        _ -> Nothing
+  where
+    paramList = T.split (== '|') passHash
 
 -- | Extracts 'ScryptParams' from a 'PasswordHash' 'Scrypt'.
 --

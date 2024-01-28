@@ -74,6 +74,9 @@ import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Crypto.Error (throwCryptoError)
 import Crypto.KDF.Argon2 as Argon2 (Options (..), Variant (..), Version (..), hash)
+#if MIN_VERSION_base64(1,0,0)
+import Data.Base64.Types (extractBase64)
+#endif
 import Data.ByteArray (Bytes, constEq, convert)
 import Data.ByteString as B (ByteString, length)
 import Data.ByteString.Base64 (encodeBase64)
@@ -205,7 +208,11 @@ hashPasswordWithSalt params@Argon2Params{..} s@(Salt salt) pass =
     , encodeWithoutPadding key
     ]
   where
+#if MIN_VERSION_base64(1,0,0)
+    encodeWithoutPadding = T.dropWhileEnd (== '=') . extractBase64 . encodeBase64
+#else
     encodeWithoutPadding = T.dropWhileEnd (== '=') . encodeBase64
+#endif
     parameters = T.intercalate ","
         [ "m=" <> showT argon2MemoryCost
         , "t=" <> showT argon2TimeCost

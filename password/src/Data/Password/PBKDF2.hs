@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -72,9 +73,12 @@ import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.Hash.Algorithms as Crypto (MD5(..))
 import Crypto.KDF.PBKDF2 as PBKDF2
+#if MIN_VERSION_base64(1,0,0)
+import Data.Base64.Types (extractBase64)
+#endif
 import Data.ByteArray (ByteArray, ByteArrayAccess, Bytes, constEq, convert)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Base64 as Base64
+import Data.ByteString.Base64 (encodeBase64)
 import qualified Data.ByteString.Char8 as C8 (length)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -186,7 +190,11 @@ hashPasswordWithSalt params@PBKDF2Params{..} s@(Salt salt) pass =
     , b64 key
     ]
   where
-    b64 = Base64.encodeBase64
+#if MIN_VERSION_base64(1,0,0)
+    b64 = extractBase64 . encodeBase64
+#else
+    b64 = encodeBase64
+#endif
     key = hashPasswordWithSalt' params s pass
 
 -- | Only for internal use
@@ -247,18 +255,16 @@ parsePBKDF2PasswordHashParams (PasswordHash passHash) = do
     -- "pbkdf2:sha256:150000:etc.etc."
     let passHash' = fromMaybe passHash $ "pbkdf2:" `T.stripPrefix` passHash
         paramList = T.split (== ':') passHash'
-    guard $ length paramList == 4
-    let [ algT,
-          iterationsT,
-          salt64,
-          hashedKey64 ] = paramList
-    pbkdf2Algorithm <- textToAlg algT
-    pbkdf2Iterations <- readT iterationsT
-    salt <- from64 salt64
-    hashedKey <- from64 hashedKey64
-    let pbkdf2OutputLength = fromIntegral $ C8.length hashedKey
-        pbkdf2Salt = fromIntegral $ C8.length salt
-    return (PBKDF2Params{..}, Salt salt, hashedKey)
+    case paramList of
+        [algT, iterationsT, salt64, hashedKey64] -> do
+            pbkdf2Algorithm <- textToAlg algT
+            pbkdf2Iterations <- readT iterationsT
+            salt <- from64 salt64
+            hashedKey <- from64 hashedKey64
+            let pbkdf2OutputLength = fromIntegral $ C8.length hashedKey
+                pbkdf2Salt = fromIntegral $ C8.length salt
+            return (PBKDF2Params{..}, Salt salt, hashedKey)
+        _ -> Nothing
 
 -- | Extracts 'PBKDF2Params' from a 'PasswordHash' 'PBKDF2'.
 --
