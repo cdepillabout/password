@@ -221,8 +221,9 @@ checkPassword pass (PasswordHash passHash) =
 extractParams :: PasswordHash Bcrypt -> Maybe Int
 extractParams (PasswordHash passHash) =
   case T.split (== '$') passHash of
-    ["", version, cost, _pass] -> do
-      guard $ elem version $ map T.pack ["2b", "2y", "2x", "2a", "2"]
+    [prefix, version, cost, _pass] -> do
+      guard $
+        T.null prefix && elem version (T.pack <$> ["2b", "2y", "2x", "2a", "2"])
       readMaybe $ T.unpack cost
     _ -> Nothing
 
