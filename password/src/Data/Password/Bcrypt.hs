@@ -223,6 +223,8 @@ extractParams (PasswordHash passHash) =
   case T.split (== '$') passHash of
     [prefix, version, cost, _pass] -> do
       guard $
+        -- 'prefix' should be nothing, because the hash should start with a '$'
+        -- The order of versions is based on most likely to encounter in the wild.
         T.null prefix && elem version (T.pack <$> ["2b", "2y", "2x", "2a", "2"])
       readMaybe $ T.unpack cost
     _ -> Nothing
