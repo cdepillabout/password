@@ -9,7 +9,7 @@ on:
 jobs:
   cabal:
     name: cabal / ghc-${{matrix.ghc}} / ${{ matrix.os }}
-    continue-on-error: ${{ matrix.ghc == '9.10.1' || (matrix.os == 'macOS-latest' && matrix.ghc == '9.0.2') }}
+    continue-on-error: ${{ matrix.ghc == '9.10.1' || matrix.os == 'macOS-latest' }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
