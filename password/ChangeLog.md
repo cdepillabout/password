@@ -1,5 +1,11 @@
 # Changelog for `password`
 
+## 3.1.0.0
+
+-   Switched default cryptographic backend library from `cryptonite` to `crypton`.
+    The `crypton` flag is now a no-op, and the `cryptonite` flag is needed to build
+    the `password` library using the `cryptonite` library.
+
 ## 3.0.4.0
 
 -   Support `base64` package up to and including `base64-1.0`.
