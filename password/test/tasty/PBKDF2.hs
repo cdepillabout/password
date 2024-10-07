@@ -4,11 +4,13 @@ module PBKDF2 where
 
 import Crypto.Hash.Algorithms as Crypto (HashAlgorithm, SHA1(..), SHA256(..), SHA512(..))
 import Crypto.KDF.PBKDF2 as PBKDF2
-import Data.ByteString (ByteString)
+import Data.ByteString (ByteString, fromStrict)
 #if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
+import Data.Text.Encoding (encodeUtf8)
 import Test.Tasty
+import Test.Tasty.Golden (goldenVsString)
 import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.ByteString ()
 import Test.QuickCheck.Instances.Text ()
@@ -43,6 +45,7 @@ testPBKDF2 = testGroup "PBKDF2"
       (\pass (PasswordHash hash) -> checkPassword pass . PasswordHash $ "pbkdf2:" <> hash)
       extractParams
       testParams
+  , testGolden
   ]
   where
     testIt s params = testCorrectPassword s (hashPasswordWithParams params) checkPassword extractParams params
@@ -65,3 +68,17 @@ cryptoParams i = PBKDF2.Parameters {
     PBKDF2.iterCounts = 2000,
     PBKDF2.outputLength = i
   }
+
+testGolden :: TestTree
+testGolden = testGroup "Golden tests"
+    [ go "defaultParams" "PBKDF2_defaultParams" defaultParams "somesalt42"
+    , go "algorithm = MD5" "PBKDF2_algorithmMD5" defaultParams{pbkdf2Algorithm = PBKDF2_MD5} "somesalt42"
+    , go "output length = 16" "PBKDF2_outputLength16" defaultParams{pbkdf2OutputLength = 16} "somesalt42"
+    , go "iterCounts = 1000" "PBKDF2_iterCounts1000" defaultParams{pbkdf2Iterations = 1000} "somesalt42"
+    , go "other salt" "PBKDF2_otherSalt" defaultParams "somesalt0"
+    ]
+  where go testName fileName params salt =
+          goldenVsString
+            testName
+            ("test/golden/" <> fileName <> ".golden")
+            (return $ fromStrict $ encodeUtf8 $ unPasswordHash $ hashPasswordWithSalt params (Salt salt) $ mkPassword "password")

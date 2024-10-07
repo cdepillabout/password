@@ -1,10 +1,13 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Scrypt where
 
+import Data.ByteString (fromStrict)
 import Data.Maybe (fromJust)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Test.Tasty
+import Test.Tasty.Golden (goldenVsString)
 import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
 
@@ -30,6 +33,7 @@ testScrypt = testGroup "scrypt"
 #ifndef IS_MAC_OS
   , testProperty "scrypt <-> cryptonite" $ withMaxSuccess 10 checkScrypt
 #endif
+  , testGolden
   ]
   where
     hash8Rounds = hashPasswordWithParams testsParams8Rounds
@@ -48,3 +52,17 @@ checkScrypt pass = ioProperty $ do
         hashPasswordWithSalt defaultParams{ scryptRounds = 8 } (Salt salt) $ mkPassword pass
   return $ scryptHash === encodeUtf8 ourHash
 #endif
+
+testGolden :: TestTree
+testGolden = testGroup "Golden tests"
+    [ go "defaultParams" "Scrypt_defaultParams" defaultParams "somesalt42"
+    , go "rounds = 8" "Scrypt_rounds8" defaultParams{scryptRounds = 8} "somesalt42"
+    , go "output length = 16" "Scrypt_outputLength16" defaultParams{scryptOutputLength = 16} "somesalt42"
+    , go "scrypt length = 16" "Scrypt_saltLength16" defaultParams{scryptSalt = 16} "somesalt42"
+    , go "Other salt" "Scrypt_otherSalt" defaultParams "somesalt0"
+    ]
+  where go testName fileName params salt =
+          goldenVsString
+            testName
+            ("test/golden/" <> fileName <> ".golden")
+            (return $ fromStrict $ encodeUtf8 $ unPasswordHash $ hashPasswordWithSalt params (Salt salt) $ mkPassword "password")
