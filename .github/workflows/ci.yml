@@ -9,7 +9,7 @@ on:
 jobs:
   cabal:
     name: cabal / ghc-${{matrix.ghc}} / ${{ matrix.os }}
-    continue-on-error: ${{ matrix.ghc == '9.10.1'}}
+    continue-on-error: ${{ matrix.ghc == '9.10.1' }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -21,22 +21,25 @@ jobs:
           - "9.0.2"
           - "9.2.8"
           - "9.4.8"
-          - "9.6.5"
+          - "9.6.6"
           - "9.8.2"
           - "9.10.1"
+        exclude:
+          os: macOS-latest
+          ghc: "9.0.2"
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       #if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
 
-    - uses: haskell/actions/setup@v2
+    - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
       name: Setup Haskell
       with:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: ${{ matrix.cabal }}
 
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       name: Cache cabal-store
       with:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
@@ -68,20 +71,20 @@ jobs:
           - "--resolver lts-19" # GHC 9.0.2
           - "--resolver lts-20" # GHC 9.2.8
           - "--resolver lts-21" # GHC 9.4.8
-          - "--resolver lts-22" # GHC 9.6.5
+          - "--resolver lts-22" # GHC 9.6.6
           - "--resolver nightly" # GHC 9.8.2
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       #if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
 
-    - uses: haskell/actions/setup@v2
+    - uses: haskell-actions/setup@v2
       name: Setup Haskell Stack
       with:
         stack-version: ${{ matrix.stack }}
         enable-stack: true
 
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       name: Cache ~/.stack
       with:
         path: ~/.stack
