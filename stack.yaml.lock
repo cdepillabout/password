@@ -3,10 +3,17 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: crypton-1.0.1@sha256:f41316fbc6ad878396e476355e27b70ac35c344d74e3eefafe709e03b192be9e,14527
+    pantry-tree:
+      sha256: b8f0a33755a0871d325300024592cd9306e393941248184e9c4faf417d4adfcd
+      size: 23276
+  original:
+    hackage: crypton-1.0.1
 snapshots:
 - completed:
-    sha256: 87da71cb0ae9ee1ea1bf51a8eb9812f39f779be76abc0a3c926defd8afda05d1
-    size: 719139
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/28.yaml
-  original: lts-22.28
+    sha256: 0964f3e2c04e21abf42e271490e6974bc923aac2f2fd595fcb53ad0c237dbed1
+    size: 720034
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/38.yaml
+  original: lts-22.38

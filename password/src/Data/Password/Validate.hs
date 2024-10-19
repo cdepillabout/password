@@ -202,7 +202,7 @@ module Data.Password.Validate
 
 import Data.Char (chr, isAsciiLower, isAsciiUpper, isDigit, ord)
 import Data.Function (on)
-import Data.List (foldl')
+import Data.Foldable (foldl')
 
 import Data.Text (Text)
 import qualified Data.Text as T
