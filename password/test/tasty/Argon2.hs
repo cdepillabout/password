@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Argon2 (testArgon2) where
 
-import Data.ByteString (fromStrict)
+import Data.ByteString.Lazy (fromStrict)
 import Data.Text.Encoding (encodeUtf8)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)

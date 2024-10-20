@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Scrypt where
 
-import Data.ByteString (fromStrict)
+import Data.ByteString.Lazy (fromStrict)
 import Data.Maybe (fromJust)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
