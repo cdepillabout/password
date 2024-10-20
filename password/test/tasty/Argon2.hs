@@ -1,8 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Argon2 (testArgon2) where
 
+import Data.ByteString (fromStrict)
+import Data.Text.Encoding (encodeUtf8)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
+import Test.Tasty.Golden (goldenVsString)
 
 import Data.Password.Argon2
 
@@ -24,6 +27,7 @@ testArgon2 = testGroup "Argon2"
   , testWithParams "Argon2 (Argon2d)" (fastParams{ argon2Variant = Argon2d })
   , paddingTests
   , omittedVersionTest
+  , testGolden
   ]
   where
     testWithParams s params =
@@ -86,3 +90,16 @@ referenceHashWithoutVersion = PasswordHash "$argon2i$m=65536,t=2,p=4$c29tZXNhbHQ
 v10Hash, v10HashWithoutVersion :: PasswordHash Argon2
 v10Hash          = PasswordHash "$argon2i$v=16$m=65536,t=2,p=1$Kx1BEcpIg0Ey5GyXq5do2w$0qRfWHw09EdqQkSsaG57O/ou8v/E6Vc83w"
 v10HashWithoutVersion = PasswordHash "$argon2i$m=65536,t=2,p=1$Kx1BEcpIg0Ey5GyXq5do2w$0qRfWHw09EdqQkSsaG57O/ou8v/E6Vc83w"
+
+testGolden :: TestTree
+testGolden = testGroup "Golden tests"
+    [ go "defaultParams" "Argon_defaultParams" defaultParams "somesalt42"
+    , go "variant = Argon2i" "Argon_variantArgon2i" defaultParams{argon2Variant = Argon2i} "somesalt42"
+    , go "output length = 24" "Argon_outputLength24" defaultParams{argon2OutputLength = 24} "somesalt42"
+    , go "other salt" "Argon_otherSalt" defaultParams "somesalt0"
+    ]
+  where go testName fileName params salt =
+          goldenVsString
+            testName
+            ("test/golden/" <> fileName <> ".golden")
+            (return $ fromStrict $ encodeUtf8 $ unPasswordHash $ hashPasswordWithSalt params (Salt salt) $ mkPassword "password")
