@@ -11,7 +11,7 @@ import Test.Tasty.Golden (goldenVsString)
 import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
 
-#ifndef darwin_HOST_OS
+#ifdef x86_64_HOST_ARCH
 import qualified Crypto.Scrypt as Scrypt
 #endif
 
@@ -31,7 +31,9 @@ testScrypt = testGroup "scrypt"
                  checkPassword
                  extractParams
                  testsParams8Rounds
+#ifdef x86_64_HOST_ARCH
   , testProperty "scrypt <-> cryptonite" $ withMaxSuccess 10 checkScrypt
+#endif
   , testGolden
   ]
   where
@@ -40,15 +42,9 @@ testScrypt = testGroup "scrypt"
     hash4Rounds = hashPasswordWithParams testsParams4Rounds
     testsParams4Rounds = defaultParams{ scryptRounds = 4, scryptSalt = 16 }
 
--- The scrypt library is not available on Darwin, so on Darwin we just stub out
--- the checkScrypt function.
-#ifdef darwin_HOST_OS
-
-checkScrypt :: Text -> Property
-checkScrypt _ = property ()
-
-#else
-
+#ifdef x86_64_HOST_ARCH
+-- The scrypt library is only available on x86_64, so we only compare password's
+-- scrypt functionality against the actual scrypt library when building on x86_64.
 checkScrypt :: Text -> Property
 checkScrypt pass = ioProperty $ do
   s@(Scrypt.Salt salt) <- Scrypt.newSalt
@@ -58,7 +54,6 @@ checkScrypt pass = ioProperty $ do
       PasswordHash ourHash =
         hashPasswordWithSalt defaultParams{ scryptRounds = 8 } (Salt salt) $ mkPassword pass
   return $ scryptHash === encodeUtf8 ourHash
-
 #endif
 
 testGolden :: TestTree
