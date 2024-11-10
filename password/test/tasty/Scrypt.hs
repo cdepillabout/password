@@ -11,9 +11,10 @@ import Test.Tasty.Golden (goldenVsString)
 import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
 
-#ifndef IS_MAC_OS
+#ifdef x86_64_HOST_ARCH
 import qualified Crypto.Scrypt as Scrypt
 #endif
+
 import Data.Password.Types
 import Data.Password.Scrypt
 
@@ -30,7 +31,7 @@ testScrypt = testGroup "scrypt"
                  checkPassword
                  extractParams
                  testsParams8Rounds
-#ifndef IS_MAC_OS
+#ifdef x86_64_HOST_ARCH
   , testProperty "scrypt <-> cryptonite" $ withMaxSuccess 10 checkScrypt
 #endif
   , testGolden
@@ -41,7 +42,9 @@ testScrypt = testGroup "scrypt"
     hash4Rounds = hashPasswordWithParams testsParams4Rounds
     testsParams4Rounds = defaultParams{ scryptRounds = 4, scryptSalt = 16 }
 
-#ifndef IS_MAC_OS
+#ifdef x86_64_HOST_ARCH
+-- The scrypt library is only available on x86_64, so we only compare password's
+-- scrypt functionality against the actual scrypt library when building on x86_64.
 checkScrypt :: Text -> Property
 checkScrypt pass = ioProperty $ do
   s@(Scrypt.Salt salt) <- Scrypt.newSalt

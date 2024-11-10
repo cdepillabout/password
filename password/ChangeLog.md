@@ -1,5 +1,13 @@
 # Changelog for `password`
 
+## 3.1.0.1
+
+-   Redo the conditionals in the `password.cabal` file so that the scrypt
+    library is only included as a test dependency on `x86_64`.  This generally
+    shouldn't affect users of the `password` library.
+    Thanks to [@sternenseemann](https://github.com/sternenseemann)
+    [#85](https://github.com/cdepillabout/password/pull/85)
+
 ## 3.1.0.0
 
 -   Switched default cryptographic backend library from `cryptonite` to `crypton`.
