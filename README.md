@@ -29,3 +29,5 @@ and
 
 In general, if you are writing a web application and need to handle passwords,
 you should use the `password` package together with `password-instances`.
+
+This project also provides [password-cli](./password-cli) a CLI to test and use `password`.
