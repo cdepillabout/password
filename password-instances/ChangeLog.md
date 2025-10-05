@@ -1,5 +1,15 @@
 # Changelog for `password-instances`
 
+## 3.0.1.0
+
+-   Added cabal flags (`aeson`, `http-api-data`, `persistent`) to make
+    dependencies optional. All flags default to `True`.
+-   Added compile-time error if all flags are disabled.
+-   Split into dedicated packages
+    [#87](https://github.com/cdepillabout/password/pull/87)
+-   and add flags to parametrize dependencies
+    [#89](https://github.com/cdepillabout/password/pull/89)
+
 ## 3.0.0.0
 
 -   The `password-instances` library now depends on the new
