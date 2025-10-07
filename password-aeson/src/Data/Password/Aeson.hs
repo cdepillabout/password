@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
@@ -19,10 +21,14 @@ for 'Password' and 'PasswordHash'.
 See the "Data.Password.Types" module for more information.
 -}
 
-module Data.Password.Aeson () where
+module Data.Password.Aeson
+  ( FromJSON (..),
+    ToJSON (..),
+    ExposedPassword (..),
+  ) where
 
 import Data.Aeson (FromJSON(..), ToJSON(..))
-import Data.Password.Types (Password, mkPassword)
+import Data.Password.Types (Password, mkPassword, unsafeShowPassword)
 import GHC.TypeLits (TypeError, ErrorMessage(..))
 
 -- $setup
@@ -57,3 +63,16 @@ type ErrMsg = 'Text "Warning! Tried to convert plain-text Password to JSON!"
 -- | Type error! Do not use 'toJSON' on a 'Password'!
 instance TypeError ErrMsg => ToJSON Password where
   toJSON = error "unreachable"
+
+-- | WARNING: DO NOT USE UNLESS ABSOLUTELY NECESSARY!
+--
+-- Using this newtype will allow your plain text password to be turned into
+-- JSON. Keep this type tightly bound to only the section where you want to
+-- expose the `Password`, since it's easy for a bigger type that contains
+-- this `ExposedPassword` to be logged or printed as JSON, and now you've
+-- accidentally leaked passwords in your logs or database.
+newtype ExposedPassword = ExposedPassword Password
+  deriving newtype (FromJSON)
+
+instance ToJSON ExposedPassword where
+  toJSON (ExposedPassword p) = toJSON $ unsafeShowPassword p
