@@ -70,7 +70,7 @@ Just like when hashing a password, you can input the password manually, through 
 by providing a `--password-file`.
 ```console
 $ # Interactively check password
-$ password-cli check argon2 --hash "SOME-HASH"
+$ password-cli check argon2 --hash 'SOME-HASH'
 Enter password:
 Password matches provided hash
 $ echo $?
@@ -80,14 +80,18 @@ If the provided hash doesn't match the password, `Password does not match provid
 will be shown and the exit code will be `1` to indicate a failed match.
 ```console
 $ # Pipe in the password.
-$ cat password.txt | password-cli check argon2 --hash "SOME-HASH" --quiet
+$ cat password.txt | password-cli check argon2 --hash 'SOME-HASH' --quiet
 $ echo $?
 0
 $ # Give the WRONG password file.
-$ password-cli check argon2 --hash "SOME-HASH" --password-file password.txt.wrong --quiet
+$ password-cli check argon2 --hash 'SOME-HASH' --password-file password.txt.wrong --quiet
 $ echo $?
 1
 ```
+NOTE: When giving literal hashes as arguments in the terminal,
+it is advised to use single quotes (`'`) instead of double quotes (`"`)
+to prevent any accidental interpolation as some hashes use
+dollar signs (`$`) in the format.
 
 You can also provide the hash from file contents by providing the path to the `--hash-file`
 option. Just like the default of the `--password-file` option, this will only read up to the

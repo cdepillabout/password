@@ -33,6 +33,15 @@ being the newest algorithm out there.
 It is, however, recommended over @'Data.Password.Scrypt.Scrypt'@ most of the time,
 and it also seems like it might become the go-to password algorithm if no
 vulnarabilities are discovered within the next couple of years.
+
+== Testing
+
+You can use [password-cli](https://github.com/cdepillabout/password/tree/master/password-cli) to test it:
+
+> $ password-cli check argon2 --hash 'SOME-HASH'
+
+> $ password-cli hash argon2 --password-file password.txt
+
 -}
 
 -- I think the portability is broadened to

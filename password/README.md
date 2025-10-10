@@ -8,7 +8,7 @@
 
 This library provides functions for working with passwords and password hashes in Haskell.
 
-Currently supports the following algorithms:
+It currently supports the following algorithms:
 
 * `PBKDF2`
 * `bcrypt`
@@ -17,3 +17,5 @@ Currently supports the following algorithms:
 
 Also, see the [password-instances](https://hackage.haskell.org/package/password-instances)
 package for instances for common typeclasses.
+
+To quickly test and use `password`, you can use [password-cli](https://github.com/cdepillabout/password/tree/master/password-cli).
