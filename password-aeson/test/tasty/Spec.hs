@@ -3,22 +3,18 @@
 import Data.Aeson
 import Data.Aeson.Types (parseMaybe)
 import Data.Text (Text)
-import Database.Persist.Class (PersistField(..))
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
-import Web.HttpApiData (FromHttpApiData(..))
 
 import Data.Password.Types (Password, PasswordHash(..), unsafeShowPassword)
-import Data.Password.Instances()
+import Data.Password.Aeson()
 
 
 main :: IO ()
 main = defaultMain $ testGroup "Password Instances"
   [ aesonTest
-  , fromHttpApiDataTest
-  , persistTest
   ]
 
 data TestUser = TestUser {
@@ -41,15 +37,3 @@ aesonTest = testCase "Password (Aeson)" $
       [ "name" .= String "testname"
       , "password" .= String testPassword
       ]
-
-fromHttpApiDataTest :: TestTree
-fromHttpApiDataTest = testCase "Password (FromHttpApiData)" $
-    assertEqual "password doesn't match" (Right testPassword) $
-      unsafeShowPassword <$> parseUrlPiece testPassword
-  where
-    testPassword = "passtest"
-
-persistTest :: TestTree
-persistTest = testProperty "PasswordHash (PersistField)" $ \pass ->
-    let pwd = PasswordHash pass
-    in fromPersistValue (toPersistValue pwd) === Right pwd

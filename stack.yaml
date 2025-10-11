@@ -34,8 +34,11 @@ resolver: lts-22.38
 #  - wai
 packages:
   - password
+  - password-aeson
   - password-cli
+  - password-http-api-data
   - password-instances
+  - password-persistent
   - password-types
 
 # Dependency packages to be pulled from upstream that are not in the resolver
