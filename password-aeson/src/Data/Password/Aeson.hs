@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -28,7 +29,7 @@ module Data.Password.Aeson
   ) where
 
 import Data.Aeson (FromJSON(..), ToJSON(..))
-import Data.Password.Types (Password, mkPassword, unsafeShowPassword)
+import Data.Password.Types
 import GHC.TypeLits (TypeError, ErrorMessage(..))
 
 -- $setup
@@ -76,3 +77,7 @@ newtype ExposedPassword = ExposedPassword Password
 
 instance ToJSON ExposedPassword where
   toJSON (ExposedPassword p) = toJSON $ unsafeShowPassword p
+
+deriving newtype instance FromJSON (PasswordHash a)
+
+deriving newtype instance ToJSON (PasswordHash a)

@@ -26,7 +26,7 @@ See the "Data.Password.Types" module for more information.
 
 module Data.Password.Persistent () where
 
-import Data.Password.Types (Password, PasswordHash(..))
+import Data.Password.Types
 #if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif

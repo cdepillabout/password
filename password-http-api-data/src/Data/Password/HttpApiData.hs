@@ -15,14 +15,14 @@ Stability   : experimental
 Portability : POSIX
 
 This module provides `http-api-data` typeclass instances
-for 'Password' and 'PasswordHash'.
+for 'Password'.
 
 See the "Data.Password.Types" module for more information.
 -}
 
 module Data.Password.HttpApiData () where
 
-import Data.Password.Types (Password, mkPassword)
+import Data.Password.Types
 import GHC.TypeLits (TypeError, ErrorMessage(..))
 import Web.HttpApiData (FromHttpApiData(..), ToHttpApiData(..))
 
