@@ -78,12 +78,13 @@ import Crypto.KDF.Scrypt as Scrypt (Parameters(..), generate)
 #if MIN_VERSION_base64(1,0,0)
 import Data.Base64.Types (extractBase64)
 #endif
-import Data.ByteArray (Bytes, constEq, convert)
+import Data.ByteArray (constEq)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64 (encodeBase64)
 import qualified Data.ByteString.Char8 as C8 (length)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T (intercalate, split)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
 
 import Data.Password.Types (
@@ -98,7 +99,6 @@ import Data.Password.Internal (
   , from64
   , readT
   , showT
-  , toBytes
   )
 import qualified Data.Password.Internal (newSalt)
 
@@ -207,12 +207,11 @@ hashPasswordWithSalt params@ScryptParams{..} s@(Salt salt) pass =
 -- | Only for internal use
 hashPasswordWithSalt' :: ScryptParams -> Salt Scrypt -> Password -> ByteString
 hashPasswordWithSalt' ScryptParams{..} (Salt salt) pass =
-    convert (scryptHash :: Bytes)
-  where
-    scryptHash = Scrypt.generate
+    Scrypt.generate
         params
-        (toBytes $ unsafeShowPassword pass)
-        (convert salt :: Bytes)
+        (encodeUtf8 $ unsafeShowPassword pass)
+        salt
+  where
     params = Scrypt.Parameters {
         n = 2 ^ scryptRounds,
         r = fromIntegral scryptBlockSize,

@@ -86,7 +86,7 @@ import Crypto.KDF.Argon2 as Argon2 (Options (..), Variant (..), Version (..), ha
 #if MIN_VERSION_base64(1,0,0)
 import Data.Base64.Types (extractBase64)
 #endif
-import Data.ByteArray (Bytes, constEq, convert)
+import Data.ByteArray (constEq)
 import Data.ByteString as B (ByteString, length)
 import Data.ByteString.Base64 (encodeBase64)
 import Data.Maybe (fromMaybe)
@@ -94,6 +94,7 @@ import Data.Maybe (fromMaybe)
 import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text as T (dropWhileEnd, intercalate, split, splitAt, stripPrefix)
 import Data.Word (Word32)
 
@@ -102,7 +103,6 @@ import Data.Password.Internal (
     from64,
     readT,
     showT,
-    toBytes,
     unsafePad64,
  )
 import Data.Password.Types (
@@ -232,14 +232,13 @@ hashPasswordWithSalt params@Argon2Params{..} s@(Salt salt) pass =
 -- | Only for internal use
 hashPasswordWithSalt' :: Argon2Params -> Salt Argon2 -> Password -> ByteString
 hashPasswordWithSalt' Argon2Params{..} (Salt salt) pass =
-    convert (argon2Hash :: Bytes)
-  where
-    argon2Hash = throwCryptoError $
+    throwCryptoError $
         Argon2.hash
             options
-            (toBytes $ unsafeShowPassword pass)
-            (convert salt :: Bytes)
+            (encodeUtf8 $ unsafeShowPassword pass)
+            salt
             $ fromIntegral argon2OutputLength
+  where
     options = Argon2.Options {
         iterations = argon2TimeCost,
         memory = argon2MemoryCost,
