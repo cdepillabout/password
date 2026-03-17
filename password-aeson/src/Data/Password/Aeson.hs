@@ -14,16 +14,14 @@ Stability   : experimental
 Portability : POSIX
 
 This module provides additional typeclass instances
-for 'Password' and 'PasswordHash'.
+for 'Password' and 'PasswordHash', along with the
+'ExposedPassword' newtype if you /absolutely have to/
+convert a plain text password into JSON.
 
 See the "Data.Password.Types" module for more information.
 -}
 
-module Data.Password.Aeson
-  ( FromJSON (..),
-    ToJSON (..),
-    ExposedPassword (..),
-  ) where
+module Data.Password.Aeson (ExposedPassword (..)) where
 
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Password.Types
