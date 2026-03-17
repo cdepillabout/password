@@ -3,13 +3,12 @@
 import Data.Aeson
 import Data.Aeson.Types (parseMaybe)
 import Data.Text (Text)
-import Test.Tasty
-import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck
+import Test.Tasty (TestTree, defaultMain, testGroup)
+import Test.Tasty.QuickCheck (testProperty, (===))
 import Test.QuickCheck.Instances.Text ()
 
-import Data.Password.Types (Password, PasswordHash(..), unsafeShowPassword)
-import Data.Password.Aeson()
+import Data.Password.Types (Password, unsafeShowPassword)
+import Data.Password.Aeson ()
 
 
 main :: IO ()
@@ -26,14 +25,14 @@ instance FromJSON TestUser where
   parseJSON = withObject "TestUser" $ \o ->
     TestUser <$> o .: "name" <*> o .: "password"
 
-
 aesonTest :: TestTree
-aesonTest = testCase "Password (Aeson)" $
-    assertEqual "password doesn't match" (Just testPassword) $
-      unsafeShowPassword . password <$> parseMaybe parseJSON testUser
+aesonTest =
+  testProperty "Password (Aeson)" $ \pwd ->
+    Just pwd === (unsafeShowPassword . password <$> parseIt pwd)
   where
-    testPassword = "testpass"
-    testUser = object
-      [ "name" .= String "testname"
-      , "password" .= String testPassword
-      ]
+    parseIt pwd =
+      parseMaybe parseJSON $
+        object
+          [ "name" .= String "testname"
+          , "password" .= String pwd
+          ]

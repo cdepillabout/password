@@ -72,7 +72,7 @@ instance PersistField (PasswordHash a) where
       PersistText txt -> Right $ PasswordHash txt
       PersistByteString bs ->
         either failed (Right . PasswordHash) $ TE.decodeUtf8' bs
-      _ -> Left "did not parse PasswordHash from PersistValue"
+      _ -> Left "could not parse PasswordHash from PersistValue"
     where
       failed e = Left $ "Failed decoding PasswordHash to UTF8: " <> pack (show e)
 
