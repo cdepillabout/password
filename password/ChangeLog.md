@@ -1,5 +1,9 @@
 # Changelog for `password`
 
+## 3.1.0.2
+
+-   Added reference to [password-cli](https://github.com/cdepillabout/password/tree/master/password-cli) package in modules and README.
+
 ## 3.1.0.1
 
 -   Redo the conditionals in the `password.cabal` file so that the scrypt
