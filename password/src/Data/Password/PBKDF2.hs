@@ -35,6 +35,15 @@ When unsure, @'Data.Password.Bcrypt.Bcrypt'@
 would probably be the safest option, as it has no memory cost which
 could become a problem if not properly calibrated to the machine
 doing the password verifications.
+
+== Testing
+
+You can use [password-cli](https://github.com/cdepillabout/password/tree/master/password-cli) to test it:
+
+> $ password-cli check pbkdf2 --hash 'SOME-HASH'
+
+> $ password-cli hash pbkdf2 --password-file password.txt
+
 -}
 
 module Data.Password.PBKDF2 (
