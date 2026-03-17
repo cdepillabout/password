@@ -42,6 +42,15 @@ Now while the very first version of @bcrypt@ would have hashes that were 59 char
 because of the 1 character-long "$2$" version prefix, @bcrypt@ has had a version increase shortly
 after release, turning the prefix into a 2 character-long one like "$2a$" pretty
 much from the very beginning.
+
+== Testing
+
+You can use [password-cli](https://github.com/cdepillabout/password/tree/master/password-cli) to test it:
+
+> $ password-cli check bcrypt --hash 'SOME-HASH'
+
+> $ password-cli hash bcrypt --password-file password.txt
+
 -}
 
 module Data.Password.Bcrypt (

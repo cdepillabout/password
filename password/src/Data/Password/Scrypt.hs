@@ -30,6 +30,15 @@ thus is fine for protection against brute-force attacks.
 Because of the memory cost, it is generally advised to use
 @'Data.Password.Bcrypt.Bcrypt'@ if you're not sure this might be a
 problem on your system.
+
+== Testing
+
+You can use [password-cli](https://github.com/cdepillabout/password/tree/master/password-cli) to test it:
+
+> $ password-cli check scrypt --hash 'SOME-HASH'
+
+> $ password-cli hash scrypt --password-file password.txt
+
 -}
 
 module Data.Password.Scrypt (
