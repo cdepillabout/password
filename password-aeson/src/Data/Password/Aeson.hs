@@ -1,11 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-|
@@ -17,16 +14,14 @@ Stability   : experimental
 Portability : POSIX
 
 This module provides additional typeclass instances
-for 'Password' and 'PasswordHash'.
+for 'Password' and 'PasswordHash', along with the
+'ExposedPassword' newtype if you /absolutely have to/
+convert a plain text password into JSON.
 
 See the "Data.Password.Types" module for more information.
 -}
 
-module Data.Password.Aeson
-  ( FromJSON (..),
-    ToJSON (..),
-    ExposedPassword (..),
-  ) where
+module Data.Password.Aeson (ExposedPassword (..)) where
 
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Password.Types

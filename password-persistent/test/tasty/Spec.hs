@@ -1,13 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Data.Text (Text)
-import Database.Persist.Class (PersistField(..))
-import Test.Tasty
-import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck
+import Database.Persist.Class (PersistField (..))
+import Test.Tasty (TestTree, defaultMain, testGroup)
+import Test.Tasty.QuickCheck (testProperty, (===))
 import Test.QuickCheck.Instances.Text ()
 
-import Data.Password.Types (Password, PasswordHash(..), unsafeShowPassword)
+import Data.Password.Types (PasswordHash (..))
 import Data.Password.Persistent()
 
 
