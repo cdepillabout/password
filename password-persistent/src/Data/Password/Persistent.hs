@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-|
@@ -46,9 +47,9 @@ import GHC.TypeLits (TypeError, ErrorMessage(..))
 -- >>> import Database.Persist.Class (PersistField(toPersistValue))
 
 type ErrMsg = 'Text "Warning! Tried to convert plain-text Password to PersistValue!"
-        ':$$: 'Text "  This is likely a security leak. Please make sure whether this was intended."
-        ':$$: 'Text "  If this is intended, please use 'unsafeShowPassword' before converting to PersistValue."
-        ':$$: 'Text ""
+         :$$: 'Text "  This is likely a security leak. Please make sure whether this was intended."
+         :$$: 'Text "  If this is intended, please use 'unsafeShowPassword' before converting to PersistValue."
+         :$$: 'Text ""
 
 -- | This instance allows a 'PasswordHash' to be stored as a field in a database using
 -- "Database.Persist".

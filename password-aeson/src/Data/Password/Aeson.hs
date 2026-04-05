@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-|
@@ -24,7 +25,12 @@ See the "Data.Password.Types" module for more information.
 module Data.Password.Aeson (ExposedPassword (..)) where
 
 import Data.Aeson (FromJSON(..), ToJSON(..))
-import Data.Password.Types
+import Data.Password.Types (
+  mkPassword,
+  unsafeShowPassword,
+  Password,
+  PasswordHash (PasswordHash),
+ )
 import GHC.TypeLits (TypeError, ErrorMessage(..))
 
 -- $setup
@@ -52,9 +58,9 @@ instance FromJSON Password where
   parseJSON = fmap mkPassword . parseJSON
 
 type ErrMsg = 'Text "Warning! Tried to convert plain-text Password to JSON!"
-        ':$$: 'Text "  This is likely a security leak. Please make sure whether this was intended."
-        ':$$: 'Text "  If this is intended, please use 'unsafeShowPassword' before converting to JSON"
-        ':$$: 'Text ""
+         :$$: 'Text "  This is likely a security leak. Please make sure whether this was intended."
+         :$$: 'Text "  If this is intended, please use 'unsafeShowPassword' before converting to JSON"
+         :$$: 'Text ""
 
 -- | Type error! Do not use 'toJSON' on a 'Password'!
 instance TypeError ErrMsg => ToJSON Password where

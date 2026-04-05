@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-|
@@ -32,9 +33,9 @@ import Web.HttpApiData (FromHttpApiData(..), ToHttpApiData(..))
 -- >>> import Web.HttpApiData (parseUrlPiece)
 
 type ErrMsg = 'Text "Warning! Tried to convert plain-text Password to HttpApiData!"
-        ':$$: 'Text "  This is likely a security leak. Please make sure whether this was intended."
-        ':$$: 'Text "  If this is intended, please use 'unsafeShowPassword' before converting to HttpApiData"
-        ':$$: 'Text ""
+         :$$: 'Text "  This is likely a security leak. Please make sure whether this was intended."
+         :$$: 'Text "  If this is intended, please use 'unsafeShowPassword' before converting to HttpApiData"
+         :$$: 'Text ""
 
 -- | This instance allows a 'Password' to be created with functions like
 -- 'Web.HttpApiData.parseUrlPiece' or 'Web.HttpApiData.parseQueryParam'.
