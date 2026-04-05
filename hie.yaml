@@ -16,10 +16,27 @@ cradle:
 
         - path: "./password-instances/src"
           component: "password-instances:lib"
-        - path: "./password-instances/test/doctest"
-          component: "password-instances:test:doctests"
-        - path: "./password-instances/test/tasty"
-          component: "password-instances:test:password-instances-tasty"
+
+        - path: "./password-aeson/src"
+          component: "password-aeson:lib"
+        - path: "./password-aeson/test/doctest"
+          component: "password-aeson:test:doctests"
+        - path: "./password-aeson/test/tasty"
+          component: "password-aeson:test:password-aeson-tasty"
+
+        - path: "./password-http-api-data/src"
+          component: "password-http-api-data:lib"
+        - path: "./password-http-api-data/test/doctest"
+          component: "password-http-api-data:test:doctests"
+        - path: "./password-http-api-data/test/tasty"
+          component: "password-http-api-data:test:password-http-api-data-tasty"
+
+        - path: "./password-persistent/src"
+          component: "password-persistent:lib"
+        - path: "./password-persistent/test/doctest"
+          component: "password-persistent:test:doctests"
+        - path: "./password-persistent/test/tasty"
+          component: "password-persistent:test:password-persistent-tasty"
 
         - path: "./password-cli/app"
           component: "password-cli:exe:password-cli"
