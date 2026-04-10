@@ -4,11 +4,12 @@
 
 -   Added cabal flags (`aeson`, `http-api-data`, `persistent`) to make
     dependencies optional. All flags default to `True`.
--   Added compile-time error if all flags are disabled.
--   Split into dedicated packages
-    [#87](https://github.com/cdepillabout/password/pull/87)
--   and add flags to parametrize dependencies
     [#89](https://github.com/cdepillabout/password/pull/89)
+-   Added compile-time error if all flags are disabled.
+-   Split into dedicated packages.
+    [#87](https://github.com/cdepillabout/password/pull/87)
+
+Thanks to [@blackheaven](https://github.com/blackheaven)
 
 ## 3.0.0.0
 
@@ -16,7 +17,7 @@
     `password-types` package, instead of on the `password` package.
     [#40](https://github.com/cdepillabout/password/pull/40)
     Thanks to [@Vlix](https://github.com/Vlix)
--   Small update to the README
+-   Small update to the README.
 -   Changed `PersistField` instance of `PasswordHash` to use
     `decodeUtf8'` for better handling of UTF8 decoding exceptions.
     [#43](https://github.com/cdepillabout/password/pull/43)
