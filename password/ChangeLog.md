@@ -1,12 +1,20 @@
 # Changelog for `password`
 
+## 3.1.1.0
+
+-   Support `crypton` dependency to include `^>= 1.1.0`.
+-   Removed converting to and from `Bytes`, especially since `ram >= 0.21.0`
+    (a dependency of `crypton >= 1.1`) has it as a newtype over `ByteString`.
+    Thanks to [@Vlix](https://github.com/Vlix)
+    [#91](https://github.com/cdepillabout/password/pull/91)
+
 ## 3.1.0.2
 
 -   Added reference to [password-cli](https://github.com/cdepillabout/password/tree/master/password-cli) package in modules and README.
 
 ## 3.1.0.1
 
--   Redo the conditionals in the `password.cabal` file so that the scrypt
+-   Redo the conditionals in the `password.cabal` file so that the `scrypt`
     library is only included as a test dependency on `x86_64`.  This generally
     shouldn't affect users of the `password` library.
     Thanks to [@sternenseemann](https://github.com/sternenseemann)
