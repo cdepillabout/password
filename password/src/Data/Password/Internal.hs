@@ -14,8 +14,6 @@ module Data.Password.Internal (
     PasswordCheck(..)
   , newSalt
   -- * Utility
-  , toBytes
-  , fromBytes
   , from64
   , unsafePad64
   , readT
@@ -26,7 +24,6 @@ module Data.Password.Internal (
 
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Crypto.Random (getRandomBytes)
-import Data.ByteArray (Bytes, convert)
 import Data.ByteString (ByteString)
 #if MIN_VERSION_base64(1,0,0)
 import Data.ByteString.Base64 (decodeBase64Untyped)
@@ -44,7 +41,7 @@ import Data.Text as T (
     unpack,
  )
 import Data.Password.Types (Salt(..))
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import Text.Read (readMaybe)
 
 -- $setup
@@ -82,16 +79,6 @@ data PasswordCheck
   -- ^ The password check failed. The plain-text password does not match the
   -- hashed password.
   deriving (Eq, Read, Show)
-
--- | Converting 'Text' to 'Bytes'
-toBytes :: Text -> Bytes
-toBytes = convert . encodeUtf8
-{-# INLINE toBytes #-}
-
--- | Converting 'Bytes' to 'Text'
-fromBytes :: Bytes -> Text
-fromBytes = decodeUtf8 . convert
-{-# INLINE fromBytes #-}
 
 -- | Decodes a base64 'Text' to a regular 'ByteString' (if possible)
 from64 :: Text -> Maybe ByteString

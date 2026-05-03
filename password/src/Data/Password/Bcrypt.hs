@@ -86,8 +86,8 @@ module Data.Password.Bcrypt (
 import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Crypto.KDF.BCrypt as Bcrypt (bcrypt, validatePassword)
-import Data.ByteArray (Bytes, convert)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Text.Read (readMaybe)
 
 import Data.Password.Types (
@@ -97,11 +97,7 @@ import Data.Password.Types (
   , unsafeShowPassword
   , Salt(..)
   )
-import Data.Password.Internal (
-    PasswordCheck(..)
-  , fromBytes
-  , toBytes
-  )
+import Data.Password.Internal (PasswordCheck(..))
 import qualified Data.Password.Internal (newSalt)
 
 
@@ -169,9 +165,9 @@ hashPasswordWithSalt
 hashPasswordWithSalt cost (Salt salt) pass =
     let hash = Bcrypt.bcrypt
             cost
-            (convert salt :: Bytes)
-            (toBytes $ unsafeShowPassword pass)
-    in PasswordHash $ fromBytes hash
+            salt
+            (encodeUtf8 $ unsafeShowPassword pass)
+    in PasswordHash $ decodeUtf8 hash
 
 -- | Hash a password using the /bcrypt/ algorithm with the given cost.
 --
@@ -214,8 +210,8 @@ hashPasswordWithParams cost pass = liftIO $ do
 checkPassword :: Password -> PasswordHash Bcrypt -> PasswordCheck
 checkPassword pass (PasswordHash passHash) =
     if Bcrypt.validatePassword
-        (toBytes $ unsafeShowPassword pass)
-        (toBytes passHash)
+        (encodeUtf8 $ unsafeShowPassword pass)
+        (encodeUtf8 passHash)
       then PasswordCheckSuccess
       else PasswordCheckFail
 

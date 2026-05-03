@@ -85,13 +85,14 @@ import Crypto.KDF.PBKDF2 as PBKDF2
 #if MIN_VERSION_base64(1,0,0)
 import Data.Base64.Types (extractBase64)
 #endif
-import Data.ByteArray (ByteArray, ByteArrayAccess, Bytes, constEq, convert)
+import Data.ByteArray (constEq)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64 (encodeBase64)
 import qualified Data.ByteString.Char8 as C8 (length)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T (intercalate, pack, split, stripPrefix)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
 
 import Data.Password.Types (
@@ -101,12 +102,7 @@ import Data.Password.Types (
   , unsafeShowPassword
   , Salt(..)
   )
-import Data.Password.Internal (
-    PasswordCheck(..)
-  , from64
-  , readT
-  , toBytes
-  )
+import Data.Password.Internal (PasswordCheck(..), from64, readT)
 import qualified Data.Password.Internal (newSalt)
 
 
@@ -209,13 +205,12 @@ hashPasswordWithSalt params@PBKDF2Params{..} s@(Salt salt) pass =
 -- | Only for internal use
 hashPasswordWithSalt' :: PBKDF2Params -> Salt PBKDF2 -> Password -> ByteString
 hashPasswordWithSalt' PBKDF2Params{..} (Salt salt) pass =
-    convert (pbkdf2Hash :: Bytes)
-  where
-    pbkdf2Hash = algToFunc
+    algToFunc
         pbkdf2Algorithm
         params
-        (toBytes $ unsafeShowPassword pass)
-        (convert salt :: Bytes)
+        (encodeUtf8 $ unsafeShowPassword pass)
+        salt
+  where
     params = PBKDF2.Parameters {
         PBKDF2.iterCounts = fromIntegral pbkdf2Iterations,
         PBKDF2.outputLength = fromIntegral $ maxOutputLength pbkdf2Algorithm pbkdf2OutputLength
@@ -324,8 +319,7 @@ textToAlg = \case
   _ -> Nothing
 
 -- Which function to use, based on the given algorithm
-algToFunc :: (ByteArrayAccess password, ByteArrayAccess salt, ByteArray hash)
-          => PBKDF2Algorithm -> PBKDF2.Parameters -> password -> salt -> hash
+algToFunc :: PBKDF2Algorithm -> PBKDF2.Parameters -> ByteString -> ByteString -> ByteString
 algToFunc = \case
   PBKDF2_MD5 -> PBKDF2.generate (PBKDF2.prfHMAC Crypto.MD5)
   PBKDF2_SHA1 -> PBKDF2.fastPBKDF2_SHA1
