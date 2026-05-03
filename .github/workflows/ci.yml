@@ -65,10 +65,10 @@ jobs:
       matrix:
         stack: ["latest"]
         resolver:
-          - "--resolver lts-21" # GHC 9.4.8
-          - "--resolver lts-22" # GHC 9.6.7
-          - "--resolver lts-23" # GHC 9.8.4
-          - "--resolver lts-24" # GHC 9.10.3
+          - "--resolver lts-21 --flag password:memory-dep" # GHC 9.4.8
+          - "--resolver lts-22 --flag password:memory-dep" # GHC 9.6.7
+          - "--resolver lts-23 --flag password:memory-dep" # GHC 9.8.4
+          - "--resolver lts-24 --flag password:memory-dep" # GHC 9.10.3
           - "--resolver nightly" # GHC 9.12.4
 
     steps:
