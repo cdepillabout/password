@@ -3,6 +3,8 @@
 ## 3.1.1.0
 
 -   Support `crypton` dependency to include `^>= 1.1.0`.
+    Added the `memory-dep` flag to be able to enforce building with `memory`
+    instead of `ram` when constrained to lower versions of `crypton`.
 -   Removed converting to and from `Bytes`, especially since `ram >= 0.21.0`
     (a dependency of `crypton >= 1.1`) has it as a newtype over `ByteString`.
     Thanks to [@Vlix](https://github.com/Vlix)
