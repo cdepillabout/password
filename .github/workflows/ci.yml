@@ -45,10 +45,14 @@ jobs:
     - name: Build
       run: |
         cabal update
-        cabal build all --enable-tests --enable-benchmarks --write-ghc-environment-files=always
+        cabal build all \
+          --enable-tests \
+          --enable-benchmarks \
+          --write-ghc-environment-files=always \
+          --allow-newer=persistent-2.18.1.0:template-haskell
     - name: Test
       run: |
-        cabal test all --enable-tests
+        cabal test all --enable-tests --allow-newer=persistent-2.18.1.0:template-haskell
   stack:
     name: stack ${{ matrix.resolver }}
     runs-on: ubuntu-latest
