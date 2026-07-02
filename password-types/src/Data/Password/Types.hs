@@ -1,4 +1,6 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {-|
 Module      : Data.Password.Types
 Copyright   : (c) Dennis Gosnell, 2019; Felix Paulusma, 2020
@@ -48,14 +50,27 @@ module Data.Password.Types (
   , unsafeShowPassword
     -- * Hashing salts
   , Salt (..)
+    -- * Utility functions
+
+    -- | These functions might not be specific to passwords, but
+    -- can be useful when handling them.
+  , constEquals
   ) where
 
-import Data.ByteArray (constEq)
-import Data.ByteString (ByteString)
+import Data.ByteString.Internal (ByteString (..))
 import Data.Function (on)
 import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
+import Foreign (
+  Word8,
+  Ptr,
+  Bits ((.|.), xor),
+  peekByteOff,
+  plusPtr,
+  withForeignPtr,
+ )
+import System.IO.Unsafe (unsafeDupablePerformIO)
 
 -- $setup
 -- >>> :set -XOverloadedStrings
@@ -112,9 +127,46 @@ newtype PasswordHash a = PasswordHash
   } deriving (Ord, Read, Show)
 
 instance Eq (PasswordHash a)  where
-  (==) = constEq `on` encodeUtf8 . unPasswordHash
+  (==) = constEquals `on` encodeUtf8 . unPasswordHash
 
 -- | A salt used by a hashing algorithm.
 newtype Salt a = Salt
   { getSalt :: ByteString
   } deriving (Eq, Show)
+
+-- The below is somewhat copied over from the 'memory'(/ram) package(s)
+
+-- | Checking two 'ByteString's for equality without short-circuiting on the
+-- first byte that is different. This is used in the definition of '==' for
+-- 'PasswordHash'es, to mitigate timing attacks.
+--
+-- It _will_ give an early 'False' if the length of the 'ByteString's aren't
+-- the same, but this does not help in timing attacks since that means the
+-- comparison is being done between two hashes of different hash functions.
+-- Which only happens if the implementation is comparing the wrong hashes.
+constEquals :: ByteString -> ByteString -> Bool
+constEquals (PS fptr1 off1 l1) (PS fptr2 off2 l2)
+  -- This is used to compare hashes of passwords, which should be equal length
+  -- if they compare the same type of algorithm with the same settings, so it's
+  -- fine to do an early return on bad hash comparisons.
+  | l1 /= l2 = False
+  | otherwise =
+      unsafeDupablePerformIO $
+        withForeignPtr fptr1 $ \ptr1 ->
+          withForeignPtr fptr2 $ \ptr2 ->
+            -- Using the 'offset' for backwards compatibility (bytestring < 0.11)
+            memConstEqual (ptr1 `plusPtr` off1) (ptr2 `plusPtr` off2) l1
+
+-- | This function MUST take two memory buffers of equal length,
+-- or it will have undefined behaviour.
+memConstEqual :: Ptr Word8 -> Ptr Word8 -> Int -> IO Bool
+memConstEqual p1 p2 n =
+    loop 0 0
+  where
+    loop :: Int -> Word8 -> IO Bool
+    loop i !acc
+      | i == n = pure $! acc == 0
+      | otherwise = do
+            w1 <- peekByteOff p1 i
+            w2 <- peekByteOff p2 i
+            loop (i + 1) (acc .|. xor w1 w2) 
