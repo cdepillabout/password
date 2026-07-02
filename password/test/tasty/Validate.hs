@@ -15,9 +15,17 @@ import qualified Data.Text as T
 import Test.QuickCheck.Instances.Text ()
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (Assertion, assertBool, assertEqual, testCase)
-import Test.Tasty.QuickCheck (Arbitrary (..), Gen, Property, choose,
-                              elements, oneof, shuffle, suchThat, testProperty,
-                              withMaxSuccess, (===))
+import Test.Tasty.QuickCheck (
+  Arbitrary (..), Gen, Property, choose,
+  elements, oneof, shuffle, suchThat, testProperty,
+#if !MIN_VERSION_QuickCheck(2,18,0)
+  Testable,
+  withMaxSuccess,
+#else
+  withNumTests,
+#endif
+  (===),
+ )
 #if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup ((<>))
 #endif
@@ -237,7 +245,7 @@ instance Show CharSetPredicate where
 -- is valid
 prop_ValidPassword :: ValidPassword -> Property
 prop_ValidPassword (ValidPassword passwordPolicy password) =
-  withMaxSuccess 1000 $
+  withNumTests 1000 $
     case validatePasswordPolicy passwordPolicy of
       Left _ -> error "PasswordPolicy is invalid"
       Right validPolicy -> validatePassword validPolicy (mkPassword password) === V.ValidPassword
@@ -272,7 +280,7 @@ instance Arbitrary ValidPassword where
 
 prop_InvalidPassword :: InvalidPassword -> Property
 prop_InvalidPassword (InvalidPassword failedReason passwordPolicy password) =
-  withMaxSuccess 1000 $ (===) expected $
+  withNumTests 1000 $ (===) expected $
     case validatePasswordPolicy passwordPolicy of
       Left policyReasons -> Left policyReasons
       Right validPolicy -> Right $ validatePassword validPolicy (mkPassword password)
@@ -435,3 +443,8 @@ isValidPolicyReason = \case
 -- Required characters are turned off so that it's much more easier to test.
 emptyPolicy :: PasswordPolicy
 emptyPolicy = PasswordPolicy 8 32 0 0 0 0 defaultCharSetPredicate
+
+#if !MIN_VERSION_QuickCheck(2,18,0)
+withNumTests :: Testable prop => Int -> prop -> Property
+withNumTests = withMaxSuccess
+#endif

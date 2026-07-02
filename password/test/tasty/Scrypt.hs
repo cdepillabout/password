@@ -32,7 +32,7 @@ testScrypt = testGroup "scrypt"
                  extractParams
                  testsParams8Rounds
 #ifdef x86_64_HOST_ARCH
-  , testProperty "scrypt <-> cryptonite" $ withMaxSuccess 10 checkScrypt
+  , testProperty "scrypt <-> cryptonite" $ withNumTests 10 checkScrypt
 #endif
   , testGolden
   ]
@@ -69,3 +69,10 @@ testGolden = testGroup "Golden tests"
             testName
             ("test/golden/" <> fileName <> ".golden")
             (return $ fromStrict $ encodeUtf8 $ unPasswordHash $ hashPasswordWithSalt params (Salt salt) $ mkPassword "password")
+
+#ifdef x86_64_HOST_ARCH
+#if !MIN_VERSION_QuickCheck(2,18,0)
+withNumTests :: Testable prop => Int -> prop -> Property
+withNumTests = withMaxSuccess
+#endif
+#endif

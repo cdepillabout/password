@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Internal where
 
-import Data.ByteArray (pack)
+import Data.ByteString (pack)
 import Test.Tasty (TestTree)
 import Test.Tasty.QuickCheck
 import Test.QuickCheck.Instances.Text ()
